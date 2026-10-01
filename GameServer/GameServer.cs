@@ -13,6 +13,7 @@ using DOL.Config;
 using DOL.Database;
 using DOL.Database.Attributes;
 using DOL.Events;
+using DOL.GS.Agents;
 using DOL.GS.Appeal;
 using DOL.GS.Behaviour;
 using DOL.GS.DatabaseUpdate;
@@ -1103,6 +1104,8 @@ namespace DOL.GS
 
 				if (!client.UdpEndPoint.Equals(state.EndPoint))
 					return;
+
+				InboundPacketCapture.Record(client, CaptureTransport.Udp, state.Buffer, state.Offset, state.Size);
 
 				try
 				{

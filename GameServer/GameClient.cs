@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DOL.Database;
 using DOL.Events;
+using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerProperties;
 using DOL.Logging;
@@ -385,6 +386,8 @@ namespace DOL.GS
                     Disconnect();
                     return;
                 }
+
+                InboundPacketCapture.Record(this, CaptureTransport.Tcp, buffer, currentOffset, packetLength);
 
                 var packet = PooledObjectFactory.GetForTick<GSPacketIn>().Init();
                 packet.Load(buffer, currentOffset, packetLength);
