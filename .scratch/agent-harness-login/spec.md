@@ -80,7 +80,7 @@ There is no Mind and no LLM in this milestone. The Agent's Account and Character
   - `/agent logout` enqueues the real `/quit` command packet. The server's normal quit path runs, including any quit delay it applies.
   - On the resulting player-quit call, the Harness triggers the normal client disconnect, so the Character is saved and removed through the existing path.
 - **Liveness.** While online, the Harness sends ping packets automatically at the real client's interval, and is subject to the normal ping timeout.
-- **Agent Accounts** are ordinary Accounts identified by a naming convention (an `agent_` prefix). `/agent login` refuses Characters on other Accounts, and Characters already online.
+- **Agent Accounts** are ordinary Accounts identified by a naming convention (an `agent` prefix, e.g. `agent1`; the server rejects underscores in account names). `/agent login` refuses Characters on other Accounts, and Characters already online.
 - **Registry.** An in-memory registry maps Character names to their live Harness clients, so that `/agent logout` and `/agent soak` can find them and duplicate logins can be refused. It holds no persistent state.
 - **Admin command.** `/agent` requires admin privilege and has three subcommands: `login <char>`, `logout <char>`, and `soak <char> <n>`. Soak runs cycles one after another (not in parallel), stops at the first failure, and reports pass or fail, the failing cycle and the reason. It compares online client count and session allocation against their values before the run.
 - **Code placement.** All Harness code lives in its own folder and namespace inside the game server project. Nothing outside the listed core seams changes.
