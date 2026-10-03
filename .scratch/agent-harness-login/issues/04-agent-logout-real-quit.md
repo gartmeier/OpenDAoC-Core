@@ -4,13 +4,13 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] After `/agent logout <char>`, the Character vanishes from the Human's screen and from `/who`
-- [ ] The Character's location and state persist: moving it (e.g. with a GM command) and then logging it out and back in restores the new location
-- [ ] The Agent never becomes linkdead during logout
-- [ ] The client's session and registry entry are released after logout
-- [ ] Server shutdown with an Agent online neither hangs nor loses the Agent's state
+- [x] After `/agent logout <char>`, the Character vanishes from the Human's screen and from `/who`
+- [x] The Character's location and state persist: moving it (e.g. with a GM command) and then logging it out and back in restores the new location
+- [x] The Agent never becomes linkdead during logout
+- [x] The client's session and registry entry are released after logout
+- [x] Server shutdown with an Agent online neither hangs nor loses the Agent's state
 - [x] A golden-byte unit test shows the `/quit` command packet builder matches the 01 fixture
 
 ## Comments
@@ -40,3 +40,12 @@ For the Human, when the server runs this build:
 Known gaps:
 - **A refused quit hangs the logout.** If the server refuses the quit (dead, mounted, moving, crafting, in an instance, or the command spam check), its reason goes to the Harness packet library and is ignored, so `/agent logout` stays at "quitting..." forever. 07 (failure reporting) and 08 (a cycle that doesn't fully disconnect fails) need a time limit here.
 - **An idle kick now ends the connection.** `KickPlayerToCharScreen` also uses the player-quit call, so an idle-kicked Agent now disconnects instead of waiting at the character screen as 05's notes said. That follows the spec's "the server's player-quit call makes the Harness complete disconnection" and releases the registry entry. A Human's client would stay at the character screen, but an Agent has nothing to do there.
+
+**2026-10-03 (Human, recorded by agent):** Ran the checks on this build (server started 17:19:49):
+- `/agent logout greeen` twice. Each time Greeen sat through the quit delay, vanished from the Human's screen and from `/who`, and "Greeen has quit." appeared. The server log shows the Character removed by the quit timer about 20 s after the command (17:21:03 → 17:21:24, 17:22:40 → 17:23:00), then "agent1 just disconnected.", with no link death or timeout.
+- `/agent login greeen` worked straight after each logout, so the registry entry and session were released.
+- Moved Greeen with `/jump greeen to me`, logged him out and in again. He appeared at the new spot.
+- `/shutdown 10` with Greeen online: the server saved 2 players (the Human's Character and Greeen) and stopped about 12 s later without hanging. (`/shutdown` takes seconds and refuses values below 10; its error message wrongly says the value is in minutes.)
+- No errors in the log after startup, apart from an unrelated UPnP configuration line.
+
+All acceptance items are met.
