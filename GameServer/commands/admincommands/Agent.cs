@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using DOL.Database;
 using DOL.GS.Agents;
 
@@ -80,8 +81,10 @@ namespace DOL.GS.Commands
                 return;
             }
 
-            DisplayMessage(client, $"Logging {character.Name} in through the Harness...");
-            await harnessClient.EnterWorld(account, character);
+            // Entering the world starts the trace, so its path is known once this returns.
+            Task enteredWorld = harnessClient.EnterWorld(account, character);
+            DisplayMessage(client, $"Logging {character.Name} in through the Harness, tracing to {harnessClient.TracePath}...");
+            await enteredWorld;
             DisplayMessage(client, $"{character.Name} is in the world.");
         }
 

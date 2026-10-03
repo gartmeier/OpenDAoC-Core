@@ -14,7 +14,7 @@ namespace DOL.GS.Agents
     /// <summary>
     /// Stands in for the game client of an Agent's Character: a client without a socket.
     /// Inbound packets come from a queue instead of the network and go through the normal packet processor, at the same point in the client tick as a Human's.
-    /// Outbound packets go to <see cref="HarnessPacketLib"/>.
+    /// Outbound packets go to <see cref="HarnessPacketLib"/>, which records them in the Agent's trace.
     /// </summary>
     public sealed class HarnessClient : GameClient
     {
@@ -29,6 +29,7 @@ namespace DOL.GS.Agents
         private WorldEntry _worldEntry;
         private Liveness _liveness;
         private WorldExit _worldExit;
+        private AgentTrace _trace;
 
         public HarnessClient() : base(null) { }
 
@@ -37,6 +38,9 @@ namespace DOL.GS.Agents
 
         // Completes once the server has disconnected the client, its Character saved and removed and its session released.
         public Task Disconnected => _disconnected.Task;
+
+        // Where this login's trace is written, once the client has started entering the world.
+        public string TracePath => _trace?.FilePath;
 
         /// <summary>
         /// Connects as the Account's client, already past the network handshake, version check and password check, and enters the world as the Character.
@@ -49,7 +53,8 @@ namespace DOL.GS.Agents
             // What the real 1.127 client reports in its version and crypt-key request, which the Harness skips.
             ClientType = eClientType.LabyrinthOfTheMinotaur;
             ClientAddons = eClientAddons.bit4 | eClientAddons.NewNewFrontiers;
-            Out = HarnessPacketLib.Create(this);
+            _trace = AgentTrace.Start(character.Name);
+            Out = HarnessPacketLib.Create(this, _trace);
             PacketProcessor = new(this);
             ClientState = eClientState.Connecting;
             _worldEntry = new(character);
@@ -149,6 +154,7 @@ namespace DOL.GS.Agents
         private void OnDisconnected(DOLEvent e, object sender, EventArgs args)
         {
             GameEventMgr.RemoveAllHandlersForObject(this);
+            _trace.Dispose();
             _disconnected.TrySetResult();
         }
     }
