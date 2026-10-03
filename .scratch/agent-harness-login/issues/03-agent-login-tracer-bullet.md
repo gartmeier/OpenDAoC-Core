@@ -18,3 +18,7 @@ Without liveness (05) the Agent will eventually be timed out. That's expected he
 - [ ] The success message is shown only once the Character is actually in the world
 - [ ] Golden-byte unit tests show every login packet builder matches the 01 fixtures (varying fields masked)
 - [ ] Harness code lives in its own folder and namespace; core changes are limited to what 02 introduced
+
+## Comments
+
+**2026-10-03 (agent, from the 01 capture):** The real world-entry sequence is in `Tests/Fixtures/Agents/v1127/README.md`. One catch for this ticket: the server soft link-deads a player whose last position update (0xA9) is more than 5 s old (`PlayerMovementComponent.SOFT_LINK_DEATH_THRESHOLD`). A Harness that only enters the world will show its Character linkdead within seconds. The real client sends a position update about every 2.1 s, even when standing still. This ticket either needs position updates too, or has to accept being linkdead until 05 lands.

@@ -4,13 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] A capture exists of a real 1.127 client logging an Agent Account's Character in from character select, idling long enough to send pings, and quitting via `/quit`
-- [ ] The world-entry sequence (packet types in order) is documented next to the fixtures
-- [ ] Fixtures for each packet the Harness will need (overview/realm, character select, world init and the rest of world entry, ping, `/quit` command) are checked in to the test project
-- [ ] Fields that legitimately vary between captures are identified for each fixture
-- [ ] Capturing adds no permanent behaviour change for Human clients (any capture tooling is either removed or off by default)
+- [x] A capture exists of a real 1.127 client logging an Agent Account's Character in from character select, idling long enough to send pings, and quitting via `/quit`
+- [x] The world-entry sequence (packet types in order) is documented next to the fixtures
+- [x] Fixtures for each packet the Harness will need (overview/realm, character select, world init and the rest of world entry, ping, `/quit` command) are checked in to the test project
+- [x] Fields that legitimately vary between captures are identified for each fixture
+- [x] Capturing adds no permanent behaviour change for Human clients (any capture tooling is either removed or off by default)
 
 ## Comments
 
@@ -38,3 +38,5 @@ Notes for that work:
 - Packets sent before the Account is set aren't recorded (the version check and the login request). That's fine, because the Harness skips them.
 - UDP packets are posted to the game loop, so the order between TCP and UDP is the server's processing order, not the order on the wire.
 - The `elapsed_ms` values can be slightly out of order across transports.
+
+**2026-10-03 (agent):** The Human captured two login–idle–quit sessions. They are checked in as `Tests/Fixtures/Agents/v1127/login-idle-quit-{1,2}.tsv`. The README there documents the world-entry sequence, the idle and quit traffic, and the fields that vary, both for every packet and per packet type. `UT_ClientCaptureFixtures` checks every fixture packet's checksum and pins the world-entry order. Findings that affect later tickets are noted on 03, 04 and 05. The most important one: position updates are needed every <5 s to avoid soft link-death, not just pings. The capture hooks stay in, off by default, for future recaptures.
