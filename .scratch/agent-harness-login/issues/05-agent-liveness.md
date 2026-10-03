@@ -4,9 +4,9 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] An Agent logged in with `/agent login` stays in the world, not linkdead, for longer than several ping-timeout windows
+- [x] An Agent logged in with `/agent login` stays in the world, not linkdead, for longer than several ping-timeout windows
 - [x] Pings are sent through the normal packet processor at the interval observed in the 01 capture
 - [x] No special-case exemption from ping timeout or idle kick is added for Agents
 - [x] A golden-byte unit test shows the ping packet builder matches the 01 fixture
@@ -39,3 +39,5 @@ For the Human, when the server runs this build:
 Known gaps:
 - **The ping's cycling bytes.** A real client cycles data offsets 1–2 through 11 values, and sets offset 11 on its first world-entry ping. The builder writes 0 there. The server reads neither.
 - **Liveness never stops while the Harness client is connected.** 04 will end the connection after the quit, so it doesn't matter yet. Recheck when 04 lands.
+
+**2026-10-03 (Human, recorded by agent):** Logged Greeen in with `/agent login` on this build at 15:58:30 and left him idle. He was still there 50 minutes later, about 20 hard ping-timeout windows. The server log since that login has no "Position update timeout", "Hard timeout", link death or quit for him. The idle kick is off on this server (`KICK_IDLE_PLAYER_STATUS` defaults to false), so it wasn't exercised. All acceptance items are met.
