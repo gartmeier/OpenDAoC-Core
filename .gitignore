@@ -485,6 +485,7 @@ $RECYCLE.BIN/
 
 # OpenDAoC
 /Pathing/Detour/Build
+/build/
 
 # Local Docker Compose overrides
 docker-compose.override.yml
