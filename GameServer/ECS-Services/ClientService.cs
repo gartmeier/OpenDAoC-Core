@@ -161,7 +161,7 @@ namespace DOL.GS
         private static void Send(GameClient client)
         {
             TickMonitor monitor = new();
-            client.PacketProcessor.SendPendingPackets();
+            client.SendPendingPackets();
 
             if (monitor.IsLongTick(out long elapsedMs) && log.IsWarnEnabled)
                 log.Warn($"Long {Instance.ServiceName}.{nameof(Send)} for {client.Account.Name}({client.SessionID}) Time: {elapsedMs}ms");

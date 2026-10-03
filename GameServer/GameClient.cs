@@ -112,6 +112,11 @@ namespace DOL.GS
             return true;
         }
 
+        public virtual void SendPendingPackets()
+        {
+            PacketProcessor.SendPendingPackets();
+        }
+
         public async Task LoadPlayer(int accountIndex)
         {
             DbCoreCharacter dolChar = Account.Characters[accountIndex];

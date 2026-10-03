@@ -80,7 +80,7 @@ namespace DOL.Network
             return Socket.SendAsync(tcpSendArgs);
         }
 
-        public void Receive()
+        public virtual void Receive()
         {
             if (Socket?.Connected != true)
             {
@@ -178,7 +178,7 @@ namespace DOL.Network
             }
         }
 
-        protected void CloseSocket()
+        protected virtual void CloseSocket()
         {
             if (Socket == null)
                 return;
