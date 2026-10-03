@@ -68,6 +68,7 @@ There is no Mind and no LLM in this milestone. The Agent's Account and Character
   - world init request (carrying the character slot index derived from the Account's realm and the Character's account slot)
   - whatever further requests a real 1.127 client sends to complete world entry (for example player init and region list)
   - ping
+  - position update, repeating the Character's current position
   - the `/quit` command packet
 
   The exact order and contents of the world-entry sequence come from capturing a real 1.127 client, not from reading handler code.
@@ -77,13 +78,13 @@ There is no Mind and no LLM in this milestone. The Agent's Account and Character
   - It enqueues the captured sequence from character select onwards and waits for the client to reach in-world play.
   - World entry includes an asynchronous character load, so login completion is detected from client state, not assumed after enqueuing.
 - **Logout flow.**
-  - `/agent logout` enqueues the real `/quit` command packet. The server's normal quit path runs, including any quit delay it applies.
+  - `/agent logout` enqueues the real `/quit` command packet (`&quit`; the captured Human typed the `&q` alias). The server's normal quit path runs, including any quit delay it applies.
   - On the resulting player-quit call, the Harness triggers the normal client disconnect, so the Character is saved and removed through the existing path.
-- **Liveness.** While online, the Harness sends ping packets automatically at the real client's interval, and is subject to the normal ping timeout.
+- **Liveness.** While online, the Harness sends what a real idle client sends, at the real client's intervals: a ping every 5 s and a position update about every 2.1 s that repeats the Character's current position. Without position updates the server soft link-deads a player after 5 s, including during the quit delay. The Harness is subject to the normal ping timeout and link-death rules. It skips the client's UDP init and ping, because the server falls back to TCP without them. Repeating the current position isn't movement, which stays out of scope.
 - **Agent Accounts** are ordinary Accounts identified by a naming convention (an `agent` prefix, e.g. `agent1`; the server rejects underscores in account names). `/agent login` refuses Characters on other Accounts, and Characters already online.
 - **Registry.** An in-memory registry maps Character names to their live Harness clients, so that `/agent logout` and `/agent soak` can find them and duplicate logins can be refused. It holds no persistent state.
 - **Admin command.** `/agent` requires admin privilege and has three subcommands: `login <char>`, `logout <char>`, and `soak <char> <n>`. Soak runs cycles one after another (not in parallel), stops at the first failure, and reports pass or fail, the failing cycle and the reason. It compares online client count and session allocation against their values before the run.
-- **Code placement.** All Harness code lives in its own folder and namespace inside the game server project. Nothing outside the listed core seams changes.
+- **Code placement.** All Harness code lives in its own folder and namespace inside the game server project. Nothing outside the listed core seams changes. The one exception is the inbound packet capture hooks in the TCP and UDP receive paths, which are off by default and kept for recapturing fixtures (ticket 01).
 
 ## Testing Decisions
 

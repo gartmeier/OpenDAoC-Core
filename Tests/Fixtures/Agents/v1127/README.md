@@ -48,7 +48,7 @@ Before step 1, while the client is still Connecting, both sessions send a ping, 
 
 ## Quit
 
-1. The quit arrives as command 0xAF with data `00` `&q` `00`. `&q` is the `/quit` command's alias.
+1. The quit arrives as command 0xAF with data `00` `&q` `00`, because the Human typed `/q`, the `/quit` command's alias. Typing `/quit` presumably sends `&quit` in the same layout; that wasn't captured.
 2. During the server's 20 s quit delay the Character sits. Position updates carry state flag 0x10 (`SITTING`) at data offset 26.
 3. About 20 s after the command, the client sends 0xAC (no handler), then character select `00` and overview `03`. It is back at the character screen with its connection still open.
 4. Exiting the client from the character screen sends 0xAC and 0xB8 `01` (neither has a handler), then the connection closes.

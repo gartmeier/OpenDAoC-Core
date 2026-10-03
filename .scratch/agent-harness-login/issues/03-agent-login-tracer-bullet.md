@@ -17,7 +17,7 @@ Without liveness (05) the Agent will eventually be timed out. That's expected he
 - [ ] Inbound packets go through the normal packet processor and handlers, not direct player method calls
 - [ ] The success message is shown only once the Character is actually in the world
 - [ ] Golden-byte unit tests show every login packet builder matches the 01 fixtures (varying fields masked)
-- [ ] Harness code lives in its own folder and namespace; core changes are limited to what 02 introduced
+- [ ] Harness code lives in its own folder and namespace; core changes are limited to what 02 introduced (plus the packet capture hooks from 01, which the Human chose to keep)
 
 ## Comments
 

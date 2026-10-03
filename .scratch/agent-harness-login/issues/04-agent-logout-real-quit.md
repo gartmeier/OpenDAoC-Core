@@ -16,3 +16,5 @@
 ## Comments
 
 **2026-10-03 (agent, from the 01 capture):** The real client's quit is command 0xAF `&q`. The Character then sits for the 20 s quit delay, and position updates keep flowing with the `SITTING` flag. The client then returns to character select (0xAC, character select `00`, overview `03`) with its connection still open. It closes the connection only when the Human exits from the character screen. Details are in `Tests/Fixtures/Agents/v1127/README.md`. Position updates have to continue through the quit delay, or the Character goes linkdead before the quit completes (see 05).
+
+**2026-10-03 (agent):** The Human typed `/q` during the capture, so the fixture holds `&q`. The Harness sends `/quit` instead, presumably as data `00` `&quit` `00` (not captured, inferred from the `&q` layout). Golden-test the builder against the captured command packet, treating the command text as the varying part. The README lists 0xAF's whole data as varying.
