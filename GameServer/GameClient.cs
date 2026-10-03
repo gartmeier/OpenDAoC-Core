@@ -472,7 +472,8 @@ namespace DOL.GS
         {
             base.OnConnect(sessionId);
 
-            // `OnConnect` is called from outside the game loop for accepted connections, but may be called from inside it for clients without a socket.
+            // `OnConnect` is called from outside the game loop for accepted connections.
+            // Clients without a socket may call it from inside the game loop.
             ClientService.Instance.Post(static state =>
             {
                 ClientService.Instance.OnClientConnect(state);
