@@ -11,3 +11,7 @@
 - [ ] Leaked clients or sessions after the run are reported as a failure
 - [ ] The first failure stops the run and reports the cycle number and reason
 - [ ] `/agent soak <char> 50` passes with a clean server log (milestone 1 acceptance)
+
+## Comments
+
+**2026-10-03 (agent, from 02):** Session allocation can't be read directly. `SessionIdAllocator` is private to `BaseServer` and has no count. To detect leaks, either compare `ClientService.Instance.ClientCount` and check that the Agent's old session ID no longer resolves through `GetClientBySessionId`, or add a small read-only count seam in its own commit.
