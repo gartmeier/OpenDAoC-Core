@@ -36,6 +36,9 @@ namespace DOL.GS.Agents
         {
             Account = account;
             Version = eClientVersion.Version1127;
+            // What the real 1.127 client reports in its version and crypt-key request, which the Harness skips.
+            ClientType = eClientType.LabyrinthOfTheMinotaur;
+            ClientAddons = eClientAddons.bit4 | eClientAddons.NewNewFrontiers;
             Out = HarnessPacketLib.Create();
             PacketProcessor = new(this);
             ClientState = eClientState.Connecting;
