@@ -10,10 +10,10 @@ Without liveness (05) the Agent will eventually be timed out. That's expected he
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] `/agent login <char>` is available only to admin privilege
-- [ ] After the command, the Agent's Character appears at its saved location next to the Human, shows in `/who`, and can be targeted and inspected with the real client
+- [x] After the command, the Agent's Character appears at its saved location next to the Human, shows in `/who`, and can be targeted and inspected with the real client
 - [x] Inbound packets go through the normal packet processor and handlers, not direct player method calls
 - [x] The success message is shown only once the Character is actually in the world
 - [x] Golden-byte unit tests show every login packet builder matches the 01 fixtures (varying fields masked)
@@ -51,3 +51,5 @@ Known gaps, deliberately left for later tickets:
 **2026-10-03 (Human, recorded by agent):** Logged Greeen in twice with `/agent login`. Both times "Greeen is in the world." appeared, Greeen was in `/who`, and the Human could target him with the real client. Inspecting wasn't reported. As expected, he disappeared after a while. The server log shows the same thing for both logins: soft link death 5 s after world entry, then a quit 60 s later through the normal link-death path, with a clean disconnect and the session released. There were no Harness errors. The second login ran with `/agent capture agent1` on and recorded nothing, because the Harness doesn't go through the socket receive path the capture hooks into.
 
 **2026-10-03 (agent):** Closed the `ClientType` gap from the comment above. The server log of the real client's login shows `type:LabyrinthOfTheMinotaur add:bit4, NewNewFrontiers`, and the Harness client now reports the same.
+
+**2026-10-03 (Human, recorded by agent):** Stood next to Greeen, targeted him and ran `/gminfo` on him with the real client. It worked. All acceptance items are met.
