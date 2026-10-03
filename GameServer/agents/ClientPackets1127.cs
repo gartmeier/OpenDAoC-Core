@@ -118,6 +118,12 @@ namespace DOL.GS.Agents
             return new((byte) eClientPackets.CommandHandler, DEFAULT_PARAMETER, [0x00, .. BaseServer.DefaultEncoding.GetBytes(command), 0x00]);
         }
 
+        // Starts the server's quit path. The captures hold the `&q` alias, which the client sends in the same layout.
+        public static ClientPacket Quit()
+        {
+            return Command("&quit");
+        }
+
         // Sent by the client at the end of world entry. Its first byte isn't a code the server acts on.
         public static ClientPacket ShowWarmapRequest()
         {

@@ -114,6 +114,18 @@ namespace DOL.GS.Tests
         }
 
         [TestCaseSource(nameof(Captures))]
+        public void Quit_ShouldMatchCapture(string capture)
+        {
+            // The captured Human typed the `/q` alias, the Harness sends `/quit`. Only the command text differs.
+            CapturedPacket captured = ClientCaptures.WhilePlaying(capture, eClientPackets.CommandHandler).Last();
+            Assert.That(captured.Data, Is.EqualTo("\0&q\0"u8.ToArray()), "captured command");
+
+            ClientPacket quit = ClientPackets1127.Quit();
+            Assert.That(quit.Data, Is.EqualTo("\0&quit\0"u8.ToArray()), "command");
+            AssertMatches(quit with { Data = captured.Data }, captured);
+        }
+
+        [TestCaseSource(nameof(Captures))]
         public void ShowWarmapRequest_ShouldMatchCapture(string capture)
         {
             AssertMatches(ClientPackets1127.ShowWarmapRequest(), FromWorldEntry(capture, eClientPackets.ShowWarmapRequest, 0));

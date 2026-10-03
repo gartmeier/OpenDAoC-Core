@@ -29,6 +29,11 @@ namespace DOL.GS.Commands
                     Login(client, args);
                     return;
                 }
+                case "logout":
+                {
+                    Logout(client, args);
+                    return;
+                }
                 case "capture":
                 {
                     Capture(client, args);
@@ -78,6 +83,28 @@ namespace DOL.GS.Commands
             DisplayMessage(client, $"Logging {character.Name} in through the Harness...");
             await harnessClient.EnterWorld(account, character);
             DisplayMessage(client, $"{character.Name} is in the world.");
+        }
+
+        // Reports success only once the server has disconnected the Harness client, after the quit delay. This resumes on a later tick.
+        private async void Logout(GameClient client, string[] args)
+        {
+            if (args.Length != 3)
+            {
+                DisplaySyntax(client);
+                return;
+            }
+
+            if (!AgentRegistry.TryGet(args[2], out HarnessClient harnessClient) || !harnessClient.IsInWorld)
+            {
+                DisplayMessage(client, $"{args[2]} isn't in the world as an Agent.");
+                return;
+            }
+
+            string name = harnessClient.Player.Name;
+            DisplayMessage(client, $"{name} is quitting...");
+            harnessClient.RequestQuit();
+            await harnessClient.Disconnected;
+            DisplayMessage(client, $"{name} has quit.");
         }
 
         private void Capture(GameClient client, string[] args)

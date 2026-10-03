@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
 using DOL.Database;
+using DOL.Events;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
 using DOL.Logging;
@@ -23,14 +24,19 @@ namespace DOL.GS.Agents
         private const ushort FIRST_SEQUENCE = 3;
 
         private readonly ConcurrentQueue<ClientPacket> _inbound = new();
+        private readonly TaskCompletionSource _disconnected = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private ushort _sequence = FIRST_SEQUENCE;
         private WorldEntry _worldEntry;
         private Liveness _liveness;
+        private WorldExit _worldExit;
 
         public HarnessClient() : base(null) { }
 
         // Playing, with the Character added to the world.
         public bool IsInWorld => ClientState is eClientState.Playing && Player?.ObjectState is GameObject.eObjectState.Active;
+
+        // Completes once the server has disconnected the client, its Character saved and removed and its session released.
+        public Task Disconnected => _disconnected.Task;
 
         /// <summary>
         /// Connects as the Account's client, already past the network handshake, version check and password check, and enters the world as the Character.
@@ -43,12 +49,25 @@ namespace DOL.GS.Agents
             // What the real 1.127 client reports in its version and crypt-key request, which the Harness skips.
             ClientType = eClientType.LabyrinthOfTheMinotaur;
             ClientAddons = eClientAddons.bit4 | eClientAddons.NewNewFrontiers;
-            Out = HarnessPacketLib.Create();
+            Out = HarnessPacketLib.Create(this);
             PacketProcessor = new(this);
             ClientState = eClientState.Connecting;
             _worldEntry = new(character);
+            GameEventMgr.AddHandler(this, GameClientEvent.Disconnected, OnDisconnected);
             GameServer.Instance.Connect(this);
             return _worldEntry.Completion;
+        }
+
+        // Types `/quit`. The server's quit path takes it from there, quit delay included, and ends with `OnPlayerQuit`.
+        public void RequestQuit()
+        {
+            Enqueue(ClientPackets1127.Quit());
+        }
+
+        // The server told the client its Character has quit. Called on the game loop, before the server has finished removing and saving the Character.
+        public void OnPlayerQuit(bool totalOut)
+        {
+            _worldExit ??= new(totalOut, Player?.Realm ?? eRealm.None);
         }
 
         public void Enqueue(ClientPacket packet)
@@ -73,6 +92,14 @@ namespace DOL.GS.Agents
         // Called by the client service on the game loop, where a real client's received bytes are processed.
         public override void Receive()
         {
+            // Where a real client's closed connection is noticed.
+            if (_worldExit?.Tick(this) is true)
+            {
+                _worldExit = null;
+                Disconnect();
+                return;
+            }
+
             if (_worldEntry?.Tick(this) is true)
             {
                 _worldEntry = null;
@@ -118,5 +145,11 @@ namespace DOL.GS.Agents
         public override void SendPendingPackets() { }
 
         protected override void CloseSocket() { }
+
+        private void OnDisconnected(DOLEvent e, object sender, EventArgs args)
+        {
+            GameEventMgr.RemoveAllHandlersForObject(this);
+            _disconnected.TrySetResult();
+        }
     }
 }

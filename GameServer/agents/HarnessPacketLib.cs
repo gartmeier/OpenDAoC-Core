@@ -7,17 +7,24 @@ namespace DOL.GS.Agents
     /// <summary>
     /// The Harness client's outbound packet library (ADR 0001): every `Send*` call the server makes to tell the Agent's client something arrives in <see cref="Invoke"/>.
     /// A runtime proxy rather than a hand-written <see cref="IPacketLib"/>, so that every call of the large and changing interface ends up in one place.
-    /// For now every call is ignored. It's called on the game loop and must never block.
+    /// For now every call is ignored, except that the client reacts to its Character quitting. It's called on the game loop and must never block.
     /// </summary>
     public class HarnessPacketLib : DispatchProxy
     {
-        public static IPacketLib Create()
+        private HarnessClient _client;
+
+        public static IPacketLib Create(HarnessClient client)
         {
-            return Create<IPacketLib, HarnessPacketLib>();
+            IPacketLib packetLib = Create<IPacketLib, HarnessPacketLib>();
+            ((HarnessPacketLib) packetLib)._client = client;
+            return packetLib;
         }
 
         protected override object Invoke(MethodInfo targetMethod, object[] args)
         {
+            if (targetMethod.Name is nameof(IPacketLib.SendPlayerQuit))
+                _client.OnPlayerQuit((bool) args[0]);
+
             return targetMethod.Name switch
             {
                 // Animation IDs the server reads back, as every real packet library defines them (`PacketLib168`).
