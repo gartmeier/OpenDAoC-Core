@@ -290,8 +290,8 @@ namespace DOL.GS.Commands
 					info.Add(" ");
 					info.Add("  - Account Name : " + target.AccountName);
 					info.Add("  - IP : " + target.Client.Account.LastLoginIP);
-					info.Add("  - Local: " + target.Client.Socket.LocalEndPoint);
-					info.Add("  - Remote: " + target.Client.Socket.RemoteEndPoint);
+					info.Add("  - Local: " + target.Client.Socket?.LocalEndPoint);
+					info.Add("  - Remote: " + target.Client.Socket?.RemoteEndPoint);
 					info.Add("  - Priv. Level : " + target.Client.Account.PrivLevel);
 					info.Add("  - Client Version: " + target.Client.Account.LastClientVersion);
 					info.Add(" ");

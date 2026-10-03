@@ -203,7 +203,7 @@ namespace DOL.GS.PacketHandler
 
         public void QueuePacket(GSTCPPacketOut packet)
         {
-            if (!_client.Socket.Connected)
+            if (_client.Socket?.Connected != true)
             {
                 packet.ReleasePooledObject();
                 return;
@@ -226,7 +226,7 @@ namespace DOL.GS.PacketHandler
 
         public void QueuePacket(GSUDPPacketOut packet, bool forced)
         {
-            if (!_client.Socket.Connected)
+            if (_client.Socket?.Connected != true)
             {
                 packet.ReleasePooledObject();
                 return;
@@ -265,7 +265,7 @@ namespace DOL.GS.PacketHandler
 
         public void SendPendingPackets()
         {
-            if (!_client.Socket.Connected)
+            if (_client.Socket?.Connected != true)
                 return;
 
             try
@@ -518,7 +518,7 @@ namespace DOL.GS.PacketHandler
         {
             try
             {
-                if (!_client.Socket.Connected)
+                if (_client.Socket?.Connected != true)
                 {
                     OnFailure(this);
                     return;
@@ -563,7 +563,7 @@ namespace DOL.GS.PacketHandler
         {
             try
             {
-                if (!_client.Socket.Connected)
+                if (_client.Socket?.Connected != true)
                 {
                     OnFailure(this);
                     return;
