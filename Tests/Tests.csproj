@@ -50,6 +50,9 @@
     <ItemGroup>
       <Folder Include="IntegrationTests\" />
     </ItemGroup>
+    <ItemGroup>
+        <None Update="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
     <Target Name="CopyFiles" AfterTargets="AfterBuild">
         <Copy SourceFiles="@(ScriptFiles)" DestinationFiles="@(ScriptFiles->'$(MSBuildProjectDirectory)\$(OutputPath)\..\scripts\%(RecursiveDir)%(Filename)%(Extension)')" />
         <Copy SourceFiles="@(DbUpdaterFiles)" DestinationFiles="@(DbUpdaterFiles->'$(MSBuildProjectDirectory)\$(OutputPath)\..\scripts\dbupdater\%(RecursiveDir)%(Filename)%(Extension)')" />
