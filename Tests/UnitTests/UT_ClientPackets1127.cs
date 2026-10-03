@@ -1,0 +1,150 @@
+using System;
+using System.Buffers.Binary;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using DOL.GS.Agents;
+using DOL.GS.PacketHandler;
+using DOL.GS.PacketHandler.Client.v168;
+using NUnit.Framework;
+
+namespace DOL.GS.Tests
+{
+    /// <summary>
+    /// Golden-byte tests: every packet the Harness builds for world entry matches what a real 1.127 client sent in the captures under `Fixtures/Agents/v1127`.
+    /// Sequence and session ID are taken from the captured packet. Wire byte 8 (the code's high byte) is leftover client memory, so it and the checksum aren't compared.
+    /// Data offsets the README lists as varying are masked per packet.
+    /// </summary>
+    [TestFixture]
+    public class UT_ClientPackets1127
+    {
+        private static readonly string[] Captures = ["login-idle-quit-1", "login-idle-quit-2"];
+
+        [TestCaseSource(nameof(Captures))]
+        public void CharacterSelect_ShouldMatchCapture(string capture)
+        {
+            AssertMatches(ClientPackets1127.CharacterSelect(0x00), FromWorldEntry(capture, eClientPackets.CharacterSelectRequest, 0));
+            AssertMatches(ClientPackets1127.CharacterSelect(0x14), FromWorldEntry(capture, eClientPackets.CharacterSelectRequest, 1));
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void CharacterOverview_ShouldMatchCapture(string capture)
+        {
+            AssertMatches(ClientPackets1127.CharacterOverview(eRealm.Hibernia), FromWorldEntry(capture, eClientPackets.CharacterOverviewRequest, 0));
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void RegionList_ShouldMatchCapture(string capture)
+        {
+            // Data offset 19 is unknown and varies.
+            AssertMatches(ClientPackets1127.RegionList(ClientPackets1127.CharacterIndex(300)), FromWorldEntry(capture, eClientPackets.RegionListRequest, 0), 19);
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void Ping_ShouldMatchCapture(string capture)
+        {
+            foreach (int occurrence in new[] { 0, 1 })
+            {
+                CapturedPacket captured = FromWorldEntry(capture, eClientPackets.PingRequest, occurrence);
+                uint timestamp = BinaryPrimitives.ReadUInt32BigEndian(captured.Data.AsSpan(4));
+
+                // Data offsets 1-2 follow a cycle and 11 flags the first ping of world entry. The server reads neither.
+                AssertMatches(ClientPackets1127.Ping(timestamp), captured, 1, 2, 11);
+            }
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void WorldInit_ShouldMatchCapture(string capture)
+        {
+            AssertMatches(ClientPackets1127.WorldInit(ClientPackets1127.CharacterIndex(300)), FromWorldEntry(capture, eClientPackets.WorldInitRequest, 0));
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void PlayerInit_ShouldMatchCapture(string capture)
+        {
+            AssertMatches(ClientPackets1127.PlayerInit(), FromWorldEntry(capture, eClientPackets.PlayerInitRequest, 0));
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void GameOpen_ShouldMatchCapture(string capture)
+        {
+            AssertMatches(ClientPackets1127.GameOpen(), FromWorldEntry(capture, eClientPackets.GameOpenRequest, 0));
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void PositionUpdate_ShouldMatchCapture(string capture)
+        {
+            // The Character's saved spot, standing still. The high byte of the heading carries flags.
+            Vector3 position = new(296516, 641415, 4848);
+            const ushort zoneId = 202;
+
+            CapturedPacket beforeGameOpen = FromWorldEntry(capture, eClientPackets.PositionUpdate, 0);
+            AssertMatches(ClientPackets1127.PositionUpdate(position, zoneId, 0x19DF, 67, beforeGameOpen.SessionId, 0, 0), beforeGameOpen);
+
+            CapturedPacket afterGameOpen = FromWorldEntry(capture, eClientPackets.PositionUpdate, 1);
+            AssertMatches(ClientPackets1127.PositionUpdate(position, zoneId, 0x09DF, 100, afterGameOpen.SessionId, 0, PlayerPositionUpdateHandler.ActionFlags.TORCH), afterGameOpen);
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void ClientFilterSettings_ShouldMatchCapture(string capture)
+        {
+            AssertMatches(ClientPackets1127.ClientFilterSettings(initial: true), FromWorldEntry(capture, eClientPackets.ClientFilterSettings, 0));
+            AssertMatches(ClientPackets1127.ClientFilterSettings(initial: false), FromWorldEntry(capture, eClientPackets.ClientFilterSettings, 1));
+            AssertMatches(ClientPackets1127.ClientFilterSettings(initial: false), FromWorldEntry(capture, eClientPackets.ClientFilterSettings, 2));
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void Command_ShouldMatchCapture(string capture)
+        {
+            AssertMatches(ClientPackets1127.Command("&gc info 1"), FromWorldEntry(capture, eClientPackets.CommandHandler, 0));
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void ShowWarmapRequest_ShouldMatchCapture(string capture)
+        {
+            AssertMatches(ClientPackets1127.ShowWarmapRequest(), FromWorldEntry(capture, eClientPackets.ShowWarmapRequest, 0));
+        }
+
+        [TestCase(100, 0x00)]
+        [TestCase(109, 0x09)]
+        [TestCase(200, 0x0A)]
+        [TestCase(300, 0x14)]
+        [TestCase(309, 0x1D)]
+        public void CharacterIndex_ShouldNumberSlotsAcrossRealms(int accountSlot, int expected)
+        {
+            Assert.That(ClientPackets1127.CharacterIndex(accountSlot), Is.EqualTo(expected));
+        }
+
+        private static void AssertMatches(ClientPacket built, CapturedPacket captured, params int[] maskedDataOffsets)
+        {
+            CapturedPacket wire = new(0, CaptureTransport.Tcp, captured.ClientState, built.ToWire(captured.Sequence, captured.SessionId));
+
+            Assert.That(wire.HasValidChecksum, Is.True, "checksum");
+            Assert.That(wire.Bytes[..8], Is.EqualTo(captured.Bytes[..8]), "header");
+            Assert.That(wire.Code, Is.EqualTo(captured.Code), "code");
+            Assert.That(Masked(wire.Data, maskedDataOffsets), Is.EqualTo(Masked(captured.Data, maskedDataOffsets)), "data");
+        }
+
+        private static byte[] Masked(byte[] data, int[] offsets)
+        {
+            byte[] masked = (byte[]) data.Clone();
+
+            foreach (int offset in offsets)
+            {
+                if (offset < masked.Length)
+                    masked[offset] = 0;
+            }
+
+            return masked;
+        }
+
+        // The nth packet with this code in the world-entry part of a capture: from the first packet at the character screen until the client sends its first ping while Playing.
+        private static CapturedPacket FromWorldEntry(string capture, eClientPackets code, int occurrence)
+        {
+            CapturedPacket[] packets = CapturedPacket.ParseLines(File.ReadLines(Path.Combine(TestContext.CurrentContext.TestDirectory, "Fixtures", "Agents", "v1127", $"{capture}.tsv")));
+            int start = Array.FindIndex(packets, static p => p.ClientState is GameClient.eClientState.CharScreen);
+            int end = Array.FindIndex(packets, static p => p.ClientState is GameClient.eClientState.Playing && p.Code == (byte) eClientPackets.PingRequest);
+            return packets[start..end].Where(p => p.Code == (byte) code).ElementAt(occurrence);
+        }
+    }
+}

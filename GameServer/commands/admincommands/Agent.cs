@@ -1,4 +1,5 @@
 using System;
+using DOL.Database;
 using DOL.GS.Agents;
 
 namespace DOL.GS.Commands
@@ -23,6 +24,11 @@ namespace DOL.GS.Commands
 
             switch (args[1].ToLowerInvariant())
             {
+                case "login":
+                {
+                    Login(client, args);
+                    return;
+                }
                 case "capture":
                 {
                     Capture(client, args);
@@ -34,6 +40,44 @@ namespace DOL.GS.Commands
                     return;
                 }
             }
+        }
+
+        // Reports success only once the Character is in the world. World entry loads it asynchronously, so this resumes on a later tick.
+        private async void Login(GameClient client, string[] args)
+        {
+            if (args.Length != 3)
+            {
+                DisplaySyntax(client);
+                return;
+            }
+
+            DbCoreCharacter character = DOLDB<DbCoreCharacter>.SelectObject(DB.Column("Name").IsEqualTo(args[2]));
+
+            if (character == null)
+            {
+                DisplayMessage(client, $"No Character is named '{args[2]}'.");
+                return;
+            }
+
+            DbAccount account = DOLDB<DbAccount>.FindObjectByKey(character.AccountName);
+
+            if (account == null)
+            {
+                DisplayMessage(client, $"{character.Name}'s Account '{character.AccountName}' doesn't exist.");
+                return;
+            }
+
+            HarnessClient harnessClient = new();
+
+            if (!AgentRegistry.TryAdd(character.Name, harnessClient))
+            {
+                DisplayMessage(client, $"{character.Name} is already online as an Agent.");
+                return;
+            }
+
+            DisplayMessage(client, $"Logging {character.Name} in through the Harness...");
+            await harnessClient.EnterWorld(account, character);
+            DisplayMessage(client, $"{character.Name} is in the world.");
         }
 
         private void Capture(GameClient client, string[] args)
