@@ -266,6 +266,13 @@ namespace DOL.Network
             }
         }
 
+        public void Connect(BaseClient client)
+        {
+            // For clients that weren't accepted from the listen socket, such as clients without a socket.
+            // They share the session ID allocator with real connections so that session IDs stay unique.
+            client.OnConnect(new SessionId(_sessionIdAllocator));
+        }
+
         protected virtual BaseClient GetNewClient(Socket socket)
         {
             return new BaseClient(socket);
