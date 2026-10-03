@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
@@ -14,7 +13,7 @@ namespace DOL.GS.Tests
     [TestFixture]
     public class UT_ClientCaptureFixtures
     {
-        private static readonly string[] Captures = ["login-idle-quit-1", "login-idle-quit-2"];
+        private static readonly string[] Captures = ClientCaptures.Names;
 
         // From character select to the first position update in the world, as documented in the README.
         // 0x1D, 0x42 and 0x43 have no handler, so no name.
@@ -50,7 +49,7 @@ namespace DOL.GS.Tests
         [TestCaseSource(nameof(Captures))]
         public void EveryPacket_ShouldHaveAValidChecksum(string capture)
         {
-            CapturedPacket[] packets = Load(capture);
+            CapturedPacket[] packets = ClientCaptures.Load(capture);
 
             Assert.That(packets, Is.Not.Empty);
             Assert.That(packets.Where(static p => !p.HasValidChecksum), Is.Empty);
@@ -59,16 +58,11 @@ namespace DOL.GS.Tests
         [TestCaseSource(nameof(Captures))]
         public void WorldEntry_ShouldFollowTheDocumentedSequence(string capture)
         {
-            byte[] codes = WorldEntry(Load(capture)).Select(static p => p.Code).ToArray();
+            byte[] codes = WorldEntry(ClientCaptures.Load(capture)).Select(static p => p.Code).ToArray();
 
             Assert.That(codes[..EitherOrder.Start], Is.EqualTo(WorldEntrySequence[..EitherOrder.Start]));
             Assert.That(codes[EitherOrder], Is.EquivalentTo(WorldEntrySequence[EitherOrder]));
             Assert.That(codes[EitherOrder.End..], Is.EqualTo(WorldEntrySequence[EitherOrder.End..]));
-        }
-
-        private static CapturedPacket[] Load(string capture)
-        {
-            return CapturedPacket.ParseLines(File.ReadLines(Path.Combine(TestContext.CurrentContext.TestDirectory, "Fixtures", "Agents", "v1127", $"{capture}.tsv")));
         }
 
         private static CapturedPacket[] WorldEntry(CapturedPacket[] packets)

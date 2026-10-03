@@ -31,7 +31,7 @@ namespace DOL.GS.Agents
                     ClientPackets1127.CharacterSelect(0x00),
                     ClientPackets1127.CharacterOverview(realm),
                     ClientPackets1127.RegionList(characterIndex),
-                    Ping(),
+                    HarnessClient.Ping(),
                     ClientPackets1127.CharacterSelect(characterIndex),
                     ClientPackets1127.WorldInit(characterIndex)
                 ]),
@@ -39,7 +39,7 @@ namespace DOL.GS.Agents
                 new(static client => client.ClientState is eClientState.WorldEnter && client.Player?.ObjectState is GameObject.eObjectState.Active, static client =>
                 [
                     ClientPackets1127.PlayerInit(),
-                    Ping(),
+                    HarnessClient.Ping(),
                     client.PositionUpdate(),
                     ClientPackets1127.GameOpen()
                 ]),
@@ -74,17 +74,11 @@ namespace DOL.GS.Agents
                 return false;
             }
 
-            if (client.ClientState is not eClientState.Playing || client.Player?.ObjectState is not GameObject.eObjectState.Active)
+            if (!client.IsInWorld)
                 return false;
 
             _completion.TrySetResult();
             return true;
-        }
-
-        // Stamped with a millisecond tick counter, like a real client's.
-        private static ClientPacket Ping()
-        {
-            return ClientPackets1127.Ping((uint) Environment.TickCount);
         }
 
         private sealed record Step(Func<HarnessClient, bool> IsReady, Func<HarnessClient, ClientPacket[]> Packets);

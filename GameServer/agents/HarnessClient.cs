@@ -25,8 +25,12 @@ namespace DOL.GS.Agents
         private readonly ConcurrentQueue<ClientPacket> _inbound = new();
         private ushort _sequence = FIRST_SEQUENCE;
         private WorldEntry _worldEntry;
+        private Liveness _liveness;
 
         public HarnessClient() : base(null) { }
+
+        // Playing, with the Character added to the world.
+        public bool IsInWorld => ClientState is eClientState.Playing && Player?.ObjectState is GameObject.eObjectState.Active;
 
         /// <summary>
         /// Connects as the Account's client, already past the network handshake, version check and password check, and enters the world as the Character.
@@ -52,6 +56,12 @@ namespace DOL.GS.Agents
             _inbound.Enqueue(packet);
         }
 
+        // Stamped with a millisecond tick counter, like a real client's.
+        public static ClientPacket Ping()
+        {
+            return ClientPackets1127.Ping((uint) Environment.TickCount);
+        }
+
         // What a client standing still tells the server about its Character.
         public ClientPacket PositionUpdate()
         {
@@ -64,7 +74,13 @@ namespace DOL.GS.Agents
         public override void Receive()
         {
             if (_worldEntry?.Tick(this) is true)
+            {
                 _worldEntry = null;
+                _liveness = new(GameLoop.GameLoopTime);
+            }
+
+            if (_liveness != null)
+                StayAlive(_liveness.Tick(GameLoop.GameLoopTime));
 
             while (_inbound.TryDequeue(out ClientPacket clientPacket))
             {
@@ -86,6 +102,16 @@ namespace DOL.GS.Agents
                     packet.ReleasePooledObject();
                 }
             }
+        }
+
+        // What an idle client sends so the server doesn't time it out or link-dead it. A position update repeats where the Character is, so it needs the Character in the world.
+        private void StayAlive(Liveness.Due due)
+        {
+            if ((due & Liveness.Due.Ping) != 0)
+                Enqueue(Ping());
+
+            if ((due & Liveness.Due.PositionUpdate) != 0 && IsInWorld)
+                Enqueue(PositionUpdate());
         }
 
         // Everything the server sends went to `Out` instead of being queued for a socket.

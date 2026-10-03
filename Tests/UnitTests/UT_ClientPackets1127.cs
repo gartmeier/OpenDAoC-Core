@@ -1,6 +1,5 @@
 using System;
 using System.Buffers.Binary;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using DOL.GS.Agents;
@@ -18,7 +17,7 @@ namespace DOL.GS.Tests
     [TestFixture]
     public class UT_ClientPackets1127
     {
-        private static readonly string[] Captures = ["login-idle-quit-1", "login-idle-quit-2"];
+        private static readonly string[] Captures = ClientCaptures.Names;
 
         [TestCaseSource(nameof(Captures))]
         public void CharacterSelect_ShouldMatchCapture(string capture)
@@ -50,6 +49,21 @@ namespace DOL.GS.Tests
 
                 // Data offsets 1-2 follow a cycle and 11 flags the first ping of world entry. The server reads neither.
                 AssertMatches(ClientPackets1127.Ping(timestamp), captured, 1, 2, 11);
+            }
+        }
+
+        [TestCaseSource(nameof(Captures))]
+        public void IdlePing_ShouldMatchCapture(string capture)
+        {
+            CapturedPacket[] pings = ClientCaptures.WhilePlaying(capture, eClientPackets.PingRequest);
+            Assert.That(pings, Is.Not.Empty);
+
+            foreach (CapturedPacket captured in pings)
+            {
+                uint timestamp = BinaryPrimitives.ReadUInt32BigEndian(captured.Data.AsSpan(4));
+
+                // Data offsets 1-2 follow a cycle the server doesn't read. Offset 11 is 0 once world entry is over.
+                AssertMatches(ClientPackets1127.Ping(timestamp), captured, 1, 2);
             }
         }
 
@@ -141,7 +155,7 @@ namespace DOL.GS.Tests
         // The nth packet with this code in the world-entry part of a capture: from the first packet at the character screen until the client sends its first ping while Playing.
         private static CapturedPacket FromWorldEntry(string capture, eClientPackets code, int occurrence)
         {
-            CapturedPacket[] packets = CapturedPacket.ParseLines(File.ReadLines(Path.Combine(TestContext.CurrentContext.TestDirectory, "Fixtures", "Agents", "v1127", $"{capture}.tsv")));
+            CapturedPacket[] packets = ClientCaptures.Load(capture);
             int start = Array.FindIndex(packets, static p => p.ClientState is GameClient.eClientState.CharScreen);
             int end = Array.FindIndex(packets, static p => p.ClientState is GameClient.eClientState.Playing && p.Code == (byte) eClientPackets.PingRequest);
             return packets[start..end].Where(p => p.Code == (byte) code).ElementAt(occurrence);
