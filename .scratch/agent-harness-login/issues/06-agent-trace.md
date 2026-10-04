@@ -47,4 +47,4 @@ No formatting errors appeared in either file. One weak spot: `SendDisableSkill` 
 
 All acceptance items are met. Notes for later Percept work:
 - Object updates dominate and carry no position yet (only type, name and object ID).
-- Calls that `IPacketLib` takes as `ReadOnlySpan` never reached the trace in these sessions.
+- The three group-member calls take a `ReadOnlySpan<GameLiving>`, which the runtime proxy can't box into its argument array. Greeen wasn't grouped, so these sessions didn't exercise them. Check whether they throw or reach the trace before grouping work (milestone 8).
