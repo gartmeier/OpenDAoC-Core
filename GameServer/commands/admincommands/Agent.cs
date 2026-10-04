@@ -24,6 +24,13 @@ namespace DOL.GS.Commands
 
         public void OnCommand(GameClient client, string[] args)
         {
+            // The server console runs commands on its own thread. Run them on the game loop, as an in-game admin's are, so that what they await resumes there too.
+            if (SynchronizationContext.Current is not GameServiceSynchronizationContext)
+            {
+                ClientService.Instance.Post(static state => state.command.OnCommand(state.client, state.args), (command: this, client, args));
+                return;
+            }
+
             if (args.Length == 1)
             {
                 DisplaySyntax(client);
