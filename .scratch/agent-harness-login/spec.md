@@ -58,6 +58,7 @@ There is no Mind and no LLM in this milestone. The Agent's Account and Character
   - Sending and closing the socket become no-ops.
   - The client registers with the client service like a real connection, including session ID allocation. It goes through the same tick states (character screen, world entry, playing, disconnected).
   - The core changes needed to allow this (making a small number of client and packet-processor members overridable, and making the pending-packet send path tolerate a missing socket) go in separate small commits (ADR 0001, ADR 0002, "upstream hygiene").
+  - So that soak can compare session allocation, the server's session ID allocator also counts the IDs it holds (a read-only count, in its own commit).
 - **Percepts via a custom packet library** (ADR 0001).
   - The Harness client's outbound packet library is a Harness implementation of the server's packet-library interface. Each call is appended to the Agent's trace and otherwise ignored for now.
   - It is called on the game loop thread and must never block: trace writes go through a queue drained off the game loop.
