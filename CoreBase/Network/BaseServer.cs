@@ -28,6 +28,7 @@ namespace DOL.Network
 
         public BaseServerConfig Configuration { get; }
         public bool IsRunning => _listen != null; // Not a great way to check if the server is running.
+        public int SessionCount => _sessionIdAllocator.AllocatedCount; // Session IDs held by connected clients, with or without a socket.
 
         protected BaseServer(BaseServerConfig config)
         {

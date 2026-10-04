@@ -31,6 +31,54 @@ namespace DOL.Network.Tests
         }
 
         [Test]
+        public void AllocatedCount_ShouldCountIdsAllocatedAndNotYetFreed()
+        {
+            SessionIdAllocator allocator = new();
+            Assert.That(allocator.AllocatedCount, Is.Zero);
+
+            allocator.TryAllocate(out ushort first);
+            allocator.TryAllocate(out ushort second);
+            allocator.TryAllocate(out _);
+            Assert.That(allocator.AllocatedCount, Is.EqualTo(3));
+
+            allocator.Free(first);
+            allocator.Free(second);
+            Assert.That(allocator.AllocatedCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AllocatedCount_ShouldIgnoreFreeingAnIdThatIsNotAllocated()
+        {
+            SessionIdAllocator allocator = new();
+            allocator.TryAllocate(out ushort sessionId);
+
+            allocator.Free(sessionId);
+            allocator.Free(sessionId);
+            allocator.Free(1234);
+            Assert.That(allocator.AllocatedCount, Is.Zero);
+        }
+
+        [Test]
+        public void AllocatedCount_ShouldMatchIdsHeld_Concurrently()
+        {
+            SessionIdAllocator allocator = new();
+            ConcurrentBag<ushort> held = new();
+
+            Parallel.For(0, 20000, i =>
+            {
+                if (!allocator.TryAllocate(out ushort sessionId))
+                    return;
+
+                if (i % 3 == 0)
+                    held.Add(sessionId);
+                else
+                    allocator.Free(sessionId);
+            });
+
+            Assert.That(allocator.AllocatedCount, Is.EqualTo(held.Count));
+        }
+
+        [Test]
         public void AllocateAndFree_ShouldMaintainUniquePositiveSessionIds_Concurrently()
         {
             SessionIdAllocator allocator = new();

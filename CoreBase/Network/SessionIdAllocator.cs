@@ -11,6 +11,10 @@ namespace DOL.Network
 
         private readonly ulong[] bitSet = new ulong[ARRAY_LENGTH];
         private uint nextCandidate = 0;
+        private int allocatedCount = 0;
+
+        // Session IDs allocated and not yet freed.
+        public int AllocatedCount => Volatile.Read(ref allocatedCount);
 
         public bool TryAllocate(out ushort sessionId)
         {
@@ -36,6 +40,7 @@ namespace DOL.Network
 
                 if ((oldValue & mask) == 0)
                 {
+                    Interlocked.Increment(ref allocatedCount);
                     sessionId = (ushort) id;
                     return true;
                 }
@@ -61,6 +66,10 @@ namespace DOL.Network
                 oldValue = Volatile.Read(ref bitSet[index]);
                 newValue = oldValue & mask;
             } while (Interlocked.CompareExchange(ref bitSet[index], newValue, oldValue) != oldValue);
+
+            // Freeing an ID that wasn't allocated changes nothing.
+            if (newValue != oldValue)
+                Interlocked.Decrement(ref allocatedCount);
         }
     }
 }
