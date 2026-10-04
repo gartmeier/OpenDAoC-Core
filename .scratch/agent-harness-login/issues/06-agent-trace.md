@@ -4,10 +4,10 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] After a login/idle/logout session, a per-Agent trace exists listing each server-to-client call in order with a timestamp and its salient arguments
-- [ ] A trace of one full world entry is readable and shows the sequence the server sends
+- [x] After a login/idle/logout session, a per-Agent trace exists listing each server-to-client call in order with a timestamp and its salient arguments
+- [x] A trace of one full world entry is readable and shows the sequence the server sends
 - [x] Recording does no file or network I/O on the game loop thread
 - [x] Several Agents' traces don't interleave into one another
 
@@ -33,3 +33,18 @@ For the Human, when the server runs this build:
 Known gaps:
 - **The channel is unbounded.** If the disk stalls, queued lines grow in memory until it recovers. One Agent's call volume makes this a non-issue for this milestone; revisit at 08 (multiple Agents).
 - **Calls made after the client disconnects aren't traced.** The trace closes on the Disconnected event, after the quit path has run.
+
+**2026-10-04 (Human, recorded by agent):** Ran two login/idle/logout sessions with Greeen. Each got its own file under `Debug/agent-traces`:
+- `Greeen-20261003-164105-920.tsv`: 62 s, 3,320 calls.
+- `Greeen-20261004-100722-547.tsv`: 315 s, 15,633 calls.
+
+Both read the same way, in order, with elapsed times that never go backwards:
+- **Login and world entry.** Login granted, session ID, character overview, regions, a ping reply, then login granted and session ID again. Then about 50 calls while the client is in WorldEnter, within 20 ms: equip messages, speed and encumbrance, position and object ID, equipment and inventory items, skills, money, stats, resists, icons, quest list, points, guild ID, keep info (11 keeps), weather, time, server news, and player init finished. Then Playing: friends, game open reply, disabled skills, and a burst of NPC and object creates for the surroundings, ending with "(Region) You have entered Connla."
+- **Idle.** A ping reply every 5 s. Object updates for nearby NPCs make up about 90% of all lines (2,906 of 3,320, and 15,036 of 15,633).
+- **Logout.** Quit statistics, "You sit down", the 20 s countdown, then `SendPlayerQuit(totalOut: False)` exactly once, the Character's own object removed, "Your character has been saved.", and the character screen.
+
+No formatting errors appeared in either file. One weak spot: `SendDisableSkill` showed its items as `ValueTuple<Skill, Int32>`. Tuples now list their elements, e.g. `(Specialization "Slash", 30000)`, with a test.
+
+All acceptance items are met. Notes for later Percept work:
+- Object updates dominate and carry no position yet (only type, name and object ID).
+- Calls that `IPacketLib` takes as `ReadOnlySpan` never reached the trace in these sessions.
