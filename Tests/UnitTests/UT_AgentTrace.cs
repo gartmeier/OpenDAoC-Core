@@ -21,6 +21,7 @@ namespace DOL.GS.Tests
     {
         private static readonly MethodInfo SendMessage = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendMessage));
         private static readonly MethodInfo SendPlayerQuit = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerQuit));
+        private static readonly MethodInfo SendDisableSkill = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendDisableSkill));
         private static readonly MethodInfo SendInventoryItemsUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendInventoryItemsUpdate), [typeof(List<DbInventoryItem>)]);
 
         [Test]
@@ -74,6 +75,20 @@ namespace DOL.GS.Tests
             string[] calls = Calls(writer);
             Assert.That(Field(calls[0], 3), Does.StartWith("SendInventoryItemsUpdate(").And.Contain("\"Sword\"").And.Contain("\"Shield\""));
             Assert.That(Field(calls[1], 3), Does.StartWith("SendMessage(").And.Contain("null"));
+        }
+
+        [Test]
+        public async Task Record_ShouldListTupleElements()
+        {
+            StringWriter writer = new();
+            AgentTrace trace = new("Greeen", () => writer);
+            List<(Skill, int)> skills = [(new Specialization("Slash", "Slash", 0), 30000)];
+
+            trace.Record(GameClient.eClientState.Playing, SendDisableSkill, [skills]);
+            trace.Dispose();
+            await trace.Completion;
+
+            Assert.That(Field(Calls(writer)[0], 3), Does.Contain("\"Slash\"").And.Contain("30000"));
         }
 
         [Test]

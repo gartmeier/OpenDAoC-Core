@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -179,6 +180,21 @@ namespace DOL.GS.Agents
                     builder.Append(TypeName(value.GetType())).Append(' ');
                     AppendString(builder, gameObject.Name);
                     builder.Append(" #").Append(gameObject.ObjectID);
+                    return;
+                }
+                case ITuple tuple:
+                {
+                    builder.Append('(');
+
+                    for (int i = 0; i < tuple.Length; i++)
+                    {
+                        if (i > 0)
+                            builder.Append(", ");
+
+                        AppendValue(builder, tuple[i], false);
+                    }
+
+                    builder.Append(')');
                     return;
                 }
                 case IDictionary dictionary when expandCollections:
