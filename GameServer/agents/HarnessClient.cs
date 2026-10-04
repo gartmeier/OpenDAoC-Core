@@ -20,6 +20,9 @@ namespace DOL.GS.Agents
     {
         private static readonly Logger log = LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
 
+        // In milliseconds. The longest quit delay the server applies (`GamePlayer.QuitTimer`), with a margin. Combat during the delay starts it over, so a quit can still take longer.
+        public const int QUIT_TIME_LIMIT = 90000;
+
         // A real client's version check and login request are packets 1 and 2. The Harness skips both.
         private const ushort FIRST_SEQUENCE = 3;
 
@@ -44,7 +47,8 @@ namespace DOL.GS.Agents
 
         /// <summary>
         /// Connects as the Account's client, already past the network handshake, version check and password check, and enters the world as the Character.
-        /// Completes once the Character is in the world.
+        /// Completes once the Character is in the world. Throws a <see cref="WorldEntryFailedException"/> if it doesn't get there within <see cref="WorldEntry.TIME_LIMIT"/>, or the server disconnects the client first.
+        /// After a time limit failure the client disconnects itself once the server isn't loading its Character any more, so <see cref="Disconnected"/> completes either way.
         /// </summary>
         public Task EnterWorld(DbAccount account, DbCoreCharacter character)
         {
@@ -57,16 +61,21 @@ namespace DOL.GS.Agents
             Out = HarnessPacketLib.Create(this, _trace);
             PacketProcessor = new(this);
             ClientState = eClientState.Connecting;
-            _worldEntry = new(character);
+            _worldEntry = new(character, GameLoop.GameLoopTime);
             GameEventMgr.AddHandler(this, GameClientEvent.Disconnected, OnDisconnected);
             GameServer.Instance.Connect(this);
             return _worldEntry.Completion;
         }
 
-        // Types `/quit`. The server's quit path takes it from there, quit delay included, and ends with `OnPlayerQuit`.
-        public void RequestQuit()
+        /// <summary>
+        /// Types `/quit`. The server's quit path takes it from there, quit delay included, and ends with `OnPlayerQuit`.
+        /// Completes once the server has disconnected the client. Throws a <see cref="TimeoutException"/> if it hasn't within <see cref="QUIT_TIME_LIMIT"/>, for example because the server refused the quit.
+        /// Nothing is undone then: a refused quit leaves the Character in the world, and a quit delay still running ends in a quit. The trace shows which.
+        /// </summary>
+        public Task Quit()
         {
             Enqueue(ClientPackets1127.Quit());
+            return Disconnected.WaitAsync(TimeSpan.FromMilliseconds(QUIT_TIME_LIMIT));
         }
 
         // The server told the client its Character has quit. Called on the game loop, before the server has finished removing and saving the Character.
@@ -105,10 +114,21 @@ namespace DOL.GS.Agents
                 return;
             }
 
-            if (_worldEntry?.Tick(this) is true)
+            switch (_worldEntry?.Tick(this, GameLoop.GameLoopTime))
             {
-                _worldEntry = null;
-                _liveness = new(GameLoop.GameLoopTime);
+                case WorldEntry.Progress.Entered:
+                {
+                    _worldEntry = null;
+                    _liveness = new(GameLoop.GameLoopTime);
+                    break;
+                }
+                case WorldEntry.Progress.GaveUp:
+                {
+                    // A real client giving up closes its connection. Short of Playing, the server takes that as a disconnect. World entry only gives up while Playing if the Character isn't in the world, and then a link death comes first.
+                    _worldEntry = null;
+                    Disconnect();
+                    return;
+                }
             }
 
             if (_liveness != null)
@@ -154,6 +174,8 @@ namespace DOL.GS.Agents
         private void OnDisconnected(DOLEvent e, object sender, EventArgs args)
         {
             GameEventMgr.RemoveAllHandlersForObject(this);
+            // For example when the Character couldn't be added to the world.
+            _worldEntry?.Fail("before the server disconnected its Harness client");
             _trace.Dispose();
             _disconnected.TrySetResult();
         }

@@ -49,6 +49,7 @@ namespace DOL.GS.Commands
         }
 
         // Reports success only once the Character is in the world. World entry loads it asynchronously, so this resumes on a later tick.
+        // Refuses Characters on a Human's Account, and Characters whose Account is already logged in, as the server's own login check does.
         private async void Login(GameClient client, string[] args)
         {
             if (args.Length != 3)
@@ -73,6 +74,27 @@ namespace DOL.GS.Commands
                 return;
             }
 
+            if (!AgentAccount.IsAgentAccount(account.Name))
+            {
+                DisplayMessage(client, $"{character.Name} belongs to '{account.Name}', which isn't an Agent Account (its name doesn't start with '{AgentAccount.PREFIX}').");
+                return;
+            }
+
+            // A client that connected this tick only shows up here from the next one. The registry covers a second login of the same Character in the meantime, and an Agent Account has only the one.
+            switch (ClientService.Instance.GetClientFromAccountName(account.Name))
+            {
+                case HarnessClient onlineAgent:
+                {
+                    DisplayMessage(client, $"{onlineAgent.Player?.Name ?? character.Name} is already online as an Agent.");
+                    return;
+                }
+                case GameClient online:
+                {
+                    DisplayMessage(client, $"'{account.Name}' is already logged in with a real client (Possession{(online.Player != null ? $", as {online.Player.Name}" : string.Empty)}).");
+                    return;
+                }
+            }
+
             HarnessClient harnessClient = new();
 
             if (!AgentRegistry.TryAdd(character.Name, harnessClient))
@@ -84,11 +106,24 @@ namespace DOL.GS.Commands
             // Entering the world starts the trace, so its path is known once this returns.
             Task enteredWorld = harnessClient.EnterWorld(account, character);
             DisplayMessage(client, $"Logging {character.Name} in through the Harness, tracing to {harnessClient.TracePath}...");
-            await enteredWorld;
+
+            try
+            {
+                await enteredWorld;
+            }
+            catch (WorldEntryFailedException e)
+            {
+                DisplayMessage(client, e.Message);
+                await harnessClient.Disconnected;
+                DisplayMessage(client, $"{character.Name}'s Harness client has disconnected. The trace at {harnessClient.TracePath} shows what the server told it.");
+                return;
+            }
+
             DisplayMessage(client, $"{character.Name} is in the world.");
         }
 
         // Reports success only once the server has disconnected the Harness client, after the quit delay. This resumes on a later tick.
+        // Gives up waiting after a time limit, leaving the Character in the world.
         private async void Logout(GameClient client, string[] args)
         {
             if (args.Length != 3)
@@ -105,8 +140,17 @@ namespace DOL.GS.Commands
 
             string name = harnessClient.Player.Name;
             DisplayMessage(client, $"{name} is quitting...");
-            harnessClient.RequestQuit();
-            await harnessClient.Disconnected;
+
+            try
+            {
+                await harnessClient.Quit();
+            }
+            catch (TimeoutException)
+            {
+                DisplayMessage(client, $"{name} hasn't quit within {HarnessClient.QUIT_TIME_LIMIT / 1000} s. Either the server refused the quit and {name} stays in the world, or combat keeps restarting the quit delay. The trace at {harnessClient.TracePath} shows which.");
+                return;
+            }
+
             DisplayMessage(client, $"{name} has quit.");
         }
 
