@@ -45,6 +45,9 @@ namespace DOL.GS.Agents
         // Where this login's trace is written, once the client has started entering the world.
         public string TracePath => _trace?.FilePath;
 
+        // The Character it's entering the world as, known before the server has loaded it.
+        public string CharacterName { get; private set; }
+
         /// <summary>
         /// Connects as the Account's client, already past the network handshake, version check and password check, and enters the world as the Character.
         /// Completes once the Character is in the world. Throws a <see cref="WorldEntryFailedException"/> if it doesn't get there within <see cref="WorldEntry.TIME_LIMIT"/>, or the server disconnects the client first.
@@ -53,6 +56,7 @@ namespace DOL.GS.Agents
         public Task EnterWorld(DbAccount account, DbCoreCharacter character)
         {
             Account = account;
+            CharacterName = character.Name;
             Version = eClientVersion.Version1127;
             // What the real 1.127 client reports in its version and crypt-key request, which the Harness skips.
             ClientType = eClientType.LabyrinthOfTheMinotaur;

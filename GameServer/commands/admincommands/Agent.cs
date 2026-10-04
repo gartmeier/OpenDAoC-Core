@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using DOL.Database;
 using DOL.GS.Agents;
 
 namespace DOL.GS.Commands
@@ -49,7 +48,6 @@ namespace DOL.GS.Commands
         }
 
         // Reports success only once the Character is in the world. World entry loads it asynchronously, so this resumes on a later tick.
-        // Refuses Characters on a Human's Account, and Characters whose Account is already logged in, as the server's own login check does.
         private async void Login(GameClient client, string[] args)
         {
             if (args.Length != 3)
@@ -58,54 +56,17 @@ namespace DOL.GS.Commands
                 return;
             }
 
-            DbCoreCharacter character = DOLDB<DbCoreCharacter>.SelectObject(DB.Column("Name").IsEqualTo(args[2]));
+            string refusal = AgentLogin.TryStart(args[2], out HarnessClient harnessClient, out Task enteredWorld);
 
-            if (character == null)
+            if (refusal != null)
             {
-                DisplayMessage(client, $"No Character is named '{args[2]}'.");
+                DisplayMessage(client, refusal);
                 return;
             }
 
-            DbAccount account = DOLDB<DbAccount>.FindObjectByKey(character.AccountName);
-
-            if (account == null)
-            {
-                DisplayMessage(client, $"{character.Name}'s Account '{character.AccountName}' doesn't exist.");
-                return;
-            }
-
-            if (!AgentAccount.IsAgentAccount(account.Name))
-            {
-                DisplayMessage(client, $"{character.Name} belongs to '{account.Name}', which isn't an Agent Account (its name doesn't start with '{AgentAccount.PREFIX}').");
-                return;
-            }
-
-            // A client that connected this tick only shows up here from the next one. The registry covers a second login of the same Character in the meantime, and an Agent Account has only the one.
-            switch (ClientService.Instance.GetClientFromAccountName(account.Name))
-            {
-                case HarnessClient onlineAgent:
-                {
-                    DisplayMessage(client, $"{onlineAgent.Player?.Name ?? character.Name} is already online as an Agent.");
-                    return;
-                }
-                case GameClient online:
-                {
-                    DisplayMessage(client, $"'{account.Name}' is already logged in with a real client (Possession{(online.Player != null ? $", as {online.Player.Name}" : string.Empty)}).");
-                    return;
-                }
-            }
-
-            HarnessClient harnessClient = new();
-
-            if (!AgentRegistry.TryAdd(character.Name, harnessClient))
-            {
-                DisplayMessage(client, $"{character.Name} is already online as an Agent.");
-                return;
-            }
-
-            // Entering the world starts the trace, so its path is known once this returns.
-            Task enteredWorld = harnessClient.EnterWorld(account, character);
-            DisplayMessage(client, $"Logging {character.Name} in through the Harness, tracing to {harnessClient.TracePath}...");
+            // Entering the world started the trace, so its path is known.
+            string name = harnessClient.CharacterName;
+            DisplayMessage(client, $"Logging {name} in through the Harness, tracing to {harnessClient.TracePath}...");
 
             try
             {
@@ -115,11 +76,11 @@ namespace DOL.GS.Commands
             {
                 DisplayMessage(client, e.Message);
                 await harnessClient.Disconnected;
-                DisplayMessage(client, $"{character.Name}'s Harness client has disconnected. The trace at {harnessClient.TracePath} shows what the server told it.");
+                DisplayMessage(client, $"{name}'s Harness client has disconnected. The trace at {harnessClient.TracePath} shows what the server told it.");
                 return;
             }
 
-            DisplayMessage(client, $"{character.Name} is in the world.");
+            DisplayMessage(client, $"{name} is in the world.");
         }
 
         // Reports success only once the server has disconnected the Harness client, after the quit delay. This resumes on a later tick.
