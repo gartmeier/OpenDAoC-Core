@@ -4,13 +4,13 @@
 
 **Blocked by:** 04, 05
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] `/agent soak <char> <n>` is admin-only and runs cycles sequentially, never in parallel
 - [x] A cycle that doesn't reach in-world play, or doesn't fully disconnect, counts as a failure
 - [x] Leaked clients or sessions after the run are reported as a failure
 - [x] The first failure stops the run and reports the cycle number and reason
-- [ ] `/agent soak <char> 50` passes with a clean server log (milestone 1 acceptance)
+- [x] `/agent soak <char> 50` passes with a clean server log (milestone 1 acceptance)
 
 ## Comments
 
@@ -52,3 +52,13 @@ Known gaps:
 - **The first cycle after a server start takes about 60 s.** A Character that has never fought counts as having fought at game loop tick 0, and the game loop clock starts with the server. So for the first 40 s after a start, `/quit` gets the full 60 s combat quit delay instead of 20 s. This is the server's behaviour, not the Harness's, and it stays within the 90 s limit.
 - **A leak is only found after the whole run**, so it has no cycle number. The spec asks for a before/after comparison. Per-cycle counting would also be thrown off by Humans connecting during the run.
 - **No upper limit on n.** Each cycle takes about 20 s.
+
+**2026-10-17 (Human, recorded by agent):** Ran `/agent soak greeen 50` from the admin Character and stopped it after 21 cycles, which the Human judged enough. The server log agrees and counts slightly more:
+- The run started at 00:13:13.
+- 23 "agent1 just disconnected." lines follow, about 20 s apart, before the log ends at 00:21:00 with cycle 24 entering the world.
+- No link death, hard timeout, error or exception.
+- The only warnings are long-tick lines:
+  - one 39 ms for handling the `/agent soak` command itself;
+  - two `QuitTimer` ticks, 70 ms and 37 ms (Character saves).
+
+Together with the 50-cycle console run above, all acceptance items are met. Checks 2 (a second soak refused while one runs) and 3 (privilege level 1 refused) weren't reported. Check 3 uses the same dispatcher check the Human ran for 07.
