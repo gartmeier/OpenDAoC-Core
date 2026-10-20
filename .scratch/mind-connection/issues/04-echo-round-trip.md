@@ -14,11 +14,11 @@ See the spec: `.scratch/mind-connection/spec.md`.
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] `/say hello` from the Human next to the Agent makes the Agent say `hello` back, once
-- [ ] The Agent's own say line doesn't make it say anything
-- [ ] Chat that isn't say, and system messages, don't make it say anything
+- [x] `/say hello` from the Human next to the Agent makes the Agent say `hello` back, once
+- [x] The Agent's own say line doesn't make it say anything
+- [x] Chat that isn't say, and system messages, don't make it say anything
 - [x] Unit tests: the message call gives a Percept with exactly its text, chat type and location; a call without a projection still gives a bare Percept
 - [x] A `say` sent while the Agent isn't in the world is refused with a reason
 - [x] `bun test` covers the echo module: another speaker's say line, the Agent's own line, other chat types, unparsable text
@@ -69,3 +69,5 @@ Known gaps:
 - **Fast talk gets "Slow down!"** The echo goes out as soon as the line arrives, so two lines said within half a second make the second echo fail the server's say rate limit, which Greeen is told as a system message.
 - **`say` text isn't checked.** Empty text, a very long text or a line break goes to the server as a real client's command would. Malformed messages are 05's.
 - **`chatLocation` lists a value it never has.** The generated `eChatLoc` includes `CL_SystemWindow`, which a message Percept never carries.
+
+**2026-10-20 (Human, recorded by agent):** Ran the checks above on a server built from main at `c4dd3140a` (tickets 03 and 04 merged) and reports all of them passed. The trace `Greeen-20261020-085138-629.tsv` shows the round trip twice: `Vue says, "hi"` at 7,259 ms is followed by Greeen's `You say, "hi"` at 7,294 ms, and `Vue says, "foo"` at 9,612 ms by `You say, "foo"` at 9,625 ms. Each line got exactly one reply, and Greeen's own lines got none. All acceptance items are met.

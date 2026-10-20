@@ -4,13 +4,13 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] `/agent login` and `/agent soak` are gone from the command and its help text, and the soak runner is removed
-- [ ] `/agent logout <char>` on an Agent with a connected Mind makes it quit through the normal path, and its Mind exits after the server disconnects it
-- [ ] `/agent logout` on a Character that isn't online as an Agent fails with a clear message
-- [ ] `/agent capture` still records a real client's packets
-- [ ] A privilege level 1 Account can't use `/agent`
+- [x] `/agent login` and `/agent soak` are gone from the command and its help text, and the soak runner is removed
+- [x] `/agent logout <char>` on an Agent with a connected Mind makes it quit through the normal path, and its Mind exits after the server disconnects it
+- [x] `/agent logout` on a Character that isn't online as an Agent fails with a clear message
+- [x] `/agent capture` still records a real client's packets
+- [x] A privilege level 1 Account can't use `/agent`
 
 ## Comments
 
@@ -38,3 +38,5 @@ For the Human, when the server runs this build:
 Known gaps:
 - **A linkdead Agent can't be logged out.** `/agent logout` on a Character that's linkdead says it isn't in the world as an Agent, because only a Playing client can send `/quit`. It's gone after the link-death window anyway.
 - **The Mind's name is as typed** ("greeen"), as ticket 02 noted.
+
+**2026-10-20 (Human, recorded by agent):** Ran the checks above on a server built from main at `c4dd3140a` (tickets 03 and 04 merged) and reports all of them passed. The server log of that run shows a Mind logging Greeen in at 10:47:37 and the quit at 10:48:05 ending with "Greeen's Mind has disconnected.", with no link death and no Harness errors. All acceptance items are met.
