@@ -10,7 +10,7 @@ using NUnit.Framework;
 namespace DOL.GS.Tests
 {
     /// <summary>
-    /// Golden-byte tests: every packet the Harness builds for world entry matches what a real 1.127 client sent in the captures under `Fixtures/Agents/v1127`.
+    /// Golden-byte tests: every packet the Harness builds for world entry, idling and moving matches what a real 1.127 client sent in the captures under `Fixtures/Agents/v1127`.
     /// Sequence and session ID are taken from the captured packet. Wire byte 8 (the code's high byte) is leftover client memory, so it and the checksum aren't compared.
     /// Data offsets the README lists as varying are masked per packet.
     /// </summary>
@@ -18,6 +18,9 @@ namespace DOL.GS.Tests
     public class UT_ClientPackets1127
     {
         private static readonly string[] Captures = ClientCaptures.Names;
+
+        // Those with heading updates.
+        private static readonly string[] HeadingUpdateCaptures = [.. ClientCaptures.Names, ClientCaptures.MOVEMENT];
 
         [TestCaseSource(nameof(Captures))]
         public void CharacterSelect_ShouldMatchCapture(string capture)
@@ -93,10 +96,60 @@ namespace DOL.GS.Tests
             const ushort zoneId = 202;
 
             CapturedPacket beforeGameOpen = FromWorldEntry(capture, eClientPackets.PositionUpdate, 0);
-            AssertMatches(ClientPackets1127.PositionUpdate(position, zoneId, 0x19DF, 67, beforeGameOpen.SessionId, 0, 0), beforeGameOpen);
+            AssertMatches(ClientPackets1127.PositionUpdate(position, zoneId, 0x19DF, 0, 67, beforeGameOpen.SessionId, 0, 0), beforeGameOpen);
 
             CapturedPacket afterGameOpen = FromWorldEntry(capture, eClientPackets.PositionUpdate, 1);
-            AssertMatches(ClientPackets1127.PositionUpdate(position, zoneId, 0x09DF, 100, afterGameOpen.SessionId, 0, PlayerPositionUpdateHandler.ActionFlags.TORCH), afterGameOpen);
+            AssertMatches(ClientPackets1127.PositionUpdate(position, zoneId, 0x09DF, 0, 100, afterGameOpen.SessionId, 0, PlayerPositionUpdateHandler.ActionFlags.TORCH), afterGameOpen);
+        }
+
+        [Test]
+        public void RunningPositionUpdate_ShouldMatchCapture()
+        {
+            // At full speed in the first run, heading 0x5F3 with the client's 0x1000 flag. The full packet is in the README.
+            CapturedPacket captured = ClientCaptures.WhilePlaying(ClientCaptures.MOVEMENT, eClientPackets.PositionUpdate).Single(static p => p.Sequence == 0x0042);
+            Vector3 position = new(296492.4375f, 642525.25f, 4848);
+
+            AssertMatches(ClientPackets1127.PositionUpdate(position, 202, 0x15F3, 191, 100, captured.SessionId, 0, PlayerPositionUpdateHandler.ActionFlags.TORCH), captured);
+        }
+
+        [Test]
+        public void EveryRunningPositionUpdate_ShouldMatchCapture()
+        {
+            // Every update with a speed, ramping up, at full speed, steering and stopping. Only the position, speed and heading change while running, so those are taken from the captured packet.
+            CapturedPacket[] running = ClientCaptures.WhilePlaying(ClientCaptures.MOVEMENT, eClientPackets.PositionUpdate).Where(static p => ClientCaptures.Speed(p) > 0).ToArray();
+            Assert.That(running, Has.Length.GreaterThan(20));
+
+            foreach (CapturedPacket captured in running)
+            {
+                byte[] data = captured.Data;
+                Vector3 position = new(BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(0)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(4)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(8)));
+                ushort heading = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(30));
+
+                AssertMatches(ClientPackets1127.PositionUpdate(position, 202, heading, ClientCaptures.Speed(captured), 100, captured.SessionId, 0, PlayerPositionUpdateHandler.ActionFlags.TORCH), captured);
+            }
+        }
+
+        [Test]
+        public void HeadingUpdate_ShouldMatchCapture()
+        {
+            // The first of the turn on the spot. The full packet is in the README.
+            CapturedPacket captured = ClientCaptures.WhilePlaying(ClientCaptures.MOVEMENT, eClientPackets.PlayerHeadingUpdate).First();
+
+            AssertMatches(ClientPackets1127.HeadingUpdate(0x06D6, 100, captured.SessionId, PlayerPositionUpdateHandler.ActionFlags.TORCH), captured);
+        }
+
+        [TestCaseSource(nameof(HeadingUpdateCaptures))]
+        public void EveryHeadingUpdate_ShouldMatchCapture(string capture)
+        {
+            // Only the heading varies, so it's taken from the captured packet.
+            CapturedPacket[] headingUpdates = ClientCaptures.WhilePlaying(capture, eClientPackets.PlayerHeadingUpdate);
+            Assert.That(headingUpdates, Is.Not.Empty);
+
+            foreach (CapturedPacket captured in headingUpdates)
+            {
+                ushort heading = BinaryPrimitives.ReadUInt16BigEndian(captured.Data.AsSpan(4));
+                AssertMatches(ClientPackets1127.HeadingUpdate(heading, 100, captured.SessionId, PlayerPositionUpdateHandler.ActionFlags.TORCH), captured);
+            }
         }
 
         [TestCaseSource(nameof(Captures))]

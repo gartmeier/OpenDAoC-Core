@@ -65,6 +65,20 @@ namespace DOL.GS.Tests
             Assert.That(codes[EitherOrder.End..], Is.EqualTo(WorldEntrySequence[EitherOrder.End..]));
         }
 
+        [Test]
+        public void Running_ShouldSendPositionUpdatesAboutFiveTimesASecond()
+        {
+            // Consecutive position updates while the Character runs, i.e. both with a speed. Standing, the client sends one about every 2130 ms.
+            CapturedPacket[] updates = ClientCaptures.WhilePlaying(ClientCaptures.MOVEMENT, eClientPackets.PositionUpdate);
+            long[] intervals = updates.Zip(updates.Skip(1))
+                .Where(static pair => ClientCaptures.Speed(pair.First) > 0 && ClientCaptures.Speed(pair.Second) > 0)
+                .Select(static pair => pair.Second.ElapsedMilliseconds - pair.First.ElapsedMilliseconds)
+                .ToArray();
+
+            Assert.That(intervals, Has.Length.GreaterThan(20));
+            Assert.That(intervals, Is.All.InRange(150, 300));
+        }
+
         private static CapturedPacket[] WorldEntry(CapturedPacket[] packets)
         {
             int start = Array.FindIndex(packets, static p => p.ClientState is GameClient.eClientState.CharScreen);

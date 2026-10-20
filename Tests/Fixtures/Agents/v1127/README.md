@@ -1,10 +1,11 @@
 # Real 1.127 client captures
 
-What a real 1.127 game client sends the server, from character select through world entry, idling, saying something and `/quit`. These are the source of truth for the Harness's login sequence and Primitives, and the fixtures for its packet builders' golden-byte tests (`UT_ClientCaptureFixtures` loads them).
+What a real 1.127 game client sends the server, from character select through world entry, idling, saying something, moving and `/quit`. These are the source of truth for the Harness's login sequence and Primitives, and the fixtures for its packet builders' golden-byte tests (`UT_ClientCaptureFixtures` loads them).
 
 - `login-idle-quit-1.tsv` and `login-idle-quit-2.tsv` are two separate sessions of account `agent1` and its Hibernia Character in account slot 300. In each session the client logs in, enters the world, idles for 2–3 minutes, quits, waits at character select and exits.
 - Recorded with `/agent capture agent1` on 2026-10-03 and split per session, otherwise unmodified.
 - `say-hello.tsv` is 17 s of account `admin`'s Hibernia Character standing in the world while the Human types `hello` (plain, no slash), then `/send greeen hello` and `/agent capture off`. Recorded with `/agent capture admin` on 2026-10-20, unmodified. See Say.
+- `run-turn-stop.tsv` is 62 s of the same Character on flat open ground in zone 202. It stands, runs in a straight line and stops, strafes right, turns on the spot with the keyboard, runs past an NPC and stops, then targets the NPC. Before each part the Human said `run`, `turn` and `npc`, which mark the parts in the capture as say commands. Recorded with `/agent capture admin` on 2026-10-20, unmodified. See Movement.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
 ## Format
@@ -60,11 +61,74 @@ A chat line typed without a slash goes out as the say command's `/s` alias: comm
 
 Full packet as captured: `000A 010C 0001 FFFF 38AF 00 26 73 20 68 65 6C 6C 6F 00 A414`. Only the common fields vary (see below). Wire byte 8 is 0x38 here, more leftover client memory. Typing `/say hello` or `/s hello` presumably sends `&say hello` or `&s hello` in the same layout, as `/q` sent `&q`; neither was captured.
 
+## Movement
+
+From `run-turn-stop.tsv`. Everything happens on flat ground, so the Z coordinate stays 4848 and the Z speed stays 0 throughout. Running uphill or downhill wasn't captured.
+
+### Position update (0xA9) layout
+
+As captured, by data offset:
+
+| Offset | Field | In this capture |
+|--------|-------|-----------------|
+| 0–11 | X, Y, Z, floats, little-endian, global coordinates | |
+| 12–15 | speed, float, little-endian | 0 standing or strafing, up to 191 running |
+| 16–19 | Z speed, float, little-endian | always 0 |
+| 20–21 | session ID | |
+| 22–23 | the target's object ID | 0 until the Human targets the NPC, then its ID 0x1F0B |
+| 24–25 | zone ID | 202 |
+| 26 | state flags | 0, or strafe flags while strafing (see below) |
+| 27–29 | | always 0 |
+| 30–31 | heading: low 12 bits, 4096 to a full turn; bit 0x1000 is a flag | flag set in every packet |
+| 32 | action flags | 0x80 (`TORCH`), 0xB0 (`TORCH`, `TARGET_IN_VIEW`) once the NPC is targeted |
+| 33–34 | | always 0 |
+| 35 | health % | 100 |
+| 36–39 | | always 0 |
+
+Heading `h` points along (−sin θ, cos θ) with θ = `h` × 2π / 4096, so heading 0 points towards +Y. The first run went (−29.3, −28.3) per update at heading 0x5F3 (1523, 134°). The 0x1000 flag is set in every position update here, and in the login captures in every one except the first after game open (`09DF` against `19DF`). Heading updates never set it. The server keeps it in `RawHeading` and masks it off in `Heading`.
+
+### Running
+
+- **Starting.** The first update goes out as soon as the Character moves, 633 ms after the previous idle update in both runs, not on the idle cadence. It already carries a speed (19.6 and 11.8) and a position 1–1.5 units on. Over the next three updates the speed ramps up (72.6, 127.2, 180.9), then stays at 191, the Character's maximum speed (`GamePlayer.PLAYER_BASE_SPEED`). That's about 0.9 s from standing to full speed.
+- **Rate.** One position update every 200 or 233 ms while running (173–260 ms over both runs; mean 212 ms over the first run's 23 intervals), in place of the idle 2130 ms. At 191 that's about 40 units per update, i.e. 191 units per second.
+- **What changes.** Only X and Y, the speed, and the heading if the Human steers. Z, Z speed, state flags, the heading's 0x1000 flag, action flags and health stay as they were standing. A straight run keeps its heading (`15F3` throughout the first run). Steering while running, as in the second run, changes the heading in the position updates; no heading update is sent.
+- **Stopping.** After the key is released: one update with the speed falling (103.5 and 94.1), about 31 units on, then about 200 ms later one with speed 0 at the final spot, 8–10 units further on. The next update comes about 2130 ms after that, on the idle cadence again. After the second run, a heading update with the final heading followed the speed-0 update after 200 ms.
+
+Full packet at full speed in the first run: `0028 0042 0001 FFFF 00A9 8EC59048 D4DD1C49 00809745 00003F43 00000000 0001 0000 00CA 00 000000 15F3 80 0000 64 00000000 8218`: X 296492.4375, Y 642525.25, Z 4848, speed 191, Z speed 0, session ID 1, no target, zone 202, heading 0x15F3, `TORCH`, health 100.
+
+### Strafing
+
+The Human strafed right before turning. Strafing has its own state flags and no speed: state flags 0xA0 (`STRAFING_RIGHT`, `STRAFING_FULL_SPEED`), speed 0 and the heading unchanged. The Character moves at right angles to its heading, at heading + 1024, about 23 units per update (about 110 units per second). The rate is the running one. The last moving update has only `STRAFING_RIGHT` (0x80), then the state flags go back to 0.
+
+### Turning on the spot: heading update (0xBA)
+
+While the Character turns without moving, the client sends a heading update every 200 or 233 ms (twice 433 ms), each with the heading reached so far. The position updates keep their idle 2130 ms cadence and carry the current heading too. On the keyboard the Human turned about 1.3 full turns in 8.4 s. When turning stops, the heading updates stop. The last one holds the final heading, and the next position update carries it with its 0x1000 flag (`0C1A`, then `1C1A`).
+
+Layout, 14 bytes of data, the same in all four captures:
+
+| Offset | Field | In every capture |
+|--------|-------|------------------|
+| 0–1 | session ID | |
+| 2–3 | | 0. The server reads a target here; no heading update was sent while something was targeted |
+| 4–5 | heading, low 12 bits only | never with the 0x1000 flag |
+| 6 | | 0 |
+| 7 | action flags | 0x80 (`TORCH`) |
+| 8 | | 0. The server reads a steed seat |
+| 9 | | 0. The server reads the state flags, shifted right by 2 |
+| 10 | presumably health %, as in the position update | 100 |
+| 11–13 | | 0 |
+
+Full packet, the first of the turn: `000E 0068 0001 FFFF 00BA 0001 0000 06D6 00 80 00 00 64 000000 C5CD`.
+
+### Running past an NPC
+
+While running past the NPC, the client sends a create object request (0xBE) for an object the server sent, as when idling. After stopping, the Human targeted the NPC: target (0xB0) with data `1F0B E000`, the NPC's object ID and two bytes the server reads as flags. From then on, position updates carry 0x1F0B at data offsets 22–23 and action flags 0xB0.
+
 ## Fields that vary between captures
 
 These hold for every packet:
 
-- **Sequence** (wire bytes 2–3): per-connection counter. It starts at 3 for the first recorded packet of a login (`say-hello.tsv` starts mid-session, at 0x0104) and increases by 1 per TCP packet. UDP packets carry 0.
+- **Sequence** (wire bytes 2–3): per-connection counter. It starts at 3 for the first recorded packet of a login (`say-hello.tsv` and `run-turn-stop.tsv` start mid-session, at 0x0104 and 0x0030) and increases by 1 per TCP packet. UDP packets carry 0.
 - **Session ID** (wire bytes 4–5): assigned by the server. It is 0 until the first character select is answered.
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
@@ -77,11 +141,12 @@ Packet data, by data offset:
 |------|--------|-----|
 | 0x9D Region list | 19 | unknown, client-side |
 | 0xA3 Ping | 1, 2, 4–7, 11 | see Liveness |
-| 0xA9 Position update | 20–21, 26, 30, 32, 35 | session ID, state flags, heading flags (high byte), action flags, health %. Position and speed floats (0–19, little-endian) would vary too, but the Character stood on its saved spot in both captures |
-| 0xBA Heading update | 0–1 | session ID |
+| 0xA9 Position update | 0–15, 20–26, 30–32, 35 | position and speed, session ID, the target's object ID, zone ID, state flags (sitting, strafing), heading and its 0x1000 flag, action flags, health %. See Movement. Z speed (16–19) was 0 throughout, on flat ground in every capture |
+| 0xBA Heading update | 0–1, 4–5 | session ID, heading |
+| 0xB0 Target | 0–1 | the target's object ID. Only one, in `run-turn-stop.tsv` |
 | 0xBE Create object request | 0–1 | object ID assigned by the server |
 | 0xAF Command | everything | the command text |
-| 0xF2 UDP ping | 0 | unknown |
+| 0xF2 UDP ping | 0–2 | unknown. Only offset 0 varies between the two login sessions |
 | 0x1D (no handler) | everything | unknown |
 
 Everything else (character select, overview, world init, player init, game open, warmap request, and 0x42, 0x43, 0xAC, 0xB8) is byte-for-byte identical apart from the common fields above. Client filter settings come in two fixed variants, which differ in data offsets 17–19: the first in world entry ends `00e44300`, and the two after it end `00a80401`. Both captures match packet for packet.

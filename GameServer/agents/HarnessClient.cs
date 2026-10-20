@@ -166,7 +166,7 @@ namespace DOL.GS.Agents
         {
             GamePlayer player = Player;
             PlayerPositionUpdateHandler.StateFlags stateFlags = player.IsSitting ? PlayerPositionUpdateHandler.StateFlags.SITTING : 0;
-            return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, player.Heading, player.HealthPercent, SessionID, stateFlags, player.ActionFlags);
+            return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, player.Heading, 0, player.HealthPercent, SessionID, stateFlags, player.ActionFlags);
         }
 
         // Called by the client service on the game loop, where a real client's received bytes are processed.

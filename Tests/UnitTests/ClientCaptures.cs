@@ -1,3 +1,5 @@
+using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
 using DOL.GS.Agents;
@@ -17,7 +19,10 @@ namespace DOL.GS.Tests
         // A Character already in the world saying one line.
         public const string SAY = "say-hello";
 
-        public static readonly string[] All = [.. Names, SAY];
+        // The same Character running, strafing, turning on the spot and stopping.
+        public const string MOVEMENT = "run-turn-stop";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT];
 
         public static CapturedPacket[] Load(string capture)
         {
@@ -28,6 +33,12 @@ namespace DOL.GS.Tests
         public static CapturedPacket[] WhilePlaying(string capture, eClientPackets code)
         {
             return Load(capture).Where(p => p.Transport is CaptureTransport.Tcp && p.ClientState is GameClient.eClientState.Playing && p.Code == (byte) code).ToArray();
+        }
+
+        // Data offsets 12-15 of a position update, little-endian. 0 while standing or strafing.
+        public static float Speed(CapturedPacket positionUpdate)
+        {
+            return BinaryPrimitives.ReadSingleLittleEndian(positionUpdate.Data.AsSpan(12));
         }
     }
 }
