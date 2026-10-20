@@ -23,7 +23,7 @@ See the spec: `.scratch/movement/spec.md`.
 - [x] Any other raw packet gives a bare Percept naming its packet code
 - [x] The generated TypeScript is up to date and the codegen test passes
 - [x] Surroundings (`bun test`): create, move, delete; lookup by name; distance worked out on request; nothing forgotten by time
-- [ ] In game: running around next to Greeen, the Mind prints the Human's positions as they change, and they match `/loc`
+- [x] In game: running around next to Greeen, the Mind prints the Human's positions as they change, and they match `/loc`
 
 ## Comments
 
@@ -55,3 +55,11 @@ Known gaps:
 - **The horse is untested.** `horse` reads the player's inventory, which `TestPlayer` doesn't have. While a player rides, the position packet's heading carries its steed's object ID instead.
 - **A `0xA9` is decoded by its length.** It's decoded only when it's exactly the 1.127 layout's length, which the Harness client always gets (it's a 1.127 client).
 - **`/loc` doesn't match.** It's the client's own command and prints zone coordinates. Use `/gloc`.
+
+**2026-10-20 (Human, recorded by agent):** Ran the checks above on a server built from this branch at `f30b444e8` and reports that `/gloc` matches. The Mind's output (`percepts.log`, not committed) shows:
+- Vue (object 17737) created at 146.1 s, then 57 `playerPosition` lines up to 217.7 s while running, with `SendUDP 0xBA` heading updates in between when turning on the spot. The last line, `X:296715 Y:642621 Z:4848 heading 1158 speed 0 zone 202`, is where Vue stopped.
+- Before that, from 54.0 s to 145.7 s, Vue was GM-stealthed: one `playerCreate`, then an `objectDelete` every 2 s or so instead of positions. That's the server hiding a stealthed GM from a player, as `PlayerPositionUpdateHandler.BroadcastPosition` does. `/gmstealth off` ended it. After the relog at 244.5 s Vue was stealthed again.
+- Positions also arrive about every 2 s while standing still, with speed 0: the client's idle updates, which the server broadcasts too. The hand-off above was wrong to say none come.
+- **Found a gap.** `/quit` gave no `objectDelete`, only a bare `SendObjectRemove`, so Surroundings kept Vue after he left. A player who quits leaves through `GameObject.RemoveFromWorld`, which calls `SendObjectRemove` (the `RemoveObject` packet, 0xA2), not `SendObjectDelete`. Fixed in `2f964e323`: it's now an `objectRemove` Percept with the `objectId` and `objectType` (2 for a player, 1 for a living NPC, 0 for anything else, a dead NPC included), mirroring `PacketLib168.SendObjectRemove`, and Surroundings forgets on it as on a delete. Server 177 and Mind 28 tests pass.
+
+The in-game box holds. One re-check for the fix: with this build, `/quit` next to Greeen should print `objectRemove #<your id> type 2`.
