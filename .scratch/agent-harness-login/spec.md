@@ -1,6 +1,6 @@
 # Milestone 1: Agent Harness login and logout
 
-Status: ready-for-human
+Status: resolved
 
 ## Problem Statement
 
@@ -118,3 +118,7 @@ There is no Mind and no LLM in this milestone. The Agent's Account and Character
 - Risk: some handlers used during world entry may assume a real socket or remote endpoint (for example when logging the client's address). Those need to tolerate a missing socket as part of the core seam work.
 - The idle-kick rule only applies to privilege level 1 Accounts. Agent Accounts are normal players, so long idle tests will hit it. That's expected, and it's Human-equivalent behaviour.
 - Milestone ladder for context: 1 login/logout (this spec) → 2 Mind connection → 3 movement → 4 hand-written grind Tactic → 5 LLM Planning → 6 Reflection and Tactic Library → 7 Agent character creation → 8 multiple Agents and grouping.
+
+## Comments
+
+**2026-10-20 (Human, recorded by agent):** Milestone 1 is done. All eight tickets are resolved. The acceptance tests in Testing Decisions passed: the manual login, idle and logout checks (tickets 03 to 05), and `/agent soak` with a clean server log (ticket 08). That was 50 cycles from the server console, plus an in-game run the Human stopped after 21 cycles. Next on the ladder is milestone 2 (Mind connection).
