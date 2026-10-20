@@ -10,7 +10,7 @@ namespace DOL.GS.Agents
 {
     /// <summary>
     /// Generates the Mind's TypeScript for <see cref="MindProtocol"/>'s message types, from the same JSON attributes that decide what goes over the wire.
-    /// A polymorphic C# type becomes a union of its derived types, and each derived type an interface with its discriminator as a literal. An enum becomes a union of its names.
+    /// A polymorphic C# type becomes a union of its derived types, and each derived type an interface with its discriminator as a literal. Any other record becomes a plain interface, and an enum a union of its names.
     /// A unit test fails when the checked-in file differs from what this generates.
     /// </summary>
     public static class MindProtocolTypeScript
@@ -42,7 +42,16 @@ namespace DOL.GS.Agents
                     continue;
                 }
 
-                string discriminator = union.GetCustomAttribute<JsonPolymorphicAttribute>().TypeDiscriminatorPropertyName;
+                JsonPolymorphicAttribute polymorphic = union.GetCustomAttribute<JsonPolymorphicAttribute>();
+
+                // A type that isn't polymorphic is a plain interface.
+                if (polymorphic == null)
+                {
+                    builder.Append('\n');
+                    AppendInterface(builder, union, null, pending);
+                    continue;
+                }
+
                 JsonDerivedTypeAttribute[] cases = union.GetCustomAttributes<JsonDerivedTypeAttribute>().ToArray();
 
                 builder.Append('\n');
@@ -51,20 +60,28 @@ namespace DOL.GS.Agents
                 foreach (JsonDerivedTypeAttribute derived in cases)
                 {
                     builder.Append('\n');
-                    builder.Append("export interface ").Append(derived.DerivedType.Name).Append(" {\n");
-                    builder.Append("  ").Append(discriminator).Append(": \"").Append(derived.TypeDiscriminator).Append("\";\n");
-
-                    foreach (PropertyInfo property in derived.DerivedType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                    {
-                        bool optional = property.GetCustomAttribute<JsonIgnoreAttribute>()?.Condition is JsonIgnoreCondition.WhenWritingNull;
-                        builder.Append("  ").Append(JsonNamingPolicy.CamelCase.ConvertName(property.Name)).Append(optional ? "?: " : ": ").Append(TypeName(property.PropertyType, pending)).Append(";\n");
-                    }
-
-                    builder.Append("}\n");
+                    AppendInterface(builder, derived.DerivedType, $"{polymorphic.TypeDiscriminatorPropertyName}: \"{derived.TypeDiscriminator}\"", pending);
                 }
             }
 
             return builder.ToString();
+        }
+
+        // `discriminator` is the discriminator's line, or null for a type that isn't one case of a union.
+        private static void AppendInterface(StringBuilder builder, Type type, string discriminator, Queue<Type> pending)
+        {
+            builder.Append("export interface ").Append(type.Name).Append(" {\n");
+
+            if (discriminator != null)
+                builder.Append("  ").Append(discriminator).Append(";\n");
+
+            foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                bool optional = property.GetCustomAttribute<JsonIgnoreAttribute>()?.Condition is JsonIgnoreCondition.WhenWritingNull;
+                builder.Append("  ").Append(JsonNamingPolicy.CamelCase.ConvertName(property.Name)).Append(optional ? "?: " : ": ").Append(TypeName(property.PropertyType, pending)).Append(";\n");
+            }
+
+            builder.Append("}\n");
         }
 
         // Unions the property refers to are generated after the current one.
@@ -76,17 +93,23 @@ namespace DOL.GS.Agents
             if (type == typeof(bool))
                 return "boolean";
 
-            if (type == typeof(int) || type == typeof(long))
+            if (type == typeof(int) || type == typeof(long) || type == typeof(float))
                 return "number";
 
-            // An enum is the union of its names, as they go over the wire.
-            if (type.IsEnum || type.GetCustomAttribute<JsonPolymorphicAttribute>() != null)
+            // An enum is the union of its names, as they go over the wire. A record is an interface of its own.
+            if (type.IsEnum || type.GetCustomAttribute<JsonPolymorphicAttribute>() != null || IsRecord(type))
             {
                 pending.Enqueue(type);
                 return type.Name;
             }
 
             throw new NotSupportedException($"The Mind's TypeScript has no type for {type.Name}. Add it to {nameof(MindProtocolTypeScript)}.");
+        }
+
+        // The compiler gives every record class a clone method under this name.
+        private static bool IsRecord(Type type)
+        {
+            return type.GetMethod("<Clone>$") != null;
         }
     }
 }
