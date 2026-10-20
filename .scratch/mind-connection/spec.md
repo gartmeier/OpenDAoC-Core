@@ -187,3 +187,5 @@ The Mind receives Percepts and can send Primitives. Each Percept carries only wh
 ## Comments
 
 **2026-10-20 (Human, recorded by agent):** Milestone 2 is done. All five tickets are resolved, and the manual acceptance test in Testing Decisions passed across the in-game checks of tickets 02 to 05: an echo Mind logs Greeen in, answers each say line exactly once, quits cleanly on Ctrl+C, goes linkdead when killed, is taken over by a second Mind, retries while Greeen is linkdead, and refuses everything it should. Next on the ladder is milestone 3 (movement).
+
+**2026-10-20 (Human, recorded by agent):** Pathfinding and map knowledge, listed above as milestone 3, moved to a new milestone 3b (terrain and pathing). The server has no navmeshes installed, so milestone 3 moves in straight lines. See `.scratch/movement/spec.md`.

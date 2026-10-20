@@ -11,3 +11,4 @@ An Agent must only know what a real game client would be told, but parsing the s
 
 - Any server code that queues packets on the `PacketProcessor` directly instead of going through `Out` goes around this and is invisible to the Agent.
 - The `IPacketLib` implementation is called on the game loop thread and must never block.
+- Some server code builds a packet itself and hands it to `Out.SendUDP` or `Out.SendTCP`, notably other players' position broadcasts. Those packets arrive whole rather than as typed calls. One layout is decoded so far, the 1.127 player position, mirroring the server code that builds it with a test that feeds that code's output back through the decoder. Every other raw packet stays a bare Percept naming its code. Decode another layout only when an Agent needs it, never as a general byte parser.

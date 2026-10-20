@@ -39,8 +39,16 @@ One entry in the Harness's fixed vocabulary of things an Agent decides to do, su
 _Avoid_: command, action, tool
 
 **Percept**:
-One thing the Harness tells the Mind; only what the server would have told a real game client.
+One thing the Harness tells the Mind; only what a real game client would know, whether the server told it (another Character moved) or it worked it out itself (its own position while running).
 _Avoid_: event, observation
+
+**Self**:
+What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run and whether it's on its way somewhere, built only from Percepts.
+_Avoid_: player, status, me
+
+**Surroundings**:
+What an Agent currently believes is around it, such as who and what is near and where, built only from Percepts.
+_Avoid_: world model, world state
 
 **Tactic**:
 A unit of Mind-side code that pursues a short-term aim by issuing Primitives, written by a Human or by the Agent itself.
