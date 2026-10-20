@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import type { MovedPercept, OwnPositionPercept, Percept, PerceptMessage } from "./protocol.ts";
-import { Self } from "./self.ts";
+import type { JumpPercept, MovedPercept, OwnPositionPercept, Percept, PerceptMessage } from "./protocol.ts";
+import { ownPositionIn, Self } from "./self.ts";
 
 function message(percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs: 1000, percept };
@@ -12,6 +12,10 @@ function ownPosition(x: number, y: number, z: number, heading: number): OwnPosit
 
 function moved(x: number, y: number, z: number, heading: number): MovedPercept {
   return { kind: "moved", x, y, z, heading, speed: 191, targetX: 300000, targetY: 640000, targetZ: 4848 };
+}
+
+function jump(x: number, y: number, z: number, heading: number): JumpPercept {
+  return { kind: "jump", x, y, z, objectId: 17, heading, houseNumber: 0 };
 }
 
 function selfAt(x: number, y: number, z: number): Self {
@@ -75,6 +79,66 @@ test("is moving again after a run was replaced, to the new target", () => {
   agentSelf.perceive(message({ ...moved(296570, 642620, 4848, 1000), targetX: 296000, targetY: 643000, targetZ: 4900 }));
 
   expect(agentSelf.movement).toEqual({ kind: "moving", target: { x: 296000, y: 643000, z: 4900 } });
+});
+
+test("takes the position and heading the server jumps it to, and stands", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+  agentSelf.perceive(message({ kind: "arrived", x: 300000, y: 640000, z: 4848 }));
+
+  agentSelf.perceive(message(jump(250000, 600000, 3000, 1024)));
+
+  expect(agentSelf.position).toEqual({ x: 250000, y: 600000, z: 3000 });
+  expect(agentSelf.heading).toBe(1024);
+  expect(agentSelf.movement).toEqual({ kind: "standing" });
+});
+
+// The Harness ends the run with `stopped` right after the jump.
+test("has stopped where the server jumped it to mid-run, moved by the server", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+  agentSelf.perceive(message(moved(296591.7, 642621, 4848, 1523)));
+
+  agentSelf.perceive(message(jump(250000, 600000, 3000, 1024)));
+  agentSelf.perceive(message({ kind: "stopped", x: 250000, y: 600000, z: 3000, reason: "MovedByServer" }));
+
+  expect(agentSelf.position).toEqual({ x: 250000, y: 600000, z: 3000 });
+  expect(agentSelf.heading).toBe(1024);
+  expect(agentSelf.movement).toEqual({ kind: "stopped", reason: "MovedByServer" });
+});
+
+// As `/faceloc` sends it.
+test("takes only the heading from a jump without a position", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+  agentSelf.perceive(message({ kind: "arrived", x: 300000, y: 640000, z: 4848 }));
+
+  agentSelf.perceive(message(jump(0, 0, 0, 2048)));
+
+  expect(agentSelf.position).toEqual({ x: 300000, y: 640000, z: 4848 });
+  expect(agentSelf.heading).toBe(2048);
+  expect(agentSelf.movement).toEqual({ kind: "arrived" });
+});
+
+test("has stopped where it stands when it can't move, for example while rooted", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+  agentSelf.perceive(message(moved(296591.7, 642621, 4848, 1523)));
+
+  agentSelf.perceive(message({ kind: "maxSpeed", maxSpeedPercent: 0, turningDisabled: false, waterSpeed: 0 }));
+  agentSelf.perceive(message({ kind: "stopped", x: 296580, y: 642610, z: 4848, reason: "UnableToMove" }));
+
+  expect(agentSelf.maxSpeed).toBe(0);
+  expect(agentSelf.position).toEqual({ x: 296580, y: 642610, z: 4848 });
+  expect(agentSelf.movement).toEqual({ kind: "stopped", reason: "UnableToMove" });
+});
+
+test("the Percepts that say where its own Character is give that position, and no others", () => {
+  expect(ownPositionIn(ownPosition(1, 2, 3, 0))).toEqual({ x: 1, y: 2, z: 3 });
+  expect(ownPositionIn(jump(4, 5, 6, 0))).toEqual({ x: 4, y: 5, z: 6 });
+  expect(ownPositionIn(moved(7, 8, 9, 0))).toEqual({ x: 7, y: 8, z: 9 });
+  expect(ownPositionIn({ kind: "arrived", x: 10, y: 11, z: 12 })).toEqual({ x: 10, y: 11, z: 12 });
+  expect(ownPositionIn({ kind: "stopped", x: 13, y: 14, z: 15, reason: "Stop" })).toEqual({ x: 13, y: 14, z: 15 });
+
+  expect(ownPositionIn(jump(0, 0, 0, 2048))).toBeUndefined();
+  expect(ownPositionIn({ kind: "objectDelete", objectId: 291 })).toBeUndefined();
+  expect(ownPositionIn({ kind: "maxSpeed", maxSpeedPercent: 100, turningDisabled: false, waterSpeed: 0 })).toBeUndefined();
 });
 
 test("works out its maximum speed from the percentage the server sends", () => {
