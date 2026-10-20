@@ -24,7 +24,7 @@ export class Come {
   }
 
   /** The Primitive to send for the Percept, or nothing. */
-  decide(percept: Percept, self: Self, surroundings: Surroundings): Primitive | undefined {
+  decide(percept: Percept, agentSelf: Self, surroundings: Surroundings): Primitive | undefined {
     if (percept.kind !== "message" || percept.chatType !== "CT_Say")
       return undefined;
 
@@ -35,7 +35,7 @@ export class Come {
 
     switch (words.toLowerCase()) {
       case "come":
-        return this.#comeTo(speaker, self, surroundings);
+        return this.#comeTo(speaker, agentSelf, surroundings);
       case "stop":
         return { name: "stop" };
       default:
@@ -44,8 +44,8 @@ export class Come {
   }
 
   // A speaker the Agent doesn't know of is somewhere it couldn't know, and one already within the stand-off distance is close enough.
-  #comeTo(speaker: string, self: Self, surroundings: Surroundings): Primitive | undefined {
-    const from = self.position;
+  #comeTo(speaker: string, agentSelf: Self, surroundings: Surroundings): Primitive | undefined {
+    const from = agentSelf.position;
     const to = surroundings.named(speaker)?.position;
 
     if (!from || !to)

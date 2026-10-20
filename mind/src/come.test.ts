@@ -46,17 +46,17 @@ function playerCreate(objectId: number, name: string, x: number, y: number, z: n
 
 // Greeen stands at (296000, 642000, 4848), and Vue 3000 units away along +X, 2 units higher.
 function world() {
-  const self = new Self();
-  self.perceive(message({ kind: "ownPosition", x: 296000, y: 642000, z: 4848, objectId: 17, heading: 0, zoneXOffset: 0, zoneYOffset: 0, region: 200, divingEnabled: false, underwater: false }));
+  const agentSelf = new Self();
+  agentSelf.perceive(message({ kind: "ownPosition", x: 296000, y: 642000, z: 4848, objectId: 17, heading: 0, zoneXOffset: 0, zoneYOffset: 0, region: 200, divingEnabled: false, underwater: false }));
   const surroundings = new Surroundings();
   surroundings.perceive(message(playerCreate(291, "Vue", 299000, 642000, 4850)));
-  return { come: new Come("Greeen"), self, surroundings };
+  return { come: new Come("Greeen"), agentSelf, surroundings };
 }
 
 test("another speaker's come runs to 100 units short of where they stand, along the line from Self", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
-  const primitive = come.decide(sayLine('Vue says, "come"'), self, surroundings) as MoveToPrimitive;
+  const primitive = come.decide(sayLine('Vue says, "come"'), agentSelf, surroundings) as MoveToPrimitive;
 
   expect(primitive.name).toBe("moveTo");
   expect(primitive.x).toBeCloseTo(298900);
@@ -66,23 +66,23 @@ test("another speaker's come runs to 100 units short of where they stand, along 
 });
 
 test("come works in any case", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
   for (const words of ["Come", "COME", "cOmE"])
-    expect(come.decide(sayLine(`Vue says, "${words}"`), self, surroundings)?.name).toBe("moveTo");
+    expect(come.decide(sayLine(`Vue says, "${words}"`), agentSelf, surroundings)?.name).toBe("moveTo");
 });
 
 test("a speaker found by name in any case is the same speaker", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
-  expect(come.decide(sayLine('vue says, "come"'), self, surroundings)?.name).toBe("moveTo");
+  expect(come.decide(sayLine('vue says, "come"'), agentSelf, surroundings)?.name).toBe("moveTo");
 });
 
 test("come from a speaker not in Surroundings gives nothing", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
-  expect(come.decide(sayLine('Ruwen says, "come"'), self, surroundings)).toBeUndefined();
-  expect(come.decide(sayLine('the town guard says, "come"'), self, surroundings)).toBeUndefined();
+  expect(come.decide(sayLine('Ruwen says, "come"'), agentSelf, surroundings)).toBeUndefined();
+  expect(come.decide(sayLine('the town guard says, "come"'), agentSelf, surroundings)).toBeUndefined();
 });
 
 test("come before Self knows where it is gives nothing", () => {
@@ -92,50 +92,50 @@ test("come before Self knows where it is gives nothing", () => {
 });
 
 test("come from a speaker already within 100 units gives nothing", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
   surroundings.perceive(message(playerCreate(292, "Ruwen", 296060, 642050, 4848)));
 
-  expect(come.decide(sayLine('Ruwen says, "come"'), self, surroundings)).toBeUndefined();
+  expect(come.decide(sayLine('Ruwen says, "come"'), agentSelf, surroundings)).toBeUndefined();
 });
 
 test("another speaker's stop gives stop", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
-  expect(come.decide(sayLine('Vue says, "stop"'), self, surroundings)).toEqual({ name: "stop" });
-  expect(come.decide(sayLine('Vue says, "STOP"'), self, surroundings)).toEqual({ name: "stop" });
+  expect(come.decide(sayLine('Vue says, "stop"'), agentSelf, surroundings)).toEqual({ name: "stop" });
+  expect(come.decide(sayLine('Vue says, "STOP"'), agentSelf, surroundings)).toEqual({ name: "stop" });
 });
 
 test("a stop from a speaker not in Surroundings still gives stop: it needs no position", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
-  expect(come.decide(sayLine('Ruwen says, "stop"'), self, surroundings)).toEqual({ name: "stop" });
+  expect(come.decide(sayLine('Ruwen says, "stop"'), agentSelf, surroundings)).toEqual({ name: "stop" });
 });
 
 test("the Agent's own lines give nothing", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
-  expect(come.decide(sayLine('You say, "come"'), self, surroundings)).toBeUndefined();
-  expect(come.decide(sayLine('Greeen says, "come"'), self, surroundings)).toBeUndefined();
-  expect(come.decide(sayLine('greeen says, "stop"'), self, surroundings)).toBeUndefined();
+  expect(come.decide(sayLine('You say, "come"'), agentSelf, surroundings)).toBeUndefined();
+  expect(come.decide(sayLine('Greeen says, "come"'), agentSelf, surroundings)).toBeUndefined();
+  expect(come.decide(sayLine('greeen says, "stop"'), agentSelf, surroundings)).toBeUndefined();
 });
 
 test("other chat types give nothing", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
   for (const chatType of ["CT_Send", "CT_Group", "CT_Emote", "CT_System", "CT_Staff"] as const)
-    expect(come.decide({ kind: "message", text: 'Vue says, "come"', chatType, chatLocation: "CL_ChatWindow" }, self, surroundings)).toBeUndefined();
+    expect(come.decide({ kind: "message", text: 'Vue says, "come"', chatType, chatLocation: "CL_ChatWindow" }, agentSelf, surroundings)).toBeUndefined();
 });
 
 test("longer lines, and lines that don't read as someone saying words, give nothing", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
   for (const text of ['Vue says, "come here"', 'Vue says, "please come"', 'Vue says, " come"', 'Vue says, "come!"', 'Vue says, "stop it"', 'Vue yells, "come"', 'Vue says, "come', "come", ""])
-    expect(come.decide(sayLine(text), self, surroundings)).toBeUndefined();
+    expect(come.decide(sayLine(text), agentSelf, surroundings)).toBeUndefined();
 });
 
 test("other Percepts give nothing", () => {
-  const { come, self, surroundings } = world();
+  const { come, agentSelf, surroundings } = world();
 
-  expect(come.decide({ kind: "bare", call: "SendUpdatePoints" }, self, surroundings)).toBeUndefined();
-  expect(come.decide({ kind: "arrived", x: 1, y: 2, z: 3 }, self, surroundings)).toBeUndefined();
+  expect(come.decide({ kind: "bare", call: "SendUpdatePoints" }, agentSelf, surroundings)).toBeUndefined();
+  expect(come.decide({ kind: "arrived", x: 1, y: 2, z: 3 }, agentSelf, surroundings)).toBeUndefined();
 });
