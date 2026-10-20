@@ -36,9 +36,10 @@ namespace DOL.GS.Tests
         }
 
         // A region holding the given zones, which a test lays out side by side.
-        public static Region Region(params (ushort Id, int XOffset, int YOffset, int Width, int Height)[] zones)
+        public static Region Region(ushort regionId, params (ushort Id, int XOffset, int YOffset, int Width, int Height)[] zones)
         {
             Region region = (Region) RuntimeHelpers.GetUninitializedObject(typeof(Region));
+            typeof(Region).GetProperty(nameof(GS.Region.RegionData)).SetValue(region, new RegionData { Id = regionId });
             List<Zone> list = [];
 
             foreach ((ushort id, int xOffset, int yOffset, int width, int height) in zones)
@@ -109,6 +110,9 @@ namespace DOL.GS.Tests
         public short Speed { get; set; }
         public byte Mana { get; set; }
         public byte Endurance { get; set; }
+        public bool TurningDisabled { get; set; }
+        // What `GetModified` gives for each property. Every other property is 0.
+        public Dictionary<eProperty, int> Modified { get; private set; }
 
         public override GameClient Client => TestClient;
         public override ushort Heading { get => TestHeading; set => TestHeading = value; }
@@ -122,6 +126,12 @@ namespace DOL.GS.Tests
         public override short CurrentSpeed { get => Speed; set => Speed = value; }
         public override byte ManaPercent => Mana;
         public override byte EndurancePercent => Endurance;
+        public override bool IsTurningDisabled => TurningDisabled;
+
+        public override int GetModified(eProperty property)
+        {
+            return Modified.GetValueOrDefault(property);
+        }
 
         public bool Wireframe
         {
@@ -155,6 +165,8 @@ namespace DOL.GS.Tests
             client.Player = this;
             m_name = name;
             m_customFaceAttributes = new byte[(int) eCharFacePart._Last + 1];
+            movementComponent = new PlayerMovementComponent(this);
+            Modified = [];
             Alive = true;
             Visible = true;
         }

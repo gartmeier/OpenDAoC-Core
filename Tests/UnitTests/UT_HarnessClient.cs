@@ -25,6 +25,22 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Dispatch_ShouldRefuseAMoveToWithAReason_WhileTheAgentIsntInTheWorld()
+        {
+            string reason = Dispatch(new MoveToPrimitive(1, 2, 3));
+
+            Assert.That(reason, Does.EndWith("isn't in the world."));
+        }
+
+        [Test]
+        public void Dispatch_ShouldRefuseAStopWithAReason_WhileTheAgentIsntInTheWorld()
+        {
+            string reason = Dispatch(new StopPrimitive());
+
+            Assert.That(reason, Does.EndWith("isn't in the world."));
+        }
+
+        [Test]
         public async Task TakeOver_ShouldConnectTheClientToTheNewMind_AndTellTheOldOneItWasReplaced()
         {
             FakeMind oldMind = new();

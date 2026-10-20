@@ -110,6 +110,8 @@ namespace DOL.GS.Agents
     [JsonPolymorphic(TypeDiscriminatorPropertyName = "name")]
     [JsonDerivedType(typeof(QuitPrimitive), "quit")]
     [JsonDerivedType(typeof(SayPrimitive), "say")]
+    [JsonDerivedType(typeof(MoveToPrimitive), "moveTo")]
+    [JsonDerivedType(typeof(StopPrimitive), "stop")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -117,6 +119,13 @@ namespace DOL.GS.Agents
 
     // Says `Text` to those nearby, as a Human typing a chat line does.
     public sealed record SayPrimitive(string Text) : Primitive;
+
+    // Runs in a straight line to the point, in global coordinates, at the maximum speed the server last told the client. A new one replaces the run in progress.
+    // Arriving, and stopping short, come as Percepts (ADR 0004).
+    public sealed record MoveToPrimitive([property: JsonRequired] float X, [property: JsonRequired] float Y, [property: JsonRequired] float Z) : Primitive;
+
+    // Ends the run in progress where the Character is. Without one it does nothing.
+    public sealed record StopPrimitive : Primitive;
 
     /// <summary>
     /// One thing the Harness tells the Mind: only what the 1.127 packet would tell a real client (ADR 0001).
@@ -129,6 +138,11 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(PlayerPositionPercept), "playerPosition")]
     [JsonDerivedType(typeof(ObjectDeletePercept), "objectDelete")]
     [JsonDerivedType(typeof(ObjectRemovePercept), "objectRemove")]
+    [JsonDerivedType(typeof(OwnPositionPercept), "ownPosition")]
+    [JsonDerivedType(typeof(MaxSpeedPercept), "maxSpeed")]
+    [JsonDerivedType(typeof(MovedPercept), "moved")]
+    [JsonDerivedType(typeof(ArrivedPercept), "arrived")]
+    [JsonDerivedType(typeof(StoppedPercept), "stopped")]
     public abstract record Percept;
 
     // A packet-library call without a projection yet. Only its name.
@@ -200,6 +214,43 @@ namespace DOL.GS.Agents
 
     // An object left the world, for example a player who quit. `ObjectType` is 2 for a player, 1 for a living NPC and 0 for anything else, a dead NPC included.
     public sealed record ObjectRemovePercept(int ObjectId, int ObjectType) : Percept;
+
+    // The server set where the Agent's Character is, at world entry. Positions are global.
+    // `ZoneXOffset` and `ZoneYOffset` are the zone's offsets in units of 8192, sent only in a dungeon and 0 elsewhere. `Region` is the region the client loads, the region's skin.
+    // `ServerName` is there only in a housing region.
+    public sealed record OwnPositionPercept(
+        float X,
+        float Y,
+        float Z,
+        int ObjectId,
+        int Heading,
+        int ZoneXOffset,
+        int ZoneYOffset,
+        int Region,
+        bool DivingEnabled,
+        bool Underwater,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string ServerName) : Percept;
+
+    // The server set how fast the Agent's Character may run, as a percentage of the base speed of 191 units per second. `WaterSpeed` is the same for swimming.
+    public sealed record MaxSpeedPercept(int MaxSpeedPercent, bool TurningDisabled, int WaterSpeed) : Percept;
+
+    // Worked out by the Harness, as the Agent's client works it out: where the Character is while it runs to the target of a `moveTo`, sent with each position update. Positions are global.
+    public sealed record MovedPercept(float X, float Y, float Z, int Heading, float Speed, float TargetX, float TargetY, float TargetZ) : Percept;
+
+    // Worked out by the Harness: a `moveTo` reached its target, and the Character stands there.
+    public sealed record ArrivedPercept(float X, float Y, float Z) : Percept;
+
+    // Worked out by the Harness: a run ended short of its target, where the Character stands now, and why.
+    public sealed record StoppedPercept(float X, float Y, float Z, StopReason Reason) : Percept;
+
+    // Why a run ended short of its target.
+    public enum StopReason
+    {
+        // A `stop` Primitive.
+        Stop,
+        // A new `moveTo`.
+        Replaced
+    }
 
     // A realm as the packets carry it, in two bits.
     public enum PacketRealm

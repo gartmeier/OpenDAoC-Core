@@ -45,6 +45,12 @@ namespace DOL.GS.Agents
             return due;
         }
 
+        // A position update went out another way, for example while running. The next idle one is due one interval after it.
+        public void OnPositionUpdate(long now)
+        {
+            _nextPositionUpdate = now + POSITION_UPDATE_INTERVAL;
+        }
+
         // Keeps to the interval like the client's own clock, however the server's ticks fall. After a stall it sends once instead of catching up.
         private static bool IsDue(ref long next, int interval, long now)
         {

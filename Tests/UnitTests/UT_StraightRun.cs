@@ -19,7 +19,7 @@ namespace DOL.GS.Tests
         private const int TICK_DURATION = 33;
 
         // Two zones side by side along X, as in a region's static layout.
-        private static readonly Region Region = WorldDoubles.Region((101, 0, 0, 65536, 65536), (102, 65536, 0, 65536, 65536));
+        private static readonly Region Region = WorldDoubles.Region(100, (101, 0, 0, 65536, 65536), (102, 65536, 0, 65536, 65536));
 
         private static readonly Vector3 Start = new(30000, 30000, 2000);
 
