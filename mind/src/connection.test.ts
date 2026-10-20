@@ -3,6 +3,7 @@ import type { ServerWebSocket } from "bun";
 import { Connection } from "./connection.ts";
 import type { MindMessage, PerceptMessage, ServerMessage } from "./protocol.ts";
 
+// Tests call `interrupt()` instead of pressing Ctrl+C, so they leave stdin alone.
 // Stands in for the server's Mind endpoint: remembers what the Mind sends and answers as the test says.
 function fakeServer(answer: (message: MindMessage, socket: ServerWebSocket<unknown>) => void) {
   const received: MindMessage[] = [];
@@ -54,7 +55,7 @@ test("sends a hello first, delivers Percepts in order, and ends as left when the
   const percepts: PerceptMessage[] = [];
   const connection = connect(server.url, { onPercept: (message) => percepts.push(message) });
 
-  const ending = await connection.run();
+  const ending = await connection.run({ handleCtrlC: false });
 
   expect(server.received[0]).toEqual({ type: "hello", token: "secret", character: "Greeen" });
   expect(percepts.map((message) => message.sequence)).toEqual([1, 2]);
@@ -69,7 +70,7 @@ test("ends as refused, with the server's reason", async () => {
     socket.close(1000);
   });
 
-  const ending = await connect(server.url).run();
+  const ending = await connect(server.url).run({ handleCtrlC: false });
 
   expect(ending).toEqual({ kind: "refused", reason: "No Character is named 'Greeen'." });
 });
@@ -85,7 +86,7 @@ test("interrupting in the world sends a quit and waits for the server to close t
     }
   });
 
-  const ending = await connect(server.url, { onEntered: (connection) => connection.interrupt() }).run();
+  const ending = await connect(server.url, { onEntered: (connection) => connection.interrupt() }).run({ handleCtrlC: false });
 
   expect(server.received[1]).toEqual({ type: "primitive", id: 1, primitive: { name: "quit" } });
   expect(ending).toEqual({ kind: "left" });
@@ -109,7 +110,7 @@ test("a Primitive's result comes back for its own request", async () => {
     },
   });
 
-  await connection.run();
+  await connection.run({ handleCtrlC: false });
 
   expect(result).toEqual({ type: "primitiveResult", id: 1, queued: false, reason: "Greeen isn't in the world." });
 });
@@ -120,7 +121,7 @@ test("ends as lost when the server drops the connection", async () => {
     socket.close(1011, "Server error");
   });
 
-  const ending = await connect(server.url).run();
+  const ending = await connect(server.url).run({ handleCtrlC: false });
 
   expect(ending).toEqual({ kind: "lost", code: 1011, reason: "Server error" });
 });

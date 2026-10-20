@@ -1,3 +1,4 @@
+import { onCtrlC } from "./ctrl-c.ts";
 import type { MindMessage, PerceptMessage, Primitive, PrimitiveResultMessage, ServerMessage } from "./protocol.ts";
 
 export interface ConnectionOptions {
@@ -51,21 +52,20 @@ export class Connection {
     return this.#entered;
   }
 
-  /** Connects, sends the hello, and runs until the connection ends. Handles Ctrl+C while it runs. */
-  run(): Promise<Ending> {
+  /** Connects, sends the hello, and runs until the connection ends. Handles Ctrl+C while it runs, unless `handleCtrlC` is false. */
+  run({ handleCtrlC = true }: { handleCtrlC?: boolean } = {}): Promise<Ending> {
     const { url, token, character, log } = this.#options;
 
     return new Promise((resolve) => {
       const socket = new WebSocket(url);
-      const onInterrupt = () => this.interrupt();
+      const stopHandlingCtrlC = handleCtrlC ? onCtrlC(() => this.interrupt()) : () => {};
       this.#socket = socket;
-      process.on("SIGINT", onInterrupt);
       log(`Connecting to ${url} to log ${character} in...`);
 
       socket.addEventListener("open", () => this.#write({ type: "hello", token, character }));
       socket.addEventListener("message", (event) => this.#receive(String(event.data)));
       socket.addEventListener("close", (event) => {
-        process.off("SIGINT", onInterrupt);
+        stopHandlingCtrlC();
 
         for (const [id, settle] of this.#pending)
           settle({ type: "primitiveResult", id, queued: false, reason: "The connection closed first." });
