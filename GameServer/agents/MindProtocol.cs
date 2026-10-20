@@ -2,6 +2,7 @@ using System;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DOL.GS.PacketHandler;
 
 namespace DOL.GS.Agents
 {
@@ -17,7 +18,9 @@ namespace DOL.GS.Agents
             // A Mind may write the discriminator anywhere in its object.
             AllowOutOfOrderMetadataProperties = true,
             // Both ends are on this machine, and apostrophes in reasons stay readable.
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            // Enums go over the wire as their names, which the generated TypeScript lists.
+            Converters = { new JsonStringEnumConverter() }
         };
 
         // Returns null for anything that isn't a message a Mind can send.
@@ -81,18 +84,27 @@ namespace DOL.GS.Agents
     /// </summary>
     [JsonPolymorphic(TypeDiscriminatorPropertyName = "name")]
     [JsonDerivedType(typeof(QuitPrimitive), "quit")]
+    [JsonDerivedType(typeof(SayPrimitive), "say")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
     public sealed record QuitPrimitive : Primitive;
+
+    // Says `Text` to those nearby, as a Human typing a chat line does.
+    public sealed record SayPrimitive(string Text) : Primitive;
 
     /// <summary>
     /// One thing the Harness tells the Mind: only what the 1.127 packet would tell a real client (ADR 0001).
     /// </summary>
     [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
     [JsonDerivedType(typeof(BarePercept), "bare")]
+    [JsonDerivedType(typeof(MessagePercept), "message")]
     public abstract record Percept;
 
     // A packet-library call without a projection yet. Only its name.
     public sealed record BarePercept(string Call) : Percept;
+
+    // A line for the chat window, or a popup: chat, system messages, combat text. The text is whole, with any speaker in it (`Vue says, "hello"`).
+    // The 1.127 packet only marks popups, so `ChatLocation` is `CL_PopupWindow` or `CL_ChatWindow`. The client picks the window for the rest by `ChatType`.
+    public sealed record MessagePercept(string Text, eChatType ChatType, eChatLoc ChatLocation) : Percept;
 }

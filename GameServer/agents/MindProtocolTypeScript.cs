@@ -10,7 +10,7 @@ namespace DOL.GS.Agents
 {
     /// <summary>
     /// Generates the Mind's TypeScript for <see cref="MindProtocol"/>'s message types, from the same JSON attributes that decide what goes over the wire.
-    /// A polymorphic C# type becomes a union of its derived types, and each derived type an interface with its discriminator as a literal.
+    /// A polymorphic C# type becomes a union of its derived types, and each derived type an interface with its discriminator as a literal. An enum becomes a union of its names.
     /// A unit test fails when the checked-in file differs from what this generates.
     /// </summary>
     public static class MindProtocolTypeScript
@@ -34,6 +34,13 @@ namespace DOL.GS.Agents
             {
                 if (!generated.Add(union))
                     continue;
+
+                if (union.IsEnum)
+                {
+                    builder.Append('\n');
+                    builder.Append("export type ").Append(union.Name).Append(" = ").Append(string.Join(" | ", Enum.GetNames(union).Select(static name => $"\"{name}\""))).Append(";\n");
+                    continue;
+                }
 
                 string discriminator = union.GetCustomAttribute<JsonPolymorphicAttribute>().TypeDiscriminatorPropertyName;
                 JsonDerivedTypeAttribute[] cases = union.GetCustomAttributes<JsonDerivedTypeAttribute>().ToArray();
@@ -72,7 +79,8 @@ namespace DOL.GS.Agents
             if (type == typeof(int) || type == typeof(long))
                 return "number";
 
-            if (type.GetCustomAttribute<JsonPolymorphicAttribute>() != null)
+            // An enum is the union of its names, as they go over the wire.
+            if (type.IsEnum || type.GetCustomAttribute<JsonPolymorphicAttribute>() != null)
             {
                 pending.Enqueue(type);
                 return type.Name;

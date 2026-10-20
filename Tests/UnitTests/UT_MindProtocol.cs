@@ -1,5 +1,6 @@
 using System.Text;
 using DOL.GS.Agents;
+using DOL.GS.PacketHandler;
 using NUnit.Framework;
 
 namespace DOL.GS.Tests
@@ -25,6 +26,14 @@ namespace DOL.GS.Tests
             Assert.That(message, Is.EqualTo(new PrimitiveMessage(7, new QuitPrimitive())));
         }
 
+        [Test]
+        public void Read_ShouldReadASayPrimitive()
+        {
+            MindMessage message = Read("""{"type":"primitive","id":8,"primitive":{"name":"say","text":"hello"}}""");
+
+            Assert.That(message, Is.EqualTo(new PrimitiveMessage(8, new SayPrimitive("hello"))));
+        }
+
         [TestCase("not json")]
         [TestCase("null")]
         [TestCase("""{"token":"secret","character":"Greeen"}""")]
@@ -40,6 +49,13 @@ namespace DOL.GS.Tests
         {
             Assert.That(Write(new PerceptMessage(3, 1250, new BarePercept("SendUpdatePoints"))),
                 Is.EqualTo("""{"type":"percept","sequence":3,"elapsedMs":1250,"percept":{"kind":"bare","call":"SendUpdatePoints"}}"""));
+        }
+
+        [Test]
+        public void Write_ShouldWriteAMessagePercept_WithItsChatTypeAndLocationAsNames()
+        {
+            Assert.That(Write(new PerceptMessage(4, 1500, new MessagePercept("Vue says, \"hello\"", eChatType.CT_Say, eChatLoc.CL_ChatWindow))),
+                Is.EqualTo("""{"type":"percept","sequence":4,"elapsedMs":1500,"percept":{"kind":"message","text":"Vue says, \"hello\"","chatType":"CT_Say","chatLocation":"CL_ChatWindow"}}"""));
         }
 
         [Test]
