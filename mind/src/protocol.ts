@@ -56,7 +56,7 @@ export interface SayPrimitive {
   text: string;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | ObjectDeletePercept | ObjectRemovePercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -129,6 +129,54 @@ export interface PlayerPositionPercept {
   endurancePercent: number;
 }
 
+export interface NpcCreatePercept {
+  kind: "npcCreate";
+  x: number;
+  y: number;
+  z: number;
+  objectId: number;
+  speed: number;
+  zSpeed: number;
+  heading: number;
+  model: number;
+  size: number;
+  level: number;
+  statue: boolean;
+  realm: PacketRealm;
+  ghost: boolean;
+  equipped: boolean;
+  torch: boolean;
+  peaceful: boolean;
+  flying: boolean;
+  pet: boolean;
+  untargetable: boolean;
+  nameHidden: boolean;
+  stealthed: boolean;
+  questIndicator: eQuestIndicator;
+  name: string;
+  guildName: string;
+}
+
+export interface ObjectUpdatePercept {
+  kind: "objectUpdate";
+  x: number;
+  y: number;
+  z: number;
+  objectId: number;
+  speed: number;
+  zSpeed: number;
+  heading: number;
+  targetId: number;
+  healthPercent: number;
+  realm: PacketRealm;
+  untargetable: boolean;
+  nameHidden: boolean;
+  underwater: boolean;
+  flying: boolean;
+  zoneId: number;
+  destination?: ObjectUpdateDestination;
+}
+
 export interface ObjectDeletePercept {
   kind: "objectDelete";
   objectId: number;
@@ -152,4 +200,13 @@ export interface PlayerCreateHorse {
   bardingColor: number;
   saddle: number;
   saddleColor: number;
+}
+
+export type eQuestIndicator = "None" | "Available" | "Finish" | "Lesson" | "Lore" | "Pending";
+
+export interface ObjectUpdateDestination {
+  x: number;
+  y: number;
+  z: number;
+  zoneId: number;
 }

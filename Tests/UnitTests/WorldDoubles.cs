@@ -1,7 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using DOL.AI;
 using DOL.Database;
 using DOL.GS.ServerRules;
 using DOL.Network;
@@ -49,6 +52,13 @@ namespace DOL.GS.Tests
             TestPlayer player = (TestPlayer) RuntimeHelpers.GetUninitializedObject(typeof(TestPlayer));
             player.Init(client, name);
             return player;
+        }
+
+        public static TestNpc Npc(string name)
+        {
+            TestNpc npc = (TestNpc) RuntimeHelpers.GetUninitializedObject(typeof(TestNpc));
+            npc.Init(name);
+            return npc;
         }
 
         private sealed class TestServer : GameServer
@@ -152,6 +162,105 @@ namespace DOL.GS.Tests
             {
                 m_id = id;
             }
+        }
+    }
+    /// <summary>
+    /// An NPC whose state a test sets directly, made without its constructor (see <see cref="WorldDoubles"/>).
+    /// Its movement component is real, so what the packet library reads from it is what the server would have. Standing still unless a test calls <see cref="Move"/>.
+    /// </summary>
+    public class TestNpc : GameNPC
+    {
+        private TestNpc() : base((ABrain) null) { }
+
+        public ushort TestHeading { get; set; }
+        public ushort TestModel { get; set; }
+        public byte DisplayLevel { get; set; }
+        public bool Visible { get; set; }
+        public bool Underwater { get; set; }
+        public bool Attacking { get; set; }
+        public byte Health { get; set; }
+        public Region Region { get; set; }
+        public eQuestIndicator QuestIndicator { get; set; }
+
+        public override ushort Heading { get => TestHeading; set => TestHeading = value; }
+        public override ushort Model { get => TestModel; set => TestModel = value; }
+        public override bool IsUnderwater => Underwater;
+        public override bool IsAttacking => Attacking;
+        public override byte HealthPercent => Health;
+        public override Region CurrentRegion { get => Region; set => Region = value; }
+
+        public new byte Size
+        {
+            set => m_size = value;
+        }
+
+        public new eFlags Flags
+        {
+            set => m_flags = value;
+        }
+
+        public new string GuildName
+        {
+            set => m_guildName = value;
+        }
+
+        public bool HasInventory
+        {
+            set => m_inventory = value ? (IGameInventory) RuntimeHelpers.GetUninitializedObject(typeof(GameNPCInventory)) : null;
+        }
+
+        public ABrain OwnBrain
+        {
+            set => m_ownBrain = value;
+        }
+
+        // On its way from where it is to `destination`, as the movement component has it between two ticks.
+        public void Move(short speed, Vector3 velocity, double horizontalVelocityForClient, Vector3 destination)
+        {
+            movementComponent.CurrentSpeed = speed;
+            movementComponent.Velocity = velocity;
+            movementComponent.Destination = destination;
+            movementComponent.DestinationForClient = destination;
+            SetComponentProperty(nameof(NpcMovementComponent.IsDestinationValid), true);
+            SetComponentProperty(nameof(NpcMovementComponent.HorizontalVelocityForClient), horizontalVelocityForClient);
+        }
+
+        public override bool IsVisibleTo(GameObject checkObject)
+        {
+            return Visible;
+        }
+
+        public override byte GetDisplayLevel(GamePlayer player)
+        {
+            return DisplayLevel;
+        }
+
+        public override eQuestIndicator GetQuestIndicator(GamePlayer player)
+        {
+            return QuestIndicator;
+        }
+
+        // Where it is, for the packet library's reads of the movement component too.
+        public void Place(int x, int y, int z)
+        {
+            (X, Y, Z) = (x, y, z);
+            typeof(MovementComponent).GetField("_ownerPosition", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(movementComponent, new Vector3(x, y, z));
+            movementComponent.PositionForClient = new Vector3(x, y, z);
+        }
+
+        internal void Init(string name)
+        {
+            m_name = name;
+            m_guildName = string.Empty;
+            typeof(GameNPC).GetField("m_brains", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new ArrayList());
+            movementComponent = new NpcMovementComponent(this);
+            ((GameLiving) this).movementComponent = movementComponent;
+            Visible = true;
+        }
+
+        private void SetComponentProperty(string name, object value)
+        {
+            typeof(NpcMovementComponent).GetProperty(name).SetValue(movementComponent, value);
         }
     }
 }

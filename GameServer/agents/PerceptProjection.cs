@@ -1,8 +1,11 @@
 using System;
 using System.Buffers.Binary;
 using System.Reflection;
+using DOL.AI.Brain;
+using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerRules;
+using DOL.Language;
 using DOL.Network;
 
 namespace DOL.GS.Agents
@@ -32,6 +35,8 @@ namespace DOL.GS.Agents
             {
                 nameof(IPacketLib.SendMessage) => Message(client, (string) args[0], (eChatType) args[1], (eChatLoc) args[2]),
                 nameof(IPacketLib.SendPlayerCreate) => PlayerCreate(client, (GamePlayer) args[0]),
+                nameof(IPacketLib.SendNPCCreate) => NpcCreate(client, (GameNPC) args[0]),
+                nameof(IPacketLib.SendObjectUpdate) => ObjectUpdate(client, (GameObject) args[0]),
                 nameof(IPacketLib.SendObjectDelete) => ObjectDelete(args[0]),
                 nameof(IPacketLib.SendObjectRemove) => ObjectRemove((GameObject) args[0]),
                 nameof(IPacketLib.SendUDP) => RawPacket(method.Name, (PacketOut) args[0], UDP_HEADER_LENGTH),
@@ -104,6 +109,217 @@ namespace DOL.GS.Agents
                 Encoded(rules.GetPlayerPrefixName(viewer, player)),
                 Encoded(rules.GetPlayerTitle(viewer, player)),
                 horse);
+        }
+
+        // Mirrors `PacketLib1124.SendNPCCreate`, which 1.125 to 1.127 don't override.
+        // A moving object (a boat, a siege weapon, a mine) gets the library's moving object create instead, which has no projection yet. The rider's own steed and, on a PvP server, a pet's guild ID are packets of their own, written inside the library. They never reach the Agent.
+        private static Percept NpcCreate(GameClient client, GameNPC npc)
+        {
+            GamePlayer viewer = client.Player;
+
+            if (npc == null || viewer == null || !npc.IsVisibleTo(viewer))
+                return null;
+
+            // Mines aren't shown to enemy players.
+            if (npc is GameMine mine && GameServer.ServerRules.IsAllowedToAttack(mine.Owner, viewer, true))
+                return null;
+
+            if (npc is GameMovingObject)
+                return new BarePercept(nameof(IPacketLib.SendMovingObjectCreate));
+
+            short speed = 0;
+            ushort speedZ = 0;
+
+            if (npc.IsMoving && !npc.IsAtDestination)
+            {
+                speed = npc.CurrentSpeed;
+                speedZ = (ushort) npc.movementComponent.Velocity.Z;
+            }
+
+            byte level = npc.GetDisplayLevel(viewer);
+            bool gm = client.Account.PrivLevel > 1;
+            eQuestIndicator questIndicator = npc.GetQuestIndicator(viewer);
+            string add = string.Empty;
+
+            // A GM sees the hiding flags as name suffixes instead.
+            if ((npc.Flags & GameNPC.eFlags.CANTTARGET) != 0 && gm)
+                add += "-DOR";
+
+            if ((npc.Flags & GameNPC.eFlags.DONTSHOWNAME) != 0 && gm)
+                add += "-NON";
+
+            string name = npc.Name ?? string.Empty;
+            string guildName = npc.GuildName ?? string.Empty;
+
+            if (LanguageMgr.GetTranslation(client, npc) is DbLanguageGameNpc translation)
+            {
+                if (!string.IsNullOrEmpty(translation.Name))
+                    name = translation.Name;
+
+                if (!string.IsNullOrEmpty(translation.GuildName))
+                    guildName = translation.GuildName;
+            }
+
+            int maxNameLength = 47 - add.Length - 2;
+
+            if (name.Length > maxNameLength)
+                name = name[..maxNameLength];
+
+            if (add.Length > 0)
+                name = $"[{name}]{add}";
+
+            if (guildName.Length > 47)
+                guildName = guildName[..47];
+
+            return new NpcCreatePercept(
+                X: (int) (uint) npc.X,
+                Y: (int) (uint) npc.Y,
+                Z: (ushort) npc.Z,
+                ObjectId: npc.ObjectID,
+                Speed: (ushort) speed,
+                ZSpeed: speedZ,
+                Heading: npc.Heading,
+                Model: npc.Model,
+                Size: npc.Size,
+                Level: level & 0x7F,
+                Statue: (npc.Flags & GameNPC.eFlags.STATUE) != 0,
+                Realm: (PacketRealm) (GameServer.ServerRules.GetLivingRealm(viewer, npc) & 0x03),
+                Ghost: (npc.Flags & GameNPC.eFlags.GHOST) != 0,
+                Equipped: npc.Inventory != null,
+                Torch: (npc.Flags & GameNPC.eFlags.TORCH) != 0,
+                Peaceful: (npc.Flags & GameNPC.eFlags.PEACE) != 0,
+                Flying: (npc.Flags & GameNPC.eFlags.FLYING) != 0,
+                Pet: npc.Brain is IControlledBrain,
+                Untargetable: (npc.Flags & GameNPC.eFlags.CANTTARGET) != 0 && !gm,
+                NameHidden: (npc.Flags & GameNPC.eFlags.DONTSHOWNAME) != 0 && !gm,
+                Stealthed: npc.IsStealthed,
+                QuestIndicator: questIndicator switch
+                {
+                    eQuestIndicator.Available or eQuestIndicator.Finish or eQuestIndicator.Lesson or eQuestIndicator.Lore or eQuestIndicator.Pending => questIndicator,
+                    _ => eQuestIndicator.None
+                },
+                Name: Encoded(name),
+                GuildName: Encoded(guildName));
+        }
+
+        // Mirrors `PacketLib168.SendObjectUpdate`, which no later library overrides. Sent for NPCs, and for other objects the server updates the same way.
+        // The packet carries positions relative to the zone they're in, and the zone's skin ID. They're turned back into global ones with that zone's offsets (ADR 0006), so the truncation to 16 bits the packet does stays in.
+        private static ObjectUpdatePercept ObjectUpdate(GameClient client, GameObject gameObject)
+        {
+            GamePlayer viewer = client.Player;
+
+            if (gameObject == null || viewer == null || !viewer.IsVisibleTo(gameObject))
+                return null;
+
+            Zone zone = gameObject.CurrentZone;
+
+            if (zone == null)
+                return null;
+
+            ushort xOffsetInZone;
+            ushort yOffsetInZone;
+            ushort z;
+            ushort speed = 0;
+            ushort heading;
+            int targetId = 0;
+            byte flags = 0;
+            ObjectUpdateDestination destination = null;
+
+            if (gameObject is not GameNPC npc)
+            {
+                xOffsetInZone = (ushort) (gameObject.X - zone.XOffset);
+                yOffsetInZone = (ushort) (gameObject.Y - zone.YOffset);
+                z = (ushort) gameObject.Z;
+                heading = gameObject.Heading;
+            }
+            else
+            {
+                xOffsetInZone = (ushort) (npc.movementComponent.PositionForClient.X - zone.XOffset);
+                yOffsetInZone = (ushort) (npc.movementComponent.PositionForClient.Y - zone.YOffset);
+                z = (ushort) npc.movementComponent.PositionForClient.Z;
+                flags = (byte) (GameServer.ServerRules.GetLivingRealm(viewer, npc) << 6);
+
+                if (client.Account.PrivLevel < 2)
+                {
+                    if ((npc.Flags & GameNPC.eFlags.CANTTARGET) != 0)
+                        flags |= 0x01;
+
+                    if ((npc.Flags & GameNPC.eFlags.DONTSHOWNAME) != 0)
+                        flags |= 0x02;
+                }
+
+                if ((npc.Flags & GameNPC.eFlags.STATUE) != 0)
+                    flags |= 0x01;
+
+                if (npc.IsUnderwater)
+                    flags |= 0x10;
+
+                if ((npc.Flags & GameNPC.eFlags.FLYING) != 0 || npc.movementComponent.ShouldForceFlyingFlag)
+                    flags |= 0x20;
+
+                if (!npc.IsMoving || npc.IsAtDestination)
+                    heading = npc.Heading;
+                else
+                {
+                    speed = (ushort) npc.movementComponent.HorizontalVelocityForClient;
+                    int zSpeed = (int) (npc.movementComponent.Velocity.Z / 4);
+
+                    if (zSpeed < 0)
+                    {
+                        zSpeed = -zSpeed;
+                        speed |= 0x8000;
+                    }
+
+                    speed |= (ushort) ((zSpeed & 0x70) << 8);
+                    heading = (ushort) (((zSpeed & 0xF) << 12) | npc.Heading);
+
+                    if (npc.IsDestinationValid)
+                    {
+                        Zone targetZone = npc.CurrentRegion.GetZone((int) npc.movementComponent.DestinationForClient.X, (int) npc.movementComponent.DestinationForClient.Y);
+
+                        if (targetZone != null)
+                        {
+                            destination = new(
+                                (ushort) (npc.movementComponent.DestinationForClient.X - targetZone.XOffset) + targetZone.XOffset,
+                                (ushort) (npc.movementComponent.DestinationForClient.Y - targetZone.YOffset) + targetZone.YOffset,
+                                (ushort) npc.movementComponent.DestinationForClient.Z,
+                                targetZone.ZoneSkinID & 0x1FF);
+                        }
+                    }
+                }
+
+                // The real target only while the NPC stands within reach of it, a placeholder while it attacks from anywhere else.
+                if (npc.IsAttacking && !npc.IsTurningDisabled)
+                {
+                    GameObject target = npc.TargetObject;
+
+                    if (target?.ObjectState is GameObject.eObjectState.Active && npc.CurrentSpeed == 0 && npc.IsWithinRadius(target, npc.attackComponent.AttackRange))
+                        targetId = target.ObjectID;
+                    else
+                        targetId = 65535;
+                }
+            }
+
+            // The vertical speed is split over the top bits of the speed and heading fields, with its sign at the very top of the speed's.
+            int verticalSpeed = (speed >> 8 & 0x70) | heading >> 12;
+
+            return new ObjectUpdatePercept(
+                X: xOffsetInZone + zone.XOffset,
+                Y: yOffsetInZone + zone.YOffset,
+                Z: z,
+                ObjectId: gameObject.ObjectID,
+                Speed: speed & 0x0FFF,
+                ZSpeed: (speed & 0x8000) != 0 ? -verticalSpeed : verticalSpeed,
+                Heading: heading & 0x0FFF,
+                TargetId: targetId,
+                HealthPercent: gameObject is GameLiving living ? living.HealthPercent : 0,
+                Realm: (PacketRealm) (flags >> 6),
+                Untargetable: (flags & 0x01) != 0,
+                NameHidden: (flags & 0x02) != 0,
+                Underwater: (flags & 0x10) != 0,
+                Flying: (flags & 0x20) != 0,
+                ZoneId: zone.ZoneSkinID & 0x1FF,
+                Destination: destination);
         }
 
         // Mirrors `PacketLib168.SendObjectDelete`, both overloads. The packet's other field is always 1.
