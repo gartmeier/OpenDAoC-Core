@@ -1,6 +1,10 @@
 # The Mind is a separate TypeScript process over WebSocket
 
-The Harness stays in-process C#, but the Mind runs as a separate TypeScript process, one WebSocket + JSON connection per Agent, and lives in this repo. This keeps LLM latency and LLM-written Tactic code away from the game loop (bad code can't stall or crash the server), lets the Mind be restarted and iterated on without a server reboot, and uses a language LLMs write fluently and that can be sandboxed. Type safety is kept across the boundary by generating the TypeScript types for Primitives and Percepts from the C# definitions, which is why both sides share one repo.
+The Harness stays in-process C#, but the Mind runs as a separate TypeScript process, one WebSocket + JSON connection per Agent, and lives in this repo. This keeps LLM latency and LLM-written Tactic code away from the game loop (bad code can't stall or crash the server), lets the Mind be restarted and iterated on without a server reboot, and uses a language LLMs write fluently. Type safety is kept across the boundary by generating the TypeScript types for Primitives and Percepts from the C# definitions, which is why both sides share one repo.
+
+## Runtime
+
+The Mind runs on Bun, following rs-sdk, which already drives an MMO emulator from TypeScript for LLM agents. Bun has no permission model, so nothing sandboxes LLM-written Tactics for now. That is decided separately before milestone 5, when an LLM first writes code that runs.
 
 ## Considered Options
 

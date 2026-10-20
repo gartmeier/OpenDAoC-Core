@@ -27,7 +27,7 @@ _Avoid_: player (when contrasting with Agents)
 A Human logging into an Agent's Account; the Agent is not playing while possessed.
 
 **Harness**:
-The part of an Agent that lives inside the server and stands in for the game client.
+The part of an Agent that lives inside the server and stands in for the game client, including everything a client does on its own, such as keeping the connection alive.
 _Avoid_: body, bot client
 
 **Mind**:
@@ -35,7 +35,7 @@ The part of an Agent that lives outside the server and makes its decisions.
 _Avoid_: brain
 
 **Primitive**:
-One entry in the Harness's fixed vocabulary of things an Agent can do, such as moving, attacking or saying something.
+One entry in the Harness's fixed vocabulary of things an Agent decides to do, such as moving, attacking or saying something.
 _Avoid_: command, action, tool
 
 **Percept**:
