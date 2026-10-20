@@ -41,7 +41,8 @@ namespace DOL.GS.Agents
         }
 
         // The Agent's Mind connection, which is the client's network connection (ADR 0005). Told every call the server makes on the packet library.
-        public MindLink Mind { get; }
+        // Changes only on the game loop, when another Mind takes over.
+        public MindLink Mind { get; private set; }
 
         // Playing, with the Character added to the world.
         public bool IsInWorld => ClientState is eClientState.Playing && Player?.ObjectState is GameObject.eObjectState.Active;
@@ -90,11 +91,42 @@ namespace DOL.GS.Agents
         }
 
         /// <summary>
-        /// Queues the packet a real client sends for the Primitive, for the next client tick (ADR 0002). Called on the game loop.
+        /// Connects the client to a new Mind in place of its live one, without a logout: the Character stays where it is, and liveness carries on through the new connection.
+        /// The old Mind is told it was replaced, and its connection closes. The new one hears `entered` straight away if the Character is in the world, or once world entry completes.
+        /// Returns why the new Mind can't take over, or null once it has. A client whose Mind is lost, which goes or has gone linkdead, or which is leaving the world, can't be taken over: it's gone soon, and the Character can log in again then.
+        /// Called on the game loop.
+        /// </summary>
+        public string TakeOver(MindLink mind)
+        {
+            string name = Player?.Name ?? CharacterName;
+
+            if (!Mind.IsConnected || _mindLost || ClientState is eClientState.Linkdead || Player?.IsLinkDeathTimerRunning is true)
+                return $"{name} is linkdead: its last Mind's connection was lost. The server removes the Character once its link-death window has run out, and a new Mind can log in after that.";
+
+            if (_worldExit != null || ClientState is eClientState.Disconnected)
+                return $"{name} is leaving the world. A new Mind can log in once the server has disconnected it.";
+
+            MindLink old = Mind;
+            Mind = mind;
+            old.Replace();
+
+            // Before any call the server makes from here on, so the new Mind hears it in order.
+            if (_worldEntry == null && IsInWorld)
+                mind.Send(new EnteredMessage());
+
+            return null;
+        }
+
+        /// <summary>
+        /// Queues the packet a real client sends for the Primitive, for the next client tick (ADR 0002). `from` is the Mind that sent it. Called on the game loop.
         /// Returns why it wasn't queued, or null if it was. Whether the server then accepts it isn't known here (ADR 0004).
         /// </summary>
-        public string Dispatch(Primitive primitive)
+        public string Dispatch(Primitive primitive, MindLink from)
         {
+            // A Mind can send Primitives before it hears that it was replaced.
+            if (from != Mind)
+                return $"Another Mind has taken over {CharacterName}.";
+
             if (!IsInWorld)
                 return $"{CharacterName} isn't in the world.";
 
