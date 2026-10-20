@@ -1,4 +1,5 @@
 // The echo Mind: logs an Agent's Character in, prints every Percept it gets and says back what others say next to it, until the Agent leaves the world. Ctrl+C quits.
+// Every Percept also goes to the Agent's Surroundings, which the printed lines name players from.
 // Usage: bun mind/agent.ts <character>
 // The server address and token come from mind/.env (see mind/.env.example).
 
@@ -6,6 +7,7 @@ import { Connection } from "./src/connection.ts";
 import { echo } from "./src/echo.ts";
 import { loadEnvFile } from "./src/env.ts";
 import type { Percept, PerceptMessage } from "./src/protocol.ts";
+import { type Position, Surroundings } from "./src/surroundings.ts";
 
 const character = Bun.argv[2];
 
@@ -23,9 +25,12 @@ if (!token) {
   process.exit(2);
 }
 
+const surroundings = new Surroundings();
+
 // Status lines go to stderr, so stdout holds only Percepts.
 const connection = new Connection({ url, token, character, log: (line) => console.error(line) }, {
   onPercept: (message, connection) => {
+    surroundings.perceive(message);
     console.log(formatPercept(message));
     const reply = echo(message.percept, character);
 
@@ -59,13 +64,13 @@ function describe(percept: Percept): string {
     case "playerCreate":
       return `playerCreate #${percept.objectId} ${percept.name}\t${at(percept)} heading ${percept.heading}`;
     case "playerPosition":
-      return `playerPosition #${percept.objectId}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} zone ${percept.zoneId}`;
+      return `playerPosition #${percept.objectId} ${surroundings.player(percept.objectId)?.name ?? "(unknown)"}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} zone ${percept.zoneId}`;
     case "objectDelete":
       return `objectDelete #${percept.objectId}`;
   }
 }
 
 // As `/gloc` prints a position.
-function at({ x, y, z }: { x: number; y: number; z: number }): string {
+function at({ x, y, z }: Position): string {
   return `X:${x} Y:${y} Z:${z}`;
 }
