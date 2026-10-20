@@ -14,7 +14,7 @@ namespace DOL.GS.Agents
     /// <summary>
     /// Stands in for the game client of an Agent's Character: a client without a socket.
     /// Inbound packets come from a queue instead of the network and go through the normal packet processor, at the same point in the client tick as a Human's.
-    /// Outbound packets go to <see cref="HarnessPacketLib"/>, which records them in the Agent's trace.
+    /// Outbound packets go to <see cref="HarnessPacketLib"/>, which records them in the Agent's trace and tells the Agent's Mind.
     /// </summary>
     public sealed class HarnessClient : GameClient
     {
@@ -33,8 +33,16 @@ namespace DOL.GS.Agents
         private Liveness _liveness;
         private WorldExit _worldExit;
         private AgentTrace _trace;
+        private bool _mindLost;
 
-        public HarnessClient() : base(null) { }
+        // `mind` is null for a client that `/agent login` logs in, which keeps itself alive without a Mind.
+        public HarnessClient(MindLink mind = null) : base(null)
+        {
+            Mind = mind;
+        }
+
+        // The Agent's Mind connection, which is the client's network connection (ADR 0005). Told every call the server makes on the packet library.
+        public MindLink Mind { get; }
 
         // Playing, with the Character added to the world.
         public bool IsInWorld => ClientState is eClientState.Playing && Player?.ObjectState is GameObject.eObjectState.Active;
@@ -82,6 +90,28 @@ namespace DOL.GS.Agents
             return Disconnected.WaitAsync(TimeSpan.FromMilliseconds(QUIT_TIME_LIMIT));
         }
 
+        /// <summary>
+        /// Queues the packet a real client sends for the Primitive, for the next client tick (ADR 0002). Called on the game loop.
+        /// Returns why it wasn't queued, or null if it was. Whether the server then accepts it isn't known here (ADR 0004).
+        /// </summary>
+        public string Dispatch(Primitive primitive)
+        {
+            if (!IsInWorld)
+                return $"{CharacterName} isn't in the world.";
+
+            ClientPacket packet = primitive switch
+            {
+                QuitPrimitive => ClientPackets1127.Quit(),
+                _ => null
+            };
+
+            if (packet == null)
+                return $"The Harness has no Primitive {primitive?.GetType().Name ?? "null"}.";
+
+            Enqueue(packet);
+            return null;
+        }
+
         // The server told the client its Character has quit. Called on the game loop, before the server has finished removing and saving the Character.
         public void OnPlayerQuit(bool totalOut)
         {
@@ -118,24 +148,43 @@ namespace DOL.GS.Agents
                 return;
             }
 
+            // A lost Mind is a closed connection (ADR 0005). While Playing, the server takes that as a link death.
+            if (Mind?.IsConnected is false && !_mindLost)
+            {
+                _mindLost = true;
+
+                if (_worldEntry == null)
+                {
+                    Disconnect();
+                    return;
+                }
+
+                // World entry gives up the connection itself, once the server isn't loading the Character any more.
+                _worldEntry.Fail("before its Mind disconnected");
+            }
+
             switch (_worldEntry?.Tick(this, GameLoop.GameLoopTime))
             {
                 case WorldEntry.Progress.Entered:
                 {
                     _worldEntry = null;
                     _liveness = new(GameLoop.GameLoopTime);
+                    // Before any call the server makes from here on, so the Mind hears it in order.
+                    Mind?.Send(new EnteredMessage());
                     break;
                 }
                 case WorldEntry.Progress.GaveUp:
                 {
                     // A real client giving up closes its connection. Short of Playing, the server takes that as a disconnect. World entry only gives up while Playing if the Character isn't in the world, and then a link death comes first.
+                    Mind?.Refuse(WorldEntryFailure());
                     _worldEntry = null;
                     Disconnect();
                     return;
                 }
             }
 
-            if (_liveness != null)
+            // Only while a Mind is connected, as only a running client keeps its connection alive.
+            if (_liveness != null && !_mindLost)
                 StayAlive(_liveness.Tick(GameLoop.GameLoopTime));
 
             while (_inbound.TryDequeue(out ClientPacket clientPacket))
@@ -179,9 +228,22 @@ namespace DOL.GS.Agents
         {
             GameEventMgr.RemoveAllHandlersForObject(this);
             // For example when the Character couldn't be added to the world.
-            _worldEntry?.Fail("before the server disconnected its Harness client");
+            if (_worldEntry != null)
+            {
+                _worldEntry.Fail("before the server disconnected its Harness client");
+                Mind?.Refuse(WorldEntryFailure());
+            }
+
+            // A normal close: the Agent has left the world.
+            Mind?.Close();
             _trace.Dispose();
             _disconnected.TrySetResult();
+        }
+
+        // Why world entry failed, once it has.
+        private string WorldEntryFailure()
+        {
+            return _worldEntry.Completion.Exception?.InnerException?.Message;
         }
     }
 }
