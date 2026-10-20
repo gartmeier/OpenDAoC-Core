@@ -112,6 +112,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(SayPrimitive), "say")]
     [JsonDerivedType(typeof(MoveToPrimitive), "moveTo")]
     [JsonDerivedType(typeof(StopPrimitive), "stop")]
+    [JsonDerivedType(typeof(FacePrimitive), "face")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -126,6 +127,10 @@ namespace DOL.GS.Agents
 
     // Ends the run in progress where the Character is. Without one it does nothing.
     public sealed record StopPrimitive : Primitive;
+
+    // Turns on the spot to `Heading`, 0 to 4095, at once. Heading 0 points towards +Y and grows clockwise, as the server measures headings.
+    // During a run it does nothing: the run's own heading overtakes it, and the run goes on.
+    public sealed record FacePrimitive([property: JsonRequired] int Heading) : Primitive;
 
     /// <summary>
     /// One thing the Harness tells the Mind: only what the 1.127 packet would tell a real client (ADR 0001).

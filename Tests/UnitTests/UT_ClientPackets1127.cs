@@ -204,7 +204,7 @@ namespace DOL.GS.Tests
             Assert.That(ClientPackets1127.CharacterIndex(accountSlot), Is.EqualTo(expected));
         }
 
-        private static void AssertMatches(ClientPacket built, CapturedPacket captured, params int[] maskedDataOffsets)
+        internal static void AssertMatches(ClientPacket built, CapturedPacket captured, params int[] maskedDataOffsets)
         {
             CapturedPacket wire = new(0, CaptureTransport.Tcp, captured.ClientState, built.ToWire(captured.Sequence, captured.SessionId));
 
