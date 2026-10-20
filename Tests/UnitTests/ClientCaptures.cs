@@ -17,7 +17,10 @@ namespace DOL.GS.Tests
         // A Character already in the world saying one line.
         public const string SAY = "say-hello";
 
-        public static readonly string[] All = [.. Names, SAY];
+        // The same Character running, strafing, turning on the spot and stopping.
+        public const string MOVEMENT = "run-turn-stop";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT];
 
         public static CapturedPacket[] Load(string capture)
         {
