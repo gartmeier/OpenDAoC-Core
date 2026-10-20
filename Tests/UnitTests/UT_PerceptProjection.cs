@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
@@ -17,7 +18,8 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendPlayerCreate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerCreate));
         private static readonly MethodInfo SendObjectDeleteObject = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectDelete), [typeof(GameObject)]);
         private static readonly MethodInfo SendObjectDeleteId = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectDelete), [typeof(ushort)]);
-        private static readonly MethodInfo SendUDP = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUDP));
+        private static readonly MethodInfo SendObjectRemove = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectRemove));
+        private static readonly MethodInfo SendUDP =typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUDP));
         private static readonly MethodInfo SendTCP = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendTCP));
 
         private Action _restoreServer;
@@ -207,6 +209,26 @@ namespace DOL.GS.Tests
 
             Assert.That(PerceptProjection.Project(Playing(), SendObjectDeleteObject, [vue]), Is.EqualTo(new ObjectDeletePercept(0x0123)));
             Assert.That(PerceptProjection.Project(Playing(), SendObjectDeleteId, [(ushort) 0x0456]), Is.EqualTo(new ObjectDeletePercept(0x0456)));
+        }
+
+        // A player who quits leaves the world through `GameObject.RemoveFromWorld`.
+        [Test]
+        public void Project_ShouldGiveTheObjectIdAndPlayerType_ForTheObjectRemoveCallOnAPlayer()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            TestPlayer vue = PlayerIn(zone, "Vue");
+            vue.ObjectID = 0x0123;
+
+            Assert.That(PerceptProjection.Project(Playing(), SendObjectRemove, [vue]), Is.EqualTo(new ObjectRemovePercept(0x0123, 2)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheOtherType_ForTheObjectRemoveCallOnAnythingButAPlayerOrNpc()
+        {
+            GameStaticItem item = (GameStaticItem) RuntimeHelpers.GetUninitializedObject(typeof(GameStaticItem));
+            item.ObjectID = 0x0456;
+
+            Assert.That(PerceptProjection.Project(Playing(), SendObjectRemove, [item]), Is.EqualTo(new ObjectRemovePercept(0x0456, 0)));
         }
 
         // The server's own 1.127 builder, fed back through the decoder, gives back what went in.

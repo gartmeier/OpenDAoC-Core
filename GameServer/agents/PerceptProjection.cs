@@ -33,6 +33,7 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendMessage) => Message(client, (string) args[0], (eChatType) args[1], (eChatLoc) args[2]),
                 nameof(IPacketLib.SendPlayerCreate) => PlayerCreate(client, (GamePlayer) args[0]),
                 nameof(IPacketLib.SendObjectDelete) => ObjectDelete(args[0]),
+                nameof(IPacketLib.SendObjectRemove) => ObjectRemove((GameObject) args[0]),
                 nameof(IPacketLib.SendUDP) => RawPacket(method.Name, (PacketOut) args[0], UDP_HEADER_LENGTH),
                 nameof(IPacketLib.SendTCP) => RawPacket(method.Name, (PacketOut) args[0], TCP_HEADER_LENGTH),
                 _ => new BarePercept(method.Name)
@@ -114,6 +115,22 @@ namespace DOL.GS.Agents
                 ushort objectId => new(objectId),
                 _ => null
             };
+        }
+
+        // Mirrors `PacketLib168.SendObjectRemove`, which no later library overrides. `GameObject.RemoveFromWorld` calls it, for a player who quits among others.
+        private static ObjectRemovePercept ObjectRemove(GameObject gameObject)
+        {
+            if (gameObject == null)
+                return null;
+
+            int objectType = gameObject switch
+            {
+                GamePlayer => 2,
+                GameNPC npc => npc.Health > 0 ? 1 : 0,
+                _ => 0
+            };
+
+            return new(gameObject.ObjectID, objectType);
         }
 
         // A packet the server built itself (ADR 0001). Only the 1.127 player position is decoded, mirroring `PlayerPositionUpdateHandler.CreateOutPak1127`.

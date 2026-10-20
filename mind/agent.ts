@@ -67,6 +67,8 @@ function describe(percept: Percept): string {
       return `playerPosition #${percept.objectId} ${surroundings.player(percept.objectId)?.name ?? "(unknown)"}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} zone ${percept.zoneId}`;
     case "objectDelete":
       return `objectDelete #${percept.objectId}`;
+    case "objectRemove":
+      return `objectRemove #${percept.objectId} type ${percept.objectType}`;
   }
 }
 

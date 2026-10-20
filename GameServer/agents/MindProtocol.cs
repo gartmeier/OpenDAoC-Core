@@ -128,6 +128,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(PlayerCreatePercept), "playerCreate")]
     [JsonDerivedType(typeof(PlayerPositionPercept), "playerPosition")]
     [JsonDerivedType(typeof(ObjectDeletePercept), "objectDelete")]
+    [JsonDerivedType(typeof(ObjectRemovePercept), "objectRemove")]
     public abstract record Percept;
 
     // A packet-library call without a projection yet. Only its name.
@@ -194,8 +195,11 @@ namespace DOL.GS.Agents
         int ManaPercent,
         int EndurancePercent) : Percept;
 
-    // An object went out of view, or is gone.
+    // An object went out of view, for example a player who stealthed.
     public sealed record ObjectDeletePercept(int ObjectId) : Percept;
+
+    // An object left the world, for example a player who quit. `ObjectType` is 2 for a player, 1 for a living NPC and 0 for anything else, a dead NPC included.
+    public sealed record ObjectRemovePercept(int ObjectId, int ObjectType) : Percept;
 
     // A realm as the packets carry it, in two bits.
     public enum PacketRealm

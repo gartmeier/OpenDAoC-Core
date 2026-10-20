@@ -56,7 +56,7 @@ export interface SayPrimitive {
   text: string;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | ObjectDeletePercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | ObjectDeletePercept | ObjectRemovePercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -132,6 +132,12 @@ export interface PlayerPositionPercept {
 export interface ObjectDeletePercept {
   kind: "objectDelete";
   objectId: number;
+}
+
+export interface ObjectRemovePercept {
+  kind: "objectRemove";
+  objectId: number;
+  objectType: number;
 }
 
 export type eChatType = "CT_Say" | "CT_Send" | "CT_Group" | "CT_Guild" | "CT_Broadcast" | "CT_Emote" | "CT_Help" | "CT_Chat" | "CT_Advise" | "CT_Officer" | "CT_Alliance" | "CT_BattleGroup" | "CT_BattleGroupLeader" | "CT_Staff" | "CT_Spell" | "CT_YouHit" | "CT_System" | "CT_Items" | "CT_Merchant" | "CT_YourDeath" | "CT_OthersDeath" | "CT_OthersCombat" | "CT_ResistsChanged" | "CT_SpellExpires" | "CT_Loot" | "CT_SpellResisted" | "CT_Important" | "CT_Damaged" | "CT_Action" | "CT_SpellPulse" | "CT_KilledByAlb" | "CT_KilledByMid" | "CT_KilledByHib" | "CT_LookingForGroup" | "CT_Trade" | "CT_SocialInterface" | "CT_ScreenCenter" | "CT_ScreenCenterSmaller" | "CT_ScreenCenter_And_CT_System" | "CT_ScreenCenterSmaller_And_CT_System";

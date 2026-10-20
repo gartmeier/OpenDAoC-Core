@@ -112,6 +112,16 @@ test("an object delete forgets the player, and only that one", () => {
   expect(surroundings.players.map((player) => player.name)).toEqual(["Bob"]);
 });
 
+test("an object remove forgets the player, as when it quits", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, playerCreate(0x123, "Vue", 531234, 478901, 2345)));
+  surroundings.perceive(message(1600, playerCreate(0x124, "Bob", 531000, 478000, 2345)));
+  surroundings.perceive(message(3000, { kind: "objectRemove", objectId: 0x123, objectType: 2 }));
+
+  expect(surroundings.named("Vue")).toBeUndefined();
+  expect(surroundings.players.map((player) => player.name)).toEqual(["Bob"]);
+});
+
 test("a player created again is known afresh", () => {
   const surroundings = new Surroundings();
   surroundings.perceive(message(1500, playerCreate(0x123, "Vue", 531234, 478901, 2345)));

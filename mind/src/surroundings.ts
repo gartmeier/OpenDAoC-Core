@@ -22,7 +22,7 @@ export interface KnownPlayer {
 
 /**
  * What the Agent currently believes is around it, built only from Percepts (see `CONTEXT.md`).
- * A player is known from its create Percept until its delete Percept. Nothing is forgotten by time, because the server doesn't send a player who stands still again.
+ * A player is known from its create Percept until a delete Percept (it went out of view) or a remove Percept (it left the world, for example by quitting). Nothing is forgotten by time, because the server doesn't send a player who stands still again.
  * A position Percept for a player it doesn't know is ignored: without its create, the Agent doesn't know who it is.
  */
 export class Surroundings {
@@ -56,6 +56,7 @@ export class Surroundings {
         break;
       }
       case "objectDelete":
+      case "objectRemove":
         this.#players.delete(percept.objectId);
         break;
     }
