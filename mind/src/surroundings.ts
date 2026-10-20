@@ -82,3 +82,17 @@ export class Surroundings {
 export function distance(from: Position, to: Position): number {
   return Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
 }
+
+/**
+ * The heading, 0 to 4095, that faces `to` from `from`, as the server measures headings: heading `h` points along (−sin θ, cos θ) with θ = `h` × 2π / 4096, so 0 points towards +Y.
+ * Only X and Y count. Nothing faces a point straight above, below or at `from`.
+ */
+export function headingTowards(from: Position, to: Position): number | undefined {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+
+  if (dx === 0 && dy === 0)
+    return undefined;
+
+  return (Math.round((Math.atan2(-dx, dy) * 4096) / (2 * Math.PI)) + 4096) % 4096;
+}

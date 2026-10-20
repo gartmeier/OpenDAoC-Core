@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { ObjectDeletePercept, Percept, PerceptMessage, PlayerCreatePercept, PlayerPositionPercept } from "./protocol.ts";
-import { distance, Surroundings } from "./surroundings.ts";
+import { distance, headingTowards, Surroundings } from "./surroundings.ts";
 
 function message(elapsedMs: number, percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs, percept };
@@ -181,4 +181,26 @@ test("the distance to a player follows the player as it moves", () => {
 
   surroundings.perceive(message(1600, playerPosition(0x123, 531100, 478901, 2345, 0, 191)));
   expect(distance(here, surroundings.named("Vue")!.position)).toBe(100);
+});
+
+test("heading 0 faces +Y and a quarter turn faces -X, as the server measures headings", () => {
+  const here = { x: 1000, y: 2000, z: 0 };
+
+  expect(headingTowards(here, { x: 1000, y: 2500, z: 0 })).toBe(0);
+  expect(headingTowards(here, { x: 500, y: 2000, z: 0 })).toBe(1024);
+  expect(headingTowards(here, { x: 1000, y: 1500, z: 0 })).toBe(2048);
+  expect(headingTowards(here, { x: 1500, y: 2000, z: 0 })).toBe(3072);
+  expect(headingTowards(here, { x: 1001, y: 2500, z: 0 })).toBe(4095);
+});
+
+test("the heading towards a point is the one the captured client ran along towards it", () => {
+  // The captured first run went (-29.3, -28.3) per update at heading 1523 (see the fixtures README).
+  const heading = headingTowards({ x: 0, y: 0, z: 0 }, { x: -29.3 * 20, y: -28.3 * 20, z: 0 })!;
+
+  expect(Math.abs(heading - 1523)).toBeLessThanOrEqual(2);
+});
+
+test("only X and Y count towards a heading, and nothing faces a point straight above or below", () => {
+  expect(headingTowards({ x: 0, y: 0, z: 0 }, { x: 0, y: 100, z: 5000 })).toBe(0);
+  expect(headingTowards({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 100 })).toBeUndefined();
 });
