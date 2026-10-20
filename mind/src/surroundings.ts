@@ -1,4 +1,8 @@
 import type { PerceptMessage } from "./protocol.ts";
+import { ownPositionIn } from "./self.ts";
+
+/** How far, in game units, the Agent's Character sees objects (`WorldMgr.VISIBILITY_DISTANCE` in the server). Static knowledge, as the client has it. */
+export const VISIBILITY_DISTANCE = 6000;
 
 /** A point in global coordinates. */
 export interface Position {
@@ -22,13 +26,24 @@ export interface KnownPlayer {
 
 /**
  * What the Agent currently believes is around it, built only from Percepts (see `CONTEXT.md`).
- * A player is known from its create Percept until a delete Percept (it went out of view) or a remove Percept (it left the world, for example by quitting). Nothing is forgotten by time, because the server doesn't send a player who stands still again.
+ * A player is known from its create Percept until a delete Percept (it went out of view) or a remove Percept (it left the world, for example by quitting).
+ * Whenever the Agent's own Character moves, by running or by the server moving it, everything farther than the visibility distance from it is forgotten too, as the client forgets it: the server doesn't always say.
+ * Nothing is forgotten by time, because the server doesn't send a player who stands still again.
  * A position Percept for a player it doesn't know is ignored: without its create, the Agent doesn't know who it is.
  */
 export class Surroundings {
   readonly #players = new Map<number, KnownPlayer>();
+  // Where the Agent's own Character is, from the same Percepts Self takes it from.
+  #ownPosition: Position | undefined;
 
   perceive({ elapsedMs, percept }: PerceptMessage): void {
+    const ownPosition = ownPositionIn(percept);
+
+    if (ownPosition && !samePosition(ownPosition, this.#ownPosition)) {
+      this.#ownPosition = ownPosition;
+      this.#forgetOutOfView(ownPosition);
+    }
+
     switch (percept.kind) {
       case "playerCreate":
         this.#players.set(percept.objectId, {
@@ -76,6 +91,17 @@ export class Surroundings {
     const wanted = name.toLowerCase();
     return this.players.find((player) => player.name.toLowerCase() === wanted);
   }
+
+  #forgetOutOfView(from: Position): void {
+    for (const [objectId, player] of this.#players) {
+      if (distance(from, player.position) > VISIBILITY_DISTANCE)
+        this.#players.delete(objectId);
+    }
+  }
+}
+
+function samePosition(a: Position, b: Position | undefined): boolean {
+  return b !== undefined && a.x === b.x && a.y === b.y && a.z === b.z;
 }
 
 /** How far apart two points are, in game units, Z included. Worked out when asked, so it's never stale. */
