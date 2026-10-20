@@ -148,7 +148,7 @@ namespace DOL.GS.Agents
             {
                 try
                 {
-                    string refusal = AgentLogin.TryStart(state.character, state.link, out HarnessClient client, out _);
+                    string refusal = AgentLogin.TryStart(state.character, state.link, out HarnessClient client);
                     state.login.SetResult((refusal, client));
                 }
                 catch (Exception e)

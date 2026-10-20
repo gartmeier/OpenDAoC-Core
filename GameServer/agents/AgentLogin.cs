@@ -1,29 +1,21 @@
 using System;
-using System.Threading.Tasks;
 using DOL.Database;
 
 namespace DOL.GS.Agents
 {
     /// <summary>
-    /// What a Mind's hello, `/agent login` and `/agent soak` check before a Character enters the world as an Agent, and the start of its world entry.
+    /// What a Mind's hello checks before a Character enters the world as an Agent, and the start of its world entry.
     /// Refuses Characters on a Human's Account, and Characters whose Account is already logged in, as the server's own login check does.
     /// </summary>
     public static class AgentLogin
     {
-        // For `/agent login` and `/agent soak`, whose Harness client has no Mind.
-        public static string TryStart(string characterName, out HarnessClient harnessClient, out Task enteredWorld)
-        {
-            return TryStart(characterName, null, out harnessClient, out enteredWorld);
-        }
-
         /// <summary>
         /// Returns why the Character can't log in as an Agent, a whole sentence for the Human.
-        /// Otherwise returns null, with the Character's Harness client registered and entering the world, connected to `mind`. `enteredWorld` is <see cref="HarnessClient.EnterWorld"/>'s.
+        /// Otherwise returns null, with the Character's Harness client registered and entering the world, connected to `mind`. The client tells the Mind once it's in the world, or why it couldn't get there.
         /// </summary>
-        public static string TryStart(string characterName, MindLink mind, out HarnessClient harnessClient, out Task enteredWorld)
+        public static string TryStart(string characterName, MindLink mind, out HarnessClient harnessClient)
         {
             harnessClient = null;
-            enteredWorld = null;
             DbCoreCharacter character = DOLDB<DbCoreCharacter>.SelectObject(DB.Column("Name").IsEqualTo(characterName));
 
             if (character == null)
@@ -52,7 +44,7 @@ namespace DOL.GS.Agents
             if (!AgentRegistry.TryAdd(character.Name, client))
                 return $"{character.Name} is already online as an Agent.";
 
-            enteredWorld = client.EnterWorld(account, character);
+            client.EnterWorld(account, character);
             harnessClient = client;
             return null;
         }

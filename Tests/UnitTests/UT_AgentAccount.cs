@@ -4,7 +4,7 @@ using NUnit.Framework;
 namespace DOL.GS.Tests
 {
     /// <summary>
-    /// Agent Accounts are ordinary Accounts recognised by an `agent` prefix, so that `/agent login` can't take over a Human's Character.
+    /// Agent Accounts are ordinary Accounts recognised by an `agent` prefix, so that a Mind can't take over a Human's Character.
     /// </summary>
     [TestFixture]
     public class UT_AgentAccount
