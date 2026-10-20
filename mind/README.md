@@ -22,7 +22,7 @@ The Mind exits with 0 when the server disconnected its Agent or another Mind too
 - `agent.ts`: the entry point.
 - `src/connection.ts`: the connection to the server. It knows nothing about what the Mind decides.
 - `src/echo.ts`: what the echo Mind decides. Given a Percept and the Agent's Character, it returns a `say` Primitive or nothing.
-- `src/surroundings.ts`: what the Agent believes is around it, built only from Percepts: the players it knows of, by object ID, with their names and where they last were. It never forgets by time.
+- `src/surroundings.ts`: what the Agent believes is around it, built only from Percepts: the players and NPCs it knows of, in one collection by object ID, with their names and where they last were. It never forgets by time.
 - `src/protocol.ts`: the message types, generated from `GameServer/agents/MindProtocol.cs`. Don't edit it by hand. A server unit test fails when it's stale and names the command that regenerates it.
 
 `bun test` runs the Mind's tests and `bun run typecheck` checks the types (after `bun install`).

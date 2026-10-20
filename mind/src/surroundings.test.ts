@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { ObjectDeletePercept, Percept, PerceptMessage, PlayerCreatePercept, PlayerPositionPercept } from "./protocol.ts";
+import type { NpcCreatePercept, ObjectDeletePercept, ObjectUpdatePercept, Percept, PerceptMessage, PlayerCreatePercept, PlayerPositionPercept } from "./protocol.ts";
 import { distance, Surroundings } from "./surroundings.ts";
 
 function message(elapsedMs: number, percept: Percept): PerceptMessage {
@@ -62,6 +62,57 @@ function playerPosition(objectId: number, x: number, y: number, z: number, headi
   };
 }
 
+function npcCreate(objectId: number, name: string, x: number, y: number, z: number, heading = 0, speed = 0): NpcCreatePercept {
+  return {
+    kind: "npcCreate",
+    x,
+    y,
+    z,
+    objectId,
+    speed,
+    zSpeed: 0,
+    heading,
+    model: 0x190,
+    size: 40,
+    level: 3,
+    statue: false,
+    realm: "None",
+    ghost: false,
+    equipped: false,
+    torch: false,
+    peaceful: false,
+    flying: false,
+    pet: false,
+    untargetable: false,
+    nameHidden: false,
+    stealthed: false,
+    questIndicator: "None",
+    name,
+    guildName: "",
+  };
+}
+
+function objectUpdate(objectId: number, x: number, y: number, z: number, heading: number, speed: number): ObjectUpdatePercept {
+  return {
+    kind: "objectUpdate",
+    x,
+    y,
+    z,
+    objectId,
+    speed,
+    zSpeed: 0,
+    heading,
+    targetId: 0,
+    healthPercent: 100,
+    realm: "None",
+    untargetable: false,
+    nameHidden: false,
+    underwater: false,
+    flying: false,
+    zoneId: 101,
+  };
+}
+
 function objectDelete(objectId: number): ObjectDeletePercept {
   return { kind: "objectDelete", objectId };
 }
@@ -71,6 +122,7 @@ test("a player create makes the player known, with its name, position and headin
   surroundings.perceive(message(1500, playerCreate(0x123, "Vue", 531234, 478901, 2345, 2048)));
 
   expect(surroundings.player(0x123)).toEqual({
+    kind: "player",
     objectId: 0x123,
     name: "Vue",
     position: { x: 531234, y: 478901, z: 2345 },
@@ -86,6 +138,7 @@ test("a player position moves a known player, and says when it was last heard fr
   surroundings.perceive(message(2700, playerPosition(0x123, 531400, 478950, 2350, 1024, 191)));
 
   expect(surroundings.player(0x123)).toEqual({
+    kind: "player",
     objectId: 0x123,
     name: "Vue",
     position: { x: 531400, y: 478950, z: 2350 },
@@ -129,6 +182,7 @@ test("a player created again is known afresh", () => {
   surroundings.perceive(message(5000, playerCreate(0x123, "Vue", 540000, 470000, 2000, 512)));
 
   expect(surroundings.player(0x123)).toEqual({
+    kind: "player",
     objectId: 0x123,
     name: "Vue",
     position: { x: 540000, y: 470000, z: 2000 },
@@ -181,4 +235,99 @@ test("the distance to a player follows the player as it moves", () => {
 
   surroundings.perceive(message(1600, playerPosition(0x123, 531100, 478901, 2345, 0, 191)));
   expect(distance(here, surroundings.named("Vue")!.position)).toBe(100);
+});
+
+test("an NPC create makes the NPC known, with its name, position, heading and speed", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, npcCreate(0x456, "rat", 531234, 478901, 2345, 3072, 120)));
+
+  expect(surroundings.npc(0x456)).toEqual({
+    kind: "npc",
+    objectId: 0x456,
+    name: "rat",
+    position: { x: 531234, y: 478901, z: 2345 },
+    heading: 3072,
+    speed: 120,
+    lastHeardMs: 1500,
+  });
+});
+
+test("an object update moves a known NPC, and says when it was last heard from", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, npcCreate(0x456, "rat", 531234, 478901, 2345)));
+  surroundings.perceive(message(6500, objectUpdate(0x456, 531400, 478950, 2350, 1024, 150)));
+
+  expect(surroundings.npc(0x456)).toEqual({
+    kind: "npc",
+    objectId: 0x456,
+    name: "rat",
+    position: { x: 531400, y: 478950, z: 2350 },
+    heading: 1024,
+    speed: 150,
+    lastHeardMs: 6500,
+  });
+});
+
+test("an object update for an object it doesn't know is ignored", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(6500, objectUpdate(0x456, 531400, 478950, 2350, 1024, 150)));
+
+  expect(surroundings.objects).toEqual([]);
+});
+
+test("an object delete or remove forgets the NPC, and only that one", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, npcCreate(0x456, "rat", 531234, 478901, 2345)));
+  surroundings.perceive(message(1600, npcCreate(0x457, "spider", 531000, 478000, 2345)));
+  surroundings.perceive(message(1700, npcCreate(0x458, "snake", 532000, 479000, 2345)));
+  surroundings.perceive(message(3000, objectDelete(0x456)));
+  surroundings.perceive(message(3100, { kind: "objectRemove", objectId: 0x458, objectType: 1 }));
+
+  expect(surroundings.npc(0x456)).toBeUndefined();
+  expect(surroundings.npc(0x458)).toBeUndefined();
+  expect(surroundings.npcs.map((npc) => npc.name)).toEqual(["spider"]);
+});
+
+test("an NPC created again is known afresh", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, npcCreate(0x456, "rat", 531234, 478901, 2345)));
+  surroundings.perceive(message(6500, objectUpdate(0x456, 531400, 478950, 2350, 1024, 150)));
+  surroundings.perceive(message(9000, npcCreate(0x456, "rat", 540000, 470000, 2000, 512)));
+
+  expect(surroundings.npc(0x456)?.position).toEqual({ x: 540000, y: 470000, z: 2000 });
+  expect(surroundings.npc(0x456)?.speed).toBe(0);
+});
+
+test("players and NPCs are known side by side, each found by ID and by name", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, playerCreate(0x123, "Vue", 531234, 478901, 2345)));
+  surroundings.perceive(message(1600, npcCreate(0x456, "rat", 531000, 478000, 2345)));
+
+  expect(surroundings.objects.map((known) => [known.kind, known.name])).toEqual([["player", "Vue"], ["npc", "rat"]]);
+  expect(surroundings.players.map((player) => player.name)).toEqual(["Vue"]);
+  expect(surroundings.npcs.map((npc) => npc.name)).toEqual(["rat"]);
+  expect(surroundings.object(0x456)?.name).toBe("rat");
+  expect(surroundings.player(0x456)).toBeUndefined();
+  expect(surroundings.npc(0x123)).toBeUndefined();
+  expect(surroundings.named("RAT")?.kind).toBe("npc");
+  expect(surroundings.named("vue")?.kind).toBe("player");
+});
+
+test("the distance from a player to an NPC follows the NPC as it moves", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, playerCreate(0x123, "Vue", 531000, 478901, 2345)));
+  surroundings.perceive(message(1600, npcCreate(0x456, "rat", 531234, 478901, 2345)));
+  expect(distance(surroundings.named("Vue")!.position, surroundings.named("rat")!.position)).toBe(234);
+
+  surroundings.perceive(message(6600, objectUpdate(0x456, 531100, 478901, 2345, 0, 150)));
+  expect(distance(surroundings.named("Vue")!.position, surroundings.named("rat")!.position)).toBe(100);
+});
+
+// The server never deletes an NPC that goes out of its range. Forgetting by distance from Self comes with Self.
+test("an NPC isn't forgotten by time", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, npcCreate(0x456, "rat", 531234, 478901, 2345)));
+  surroundings.perceive(message(10 * 60 * 60 * 1000, { kind: "bare", call: "SendUpdatePoints" }));
+
+  expect(surroundings.named("rat")?.position).toEqual({ x: 531234, y: 478901, z: 2345 });
 });

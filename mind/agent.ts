@@ -1,5 +1,5 @@
 // The echo Mind: logs an Agent's Character in, prints every Percept it gets and says back what others say next to it, until the Agent leaves the world. Ctrl+C quits.
-// Every Percept also goes to the Agent's Surroundings, which the printed lines name players from.
+// Every Percept also goes to the Agent's Surroundings, which the printed lines name players and NPCs from.
 // Usage: bun mind/agent.ts <character>
 // The server address and token come from mind/.env (see mind/.env.example).
 
@@ -64,7 +64,14 @@ function describe(percept: Percept): string {
     case "playerCreate":
       return `playerCreate #${percept.objectId} ${percept.name}\t${at(percept)} heading ${percept.heading}`;
     case "playerPosition":
-      return `playerPosition #${percept.objectId} ${surroundings.player(percept.objectId)?.name ?? "(unknown)"}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} zone ${percept.zoneId}`;
+      return `playerPosition #${percept.objectId} ${surroundings.object(percept.objectId)?.name ?? "(unknown)"}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} zone ${percept.zoneId}`;
+    case "npcCreate":
+      return `npcCreate #${percept.objectId} ${percept.name}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} level ${percept.level}`;
+    case "objectUpdate": {
+      const target = percept.targetId ? ` target #${percept.targetId}` : "";
+      const destination = percept.destination ? ` to ${at(percept.destination)}` : "";
+      return `objectUpdate #${percept.objectId} ${surroundings.object(percept.objectId)?.name ?? "(unknown)"}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} zone ${percept.zoneId} health ${percept.healthPercent}%${target}${destination}`;
+    }
     case "objectDelete":
       return `objectDelete #${percept.objectId}`;
     case "objectRemove":
