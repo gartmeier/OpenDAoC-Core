@@ -15,7 +15,7 @@ See the spec: `.scratch/movement/spec.md`.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Player create gives a typed Percept with exactly what the 1.127 packet carries, positions global
 - [x] Object delete gives a typed Percept with the object ID
@@ -63,3 +63,5 @@ Known gaps:
 - **Found a gap.** `/quit` gave no `objectDelete`, only a bare `SendObjectRemove`, so Surroundings kept Vue after he left. A player who quits leaves through `GameObject.RemoveFromWorld`, which calls `SendObjectRemove` (the `RemoveObject` packet, 0xA2), not `SendObjectDelete`. Fixed in `2f964e323`: it's now an `objectRemove` Percept with the `objectId` and `objectType` (2 for a player, 1 for a living NPC, 0 for anything else, a dead NPC included), mirroring `PacketLib168.SendObjectRemove`, and Surroundings forgets on it as on a delete. Server 177 and Mind 28 tests pass.
 
 The in-game box holds. One re-check for the fix: with this build, `/quit` next to Greeen should print `objectRemove #<your id> type 2`.
+
+**2026-10-20 (Human, recorded by agent):** Re-checked `/quit` on a server built from `2f964e323`. The Mind printed `[TEAM] Vue just left the game!` and then `objectRemove #17737 type 2` at 57.5 s, so Surroundings forgets a player who quits. All acceptance items are met.
