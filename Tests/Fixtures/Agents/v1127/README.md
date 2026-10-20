@@ -1,9 +1,10 @@
 # Real 1.127 client captures
 
-What a real 1.127 game client sends the server, from character select through world entry, idling and `/quit`. These are the source of truth for the Harness's login sequence and the fixtures for its packet builders' golden-byte tests (`UT_ClientCaptureFixtures` loads them).
+What a real 1.127 game client sends the server, from character select through world entry, idling, saying something and `/quit`. These are the source of truth for the Harness's login sequence and Primitives, and the fixtures for its packet builders' golden-byte tests (`UT_ClientCaptureFixtures` loads them).
 
 - `login-idle-quit-1.tsv` and `login-idle-quit-2.tsv` are two separate sessions of account `agent1` and its Hibernia Character in account slot 300. In each session the client logs in, enters the world, idles for 2–3 minutes, quits, waits at character select and exits.
 - Recorded with `/agent capture agent1` on 2026-10-03 and split per session, otherwise unmodified.
+- `say-hello.tsv` is 17 s of account `admin`'s Hibernia Character standing in the world while the Human types `hello` (plain, no slash), then `/send greeen hello` and `/agent capture off`. Recorded with `/agent capture admin` on 2026-10-20, unmodified. See Say.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
 ## Format
@@ -53,11 +54,17 @@ Before step 1, while the client is still Connecting, both sessions send a ping, 
 3. About 20 s after the command, the client sends 0xAC (no handler), then character select `00` and overview `03`. It is back at the character screen with its connection still open.
 4. Exiting the client from the character screen sends 0xAC and 0xB8 `01` (neither has a handler), then the connection closes.
 
+## Say
+
+A chat line typed without a slash goes out as the say command's `/s` alias: command 0xAF, parameter 0xFFFF, data `00` `&s hello` `00`. That's the same layout as every other command: a leading 0, the command with `&` in place of `/`, a terminating 0. The server's `/say` handler (`&say`, alias `&s`) reads the text after the command. The other commands in the capture follow the same layout: `&send greeen hello` and `&agent capture off`.
+
+Full packet as captured: `000A 010C 0001 FFFF 38AF 00 26 73 20 68 65 6C 6C 6F 00 A414`. Only the common fields vary (see below). Wire byte 8 is 0x38 here, more leftover client memory. Typing `/say hello` or `/s hello` presumably sends `&say hello` or `&s hello` in the same layout, as `/q` sent `&q`; neither was captured.
+
 ## Fields that vary between captures
 
 These hold for every packet:
 
-- **Sequence** (wire bytes 2–3): per-connection counter. It starts at 3 for the first recorded packet and increases by 1 per TCP packet. UDP packets carry 0.
+- **Sequence** (wire bytes 2–3): per-connection counter. It starts at 3 for the first recorded packet of a login (`say-hello.tsv` starts mid-session, at 0x0104) and increases by 1 per TCP packet. UDP packets carry 0.
 - **Session ID** (wire bytes 4–5): assigned by the server. It is 0 until the first character select is answered.
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
