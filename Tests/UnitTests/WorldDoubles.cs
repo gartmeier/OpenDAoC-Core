@@ -35,6 +35,19 @@ namespace DOL.GS.Tests
             return zone;
         }
 
+        // A region holding the given zones, which a test lays out side by side.
+        public static Region Region(params (ushort Id, int XOffset, int YOffset, int Width, int Height)[] zones)
+        {
+            Region region = (Region) RuntimeHelpers.GetUninitializedObject(typeof(Region));
+            List<Zone> list = [];
+
+            foreach ((ushort id, int xOffset, int yOffset, int width, int height) in zones)
+                list.Add(new(region, id, $"Zone {id}", xOffset, yOffset, width, height, id, false, 0, false, 0, 0, 0, 0, 0));
+
+            typeof(Region).GetField("_zones", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(region, list);
+            return region;
+        }
+
         public static GameClient Client(ushort sessionId)
         {
             GameClient client = new(null);
