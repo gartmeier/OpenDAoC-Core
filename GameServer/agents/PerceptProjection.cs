@@ -35,6 +35,7 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendObjectDelete) => ObjectDelete(args[0]),
                 nameof(IPacketLib.SendObjectRemove) => ObjectRemove((GameObject) args[0]),
                 nameof(IPacketLib.SendPlayerPositionAndObjectID) => OwnPosition(client),
+                nameof(IPacketLib.SendPlayerJump) => Jump(client, (bool) args[0]),
                 nameof(IPacketLib.SendUpdateMaxSpeed) => MaxSpeed(client),
                 nameof(IPacketLib.SendUDP) => RawPacket(method.Name, (PacketOut) args[0], UDP_HEADER_LENGTH),
                 nameof(IPacketLib.SendTCP) => RawPacket(method.Name, (PacketOut) args[0], TCP_HEADER_LENGTH),
@@ -156,6 +157,23 @@ namespace DOL.GS.Agents
                 zone.IsDivingEnabled,
                 zone.IsDivingEnabled && player.IsUnderwater,
                 player.CurrentRegion.IsHousing ? Encoded(GameServer.Instance.Configuration.ServerName) : null);
+        }
+
+        // Mirrors `PacketLib168.SendPlayerJump`, which no later library overrides. `headingOnly` sends 0 for the position.
+        private static JumpPercept Jump(GameClient client, bool headingOnly)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new JumpPercept(
+                headingOnly ? 0 : (uint) player.X,
+                headingOnly ? 0 : (uint) player.Y,
+                headingOnly ? 0 : (ushort) player.Z,
+                player.ObjectID,
+                player.Heading,
+                player.InHouse && player.CurrentHouse != null ? (ushort) player.CurrentHouse.HouseNumber : 0);
         }
 
         // Mirrors `PacketLib168.SendUpdateMaxSpeed`, which no later library overrides.

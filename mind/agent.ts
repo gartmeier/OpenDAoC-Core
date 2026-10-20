@@ -76,6 +76,8 @@ function describe(percept: Percept): string {
       return `objectRemove #${percept.objectId} type ${percept.objectType}`;
     case "ownPosition":
       return `ownPosition #${percept.objectId}	${at(percept)} heading ${percept.heading} region ${percept.region}`;
+    case "jump":
+      return percept.x === 0 && percept.y === 0 ? `jump #${percept.objectId}\theading ${percept.heading}` : `jump #${percept.objectId}\t${at(percept)} heading ${percept.heading}`;
     case "maxSpeed":
       return `maxSpeed ${percept.maxSpeedPercent}% (${agentSelf.maxSpeed.toFixed(1)} per second)`;
     case "moved":
