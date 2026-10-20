@@ -115,6 +115,82 @@ test("a Primitive's result comes back for its own request", async () => {
   expect(result).toEqual({ type: "primitiveResult", id: 1, queued: false, reason: "Greeen isn't in the world." });
 });
 
+test("retries while a refusal says to, saying so, and logs in once the server lets it", async () => {
+  let hellos = 0;
+  const server = fakeServer((message, socket) => {
+    if (message.type !== "hello")
+      return;
+
+    if (++hellos < 3) {
+      send(socket, { type: "refused", reason: "Greeen is linkdead.", retry: true });
+      socket.close(1000);
+      return;
+    }
+
+    send(socket, { type: "entered" });
+    socket.close(1000);
+  });
+  const lines: string[] = [];
+  const connection = new Connection({ url: server.url, token: "secret", character: "Greeen", log: (line) => lines.push(line), retryDelayMs: 10 });
+
+  const ending = await connection.run({ handleCtrlC: false });
+
+  expect(hellos).toBe(3);
+  expect(lines.filter((line) => line.includes("Retrying"))).toHaveLength(2);
+  expect(lines.find((line) => line.includes("Retrying"))).toContain("Greeen is linkdead.");
+  expect(ending).toEqual({ kind: "left" });
+});
+
+test("doesn't retry a refusal that doesn't say to", async () => {
+  const server = fakeServer((_, socket) => {
+    send(socket, { type: "refused", reason: "The token is wrong.", retry: false });
+    socket.close(1000);
+  });
+
+  const ending = await new Connection({ url: server.url, token: "guess", character: "Greeen", log: () => {}, retryDelayMs: 10 }).run({ handleCtrlC: false });
+
+  expect(server.received).toHaveLength(1);
+  expect(ending).toEqual({ kind: "refused", reason: "The token is wrong." });
+});
+
+test("interrupting while waiting to retry stops retrying", async () => {
+  const server = fakeServer((_, socket) => {
+    send(socket, { type: "refused", reason: "Greeen is linkdead.", retry: true });
+    socket.close(1000);
+  });
+  const connection = new Connection({
+    url: server.url,
+    token: "secret",
+    character: "Greeen",
+    log: (line) => {
+      if (line.includes("Retrying"))
+        connection.interrupt();
+    },
+    retryDelayMs: 60_000,
+  });
+
+  const ending = await connection.run({ handleCtrlC: false });
+
+  expect(server.received).toHaveLength(1);
+  expect(ending).toEqual({ kind: "refused", reason: "Greeen is linkdead." });
+});
+
+test("ends as replaced when another Mind takes over, and doesn't reconnect", async () => {
+  const server = fakeServer((_, socket) => {
+    send(socket, { type: "entered" });
+    send(socket, { type: "replaced" });
+    socket.close(1000);
+  });
+  const lines: string[] = [];
+  const connection = new Connection({ url: server.url, token: "secret", character: "Greeen", log: (line) => lines.push(line), retryDelayMs: 10 });
+
+  const ending = await connection.run({ handleCtrlC: false });
+
+  expect(server.received).toHaveLength(1);
+  expect(ending).toEqual({ kind: "replaced" });
+  expect(lines.at(-1)).toContain("Another Mind has taken over Greeen");
+});
+
 test("ends as lost when the server drops the connection", async () => {
   const server = fakeServer((_, socket) => {
     send(socket, { type: "entered" });

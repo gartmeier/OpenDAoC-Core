@@ -41,7 +41,8 @@ const connection = new Connection({ url, token, character, log: (line) => consol
 });
 
 const ending = await connection.run();
-process.exit(ending.kind === "left" ? 0 : 1);
+// Leaving the world and being taken over by another Mind are both the Agent's normal ways out.
+process.exit(ending.kind === "left" || ending.kind === "replaced" ? 0 : 1);
 
 function formatPercept({ sequence, elapsedMs, percept }: PerceptMessage): string {
   return `#${sequence}\t${(elapsedMs / 1000).toFixed(3)} s\t${describe(percept)}`;
