@@ -26,11 +26,11 @@ See the spec: `.scratch/mind-connection/spec.md`.
 - [x] Percepts never block the game loop: no network I/O on the game loop thread, and a stalled Mind doesn't hold it up
 - [ ] An idle Agent with a connected Mind stays online without link death or timeout
 - [ ] Ctrl+C on the Mind makes the Agent quit through the normal quit path, and the Mind exits after the server disconnects it
-- [ ] Killing the Mind's process makes the Agent go linkdead, and it's gone after the link-death window
-- [ ] The Agent's Character is saved and its session released after either way out
+- [x] Killing the Mind's process makes the Agent go linkdead, and it's gone after the link-death window
+- [x] The Agent's Character is saved and its session released after either way out
 - [ ] Shutting the server down with a Mind connected behaves as it does for an online Human
 - [x] A unit test generates the TypeScript protocol types from the C# types and fails if the checked-in file differs, naming the command that regenerates it
-- [ ] The milestone 1 trace still records every call, one file per login
+- [x] The milestone 1 trace still records every call, one file per login
 
 ## Comments
 
@@ -78,3 +78,20 @@ Known gaps:
 - **A stalled Mind grows its queue.** The queue is unbounded, the risk the spec accepts.
 - **A refused quit leaves the Mind waiting.** If the server refuses the quit (dead, mounted, in combat), Ctrl+C just waits; a second Ctrl+C drops the connection. The Mind only learns why once the message call is projected (04).
 - **`agent_mind_port` needs a restart** to take effect.
+
+**2026-10-20 (Human, recorded by agent from the server log and traces):** Ran the checks on this build (server started 08:52:55, token set and refreshed at 08:54:10). Five logins, each with its own trace:
+- **Entering the world.** Every Mind got Greeen into the world within about a second (for example 08:55:06 → 08:55:07, Region Hibernia).
+- **Ctrl+C.** The run at 09:01:51 quit cleanly. The Mind sent `/quit`, Greeen sat through the 20 s quit delay, the server saved him and sent him to the character screen, and the client disconnected without a link death. The server closed the Mind's connection after that. The other three runs (08:55:06, 08:58:46, 09:00:29) sent the quit too, but their connection dropped 0.3 to 7 s into the delay, so they went linkdead. Each was removed and saved 60 s later.
+- **Why those runs dropped.** In the terminal panel, PowerShell exits when a program it's running survives Ctrl+C. Bun and Node do the same, with any SIGINT handler. The tab then closes and kills the Mind. Reproduced with a fake server, and fixed: the Mind now reads Ctrl+C as a key, with stdin in raw mode, so the console never raises the signal (`mind/src/ctrl-c.ts`; SIGINT is still the fallback without a terminal). Against the fake server, Ctrl+C now sends `quit`, the Mind waits for the server's close 5 s later and exits, and the shell stays open.
+- **Link death.** It works as for a Human: "Linkdead player Greeen(agent1) will quit in 60 seconds", then removed, saved and disconnected 60 s later.
+- **Refusals.** An unknown Character (`greeex`) was refused with "No Character is named 'greeex'." Minds started while Greeen was still linkdead were refused with "Greeen is already online as an Agent.", without retry, which is 05's.
+- **Saving and session.** Both ways out end with "Your character has been saved.", and each later login got in, so the session was released.
+- **Trace.** One file per login, recording every call: 6950 calls for the 2 min 20 s session.
+
+Still to check, with the Ctrl+C fix:
+1. Ctrl+C in the terminal panel: Greeen should quit after the delay without going linkdead, the Mind should print "The server has disconnected Greeen." and exit, and the tab should stay open.
+2. Idle for at least 3 minutes. The longest session so far was 2 min 20 s, without a timeout.
+3. Greeen appears at his saved location, and the Mind prints numbered Percepts and "Greeen is in the world." (not visible in the server log).
+4. Refusals for a Character on a Human's Account, a wrong token, and an empty `agent_mind_token`.
+5. `/shutdown 10` with a Mind connected.
+6. `/agent login` and `/agent logout` still work.
