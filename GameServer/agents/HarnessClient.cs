@@ -35,8 +35,7 @@ namespace DOL.GS.Agents
         private AgentTrace _trace;
         private bool _mindLost;
 
-        // `mind` is null for a client that `/agent login` logs in, which keeps itself alive without a Mind.
-        public HarnessClient(MindLink mind = null) : base(null)
+        public HarnessClient(MindLink mind) : base(null)
         {
             Mind = mind;
         }
@@ -149,7 +148,7 @@ namespace DOL.GS.Agents
             }
 
             // A lost Mind is a closed connection (ADR 0005). While Playing, the server takes that as a link death.
-            if (Mind?.IsConnected is false && !_mindLost)
+            if (!Mind.IsConnected && !_mindLost)
             {
                 _mindLost = true;
 
@@ -170,13 +169,13 @@ namespace DOL.GS.Agents
                     _worldEntry = null;
                     _liveness = new(GameLoop.GameLoopTime);
                     // Before any call the server makes from here on, so the Mind hears it in order.
-                    Mind?.Send(new EnteredMessage());
+                    Mind.Send(new EnteredMessage());
                     break;
                 }
                 case WorldEntry.Progress.GaveUp:
                 {
                     // A real client giving up closes its connection. Short of Playing, the server takes that as a disconnect. World entry only gives up while Playing if the Character isn't in the world, and then a link death comes first.
-                    Mind?.Refuse(WorldEntryFailure());
+                    Mind.Refuse(WorldEntryFailure());
                     _worldEntry = null;
                     Disconnect();
                     return;
@@ -231,11 +230,11 @@ namespace DOL.GS.Agents
             if (_worldEntry != null)
             {
                 _worldEntry.Fail("before the server disconnected its Harness client");
-                Mind?.Refuse(WorldEntryFailure());
+                Mind.Refuse(WorldEntryFailure());
             }
 
-            // A normal close: the Agent has left the world.
-            Mind?.Close();
+            // A normal close: the Agent has left the world. However the client disconnected, `/agent logout` included, the Mind's connection ends here.
+            Mind.Close();
             _trace.Dispose();
             _disconnected.TrySetResult();
         }
