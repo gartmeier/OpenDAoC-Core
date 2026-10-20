@@ -1,5 +1,4 @@
 using System;
-using System.Buffers.Binary;
 using System.Linq;
 using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
@@ -72,18 +71,12 @@ namespace DOL.GS.Tests
             // Consecutive position updates while the Character runs, i.e. both with a speed. Standing, the client sends one about every 2130 ms.
             CapturedPacket[] updates = ClientCaptures.WhilePlaying(ClientCaptures.MOVEMENT, eClientPackets.PositionUpdate);
             long[] intervals = updates.Zip(updates.Skip(1))
-                .Where(static pair => Speed(pair.First) > 0 && Speed(pair.Second) > 0)
+                .Where(static pair => ClientCaptures.Speed(pair.First) > 0 && ClientCaptures.Speed(pair.Second) > 0)
                 .Select(static pair => pair.Second.ElapsedMilliseconds - pair.First.ElapsedMilliseconds)
                 .ToArray();
 
             Assert.That(intervals, Has.Length.GreaterThan(20));
             Assert.That(intervals, Is.All.InRange(150, 300));
-        }
-
-        // Data offsets 12-15 of a position update, little-endian.
-        private static float Speed(CapturedPacket positionUpdate)
-        {
-            return BinaryPrimitives.ReadSingleLittleEndian(positionUpdate.Data.AsSpan(12));
         }
 
         private static CapturedPacket[] WorldEntry(CapturedPacket[] packets)

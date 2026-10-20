@@ -1,3 +1,5 @@
+using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
 using DOL.GS.Agents;
@@ -31,6 +33,12 @@ namespace DOL.GS.Tests
         public static CapturedPacket[] WhilePlaying(string capture, eClientPackets code)
         {
             return Load(capture).Where(p => p.Transport is CaptureTransport.Tcp && p.ClientState is GameClient.eClientState.Playing && p.Code == (byte) code).ToArray();
+        }
+
+        // Data offsets 12-15 of a position update, little-endian. 0 while standing or strafing.
+        public static float Speed(CapturedPacket positionUpdate)
+        {
+            return BinaryPrimitives.ReadSingleLittleEndian(positionUpdate.Data.AsSpan(12));
         }
     }
 }

@@ -70,12 +70,14 @@ namespace DOL.GS.Agents
             return new((byte) eClientPackets.PlayerInitRequest, DEFAULT_PARAMETER, [0x03]);
         }
 
-        // Where the client's Character is and what it's doing, as read by `PlayerPositionUpdateHandler`. Speeds are 0: the Character stands still.
-        // `heading` is the full 16 bits on the wire: the low 12 bits are the heading, the client sets flags in the high byte.
+        // Where the client's Character is and what it's doing, as read by `PlayerPositionUpdateHandler`.
+        // `speed` is 0 standing and the current speed running: the client ramps it up to its maximum over about 0.9 s and down to 0 when it stops.
+        // `heading` is the full 16 bits on the wire: the low 12 bits are the heading, the client sets flags in the high nibble.
         public static ClientPacket PositionUpdate(
             Vector3 position,
             ushort zoneId,
             ushort heading,
+            float speed,
             byte healthPercent,
             ushort sessionId,
             PlayerPositionUpdateHandler.StateFlags stateFlags,
@@ -86,9 +88,10 @@ namespace DOL.GS.Agents
             BinaryPrimitives.WriteSingleLittleEndian(span[0..], position.X);
             BinaryPrimitives.WriteSingleLittleEndian(span[4..], position.Y);
             BinaryPrimitives.WriteSingleLittleEndian(span[8..], position.Z);
-            // 12-19: speed and fall speed.
+            BinaryPrimitives.WriteSingleLittleEndian(span[12..], speed);
+            // 16-19: Z speed, 0 in every capture, all on flat ground.
             BinaryPrimitives.WriteUInt16BigEndian(span[20..], sessionId);
-            // 22-23: object ID, 0 in both captures.
+            // 22-23: the target's object ID, 0 while nothing is targeted.
             BinaryPrimitives.WriteUInt16BigEndian(span[24..], zoneId);
             data[26] = (byte) stateFlags;
             // 27: unknown. 28-29: falling damage.
@@ -98,6 +101,22 @@ namespace DOL.GS.Agents
             data[35] = healthPercent;
             // 36-39: trailing, always 0.
             return new((byte) eClientPackets.PositionUpdate, DEFAULT_PARAMETER, data);
+        }
+
+        // What the client sends while its Character turns on the spot: the heading reached so far. Read by `PlayerHeadingUpdateHandler`.
+        // `heading` is the low 12 bits only: the client never sets the position update's flags here.
+        public static ClientPacket HeadingUpdate(ushort heading, byte healthPercent, ushort sessionId, PlayerPositionUpdateHandler.ActionFlags actionFlags)
+        {
+            byte[] data = new byte[14];
+            Span<byte> span = data;
+            BinaryPrimitives.WriteUInt16BigEndian(span[0..], sessionId);
+            // 2-3: 0 in every capture. The server reads a target there.
+            BinaryPrimitives.WriteUInt16BigEndian(span[4..], heading);
+            // 6: unknown. 8: 0, the server reads a steed seat. 9: 0, the server reads the state flags shifted right by 2.
+            data[7] = (byte) actionFlags;
+            data[10] = healthPercent;
+            // 11-13: trailing, always 0.
+            return new((byte) eClientPackets.PlayerHeadingUpdate, DEFAULT_PARAMETER, data);
         }
 
         // Ends world entry; the client is Playing from here on. The server reads the flag, which the real client leaves at 0.
