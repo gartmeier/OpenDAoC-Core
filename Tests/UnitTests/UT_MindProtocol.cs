@@ -44,6 +44,27 @@ namespace DOL.GS.Tests
             Assert.That(Read(json), Is.Null);
         }
 
+        [TestCase("not json", "isn't JSON")]
+        [TestCase("""{"type":"dance"}""", "'dance'")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"dance"}}""", "'dance'")]
+        [TestCase("""{"type":"primitive","id":"one","primitive":{"name":"quit"}}""", "$.id")]
+        [TestCase("""{"token":"secret","character":"Greeen"}""", "\"type\"")]
+        public void Read_ShouldSayWhy_ForAMessageItCannotRead(string json, string why)
+        {
+            MindMessage message = MindProtocol.Read(Encoding.UTF8.GetBytes(json), out string error);
+
+            Assert.That(message, Is.Null);
+            Assert.That(error, Does.Contain(why));
+        }
+
+        [Test]
+        public void Read_ShouldGiveNoError_ForAMessageItCanRead()
+        {
+            MindProtocol.Read("""{"type":"hello","token":"secret","character":"Greeen"}"""u8, out string error);
+
+            Assert.That(error, Is.Null);
+        }
+
         [Test]
         public void Write_ShouldWriteAPercept_WithItsSequenceAndTime()
         {
@@ -66,10 +87,11 @@ namespace DOL.GS.Tests
         }
 
         [Test]
-        public void Write_ShouldWriteEnteredAndRefused()
+        public void Write_ShouldWriteEnteredRefusedAndReplaced()
         {
             Assert.That(Write(new EnteredMessage()), Is.EqualTo("""{"type":"entered"}"""));
             Assert.That(Write(new RefusedMessage("No token.", false)), Is.EqualTo("""{"type":"refused","reason":"No token.","retry":false}"""));
+            Assert.That(Write(new ReplacedMessage()), Is.EqualTo("""{"type":"replaced"}"""));
         }
 
         private static MindMessage Read(string json)

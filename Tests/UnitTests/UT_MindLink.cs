@@ -96,6 +96,32 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public async Task Refuse_ShouldSayWhetherToRetry()
+        {
+            FakeMind mind = new();
+
+            mind.Link.Refuse("Greeen is linkdead.", retry: true);
+            await mind.Link.Completion;
+
+            Assert.That(mind.Sent, Is.EqualTo(new ServerMessage[] { new RefusedMessage("Greeen is linkdead.", true) }));
+        }
+
+        [Test]
+        public async Task Replace_ShouldTellTheMind_ThenCloseTheConnection_AfterWhatWasQueuedBefore()
+        {
+            FakeMind mind = new();
+
+            mind.Link.Send(new EnteredMessage());
+            mind.Link.Replace();
+            mind.Link.Send(new EnteredMessage());
+            await mind.Link.Completion;
+
+            Assert.That(mind.Sent, Is.EqualTo(new ServerMessage[] { new EnteredMessage(), new ReplacedMessage() }));
+            Assert.That(mind.ClosedAfter, Is.EqualTo(2));
+            Assert.That(mind.Link.IsReplaced, Is.True);
+        }
+
+        [Test]
         public async Task OnLost_ShouldStopSending_AndNotCloseTheConnection()
         {
             FakeMind mind = new();

@@ -15,7 +15,7 @@ export interface PrimitiveMessage {
   primitive: Primitive;
 }
 
-export type ServerMessage = RefusedMessage | EnteredMessage | PerceptMessage | PrimitiveResultMessage;
+export type ServerMessage = RefusedMessage | EnteredMessage | PerceptMessage | PrimitiveResultMessage | ReplacedMessage;
 
 export interface RefusedMessage {
   type: "refused";
@@ -39,6 +39,10 @@ export interface PrimitiveResultMessage {
   id: number;
   queued: boolean;
   reason?: string;
+}
+
+export interface ReplacedMessage {
+  type: "replaced";
 }
 
 export type Primitive = QuitPrimitive | SayPrimitive;

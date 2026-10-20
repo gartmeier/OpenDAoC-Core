@@ -48,10 +48,21 @@ namespace DOL.GS.Agents
                 Send(new PerceptMessage(Interlocked.Increment(ref _perceptSequence), _stopwatch.ElapsedMilliseconds, percept));
         }
 
-        // `reason` is a whole sentence for the Human.
+        // True once another Mind has taken over the Agent's connection from this one.
+        public bool IsReplaced { get; private set; }
+
+        // `reason` is a whole sentence for the Human, and `retry` says whether the same hello can succeed later.
         public void Refuse(string reason, bool retry = false)
         {
             Send(new RefusedMessage(reason, retry));
+            Close();
+        }
+
+        // Another Mind has taken over the Agent's connection. Tells this one, after whatever was queued before, and closes its connection.
+        public void Replace()
+        {
+            IsReplaced = true;
+            Send(new ReplacedMessage());
             Close();
         }
 

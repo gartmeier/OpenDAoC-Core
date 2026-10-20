@@ -26,13 +26,33 @@ namespace DOL.GS.Agents
         // Returns null for anything that isn't a message a Mind can send.
         public static MindMessage Read(ReadOnlySpan<byte> json)
         {
+            return Read(json, out _);
+        }
+
+        // Returns null for anything that isn't a message a Mind can send, with `error` saying what's wrong, for the Mind's developer.
+        public static MindMessage Read(ReadOnlySpan<byte> json, out string error)
+        {
+            error = null;
+
             try
             {
-                return JsonSerializer.Deserialize<MindMessage>(json, _options);
+                MindMessage message = JsonSerializer.Deserialize<MindMessage>(json, _options);
+
+                if (message == null)
+                    error = "It's null.";
+
+                return message;
             }
-            catch (Exception e) when (e is JsonException or NotSupportedException)
+            catch (JsonException e)
             {
-                // `NotSupportedException` is a message without its discriminator.
+                // The reader's own exception is inside when the text isn't JSON at all. Otherwise the message names an unknown discriminator, or the path of a value of the wrong kind.
+                error = e.InnerException is JsonException ? $"It isn't JSON: {e.Message}" : e.Message;
+                return null;
+            }
+            catch (NotSupportedException e)
+            {
+                // A message, or a Primitive, without its discriminator.
+                error = $"Its \"type\", or its Primitive's \"name\", is missing ({e.Message}).";
                 return null;
             }
         }
@@ -65,9 +85,11 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(EnteredMessage), "entered")]
     [JsonDerivedType(typeof(PerceptMessage), "percept")]
     [JsonDerivedType(typeof(PrimitiveResultMessage), "primitiveResult")]
+    [JsonDerivedType(typeof(ReplacedMessage), "replaced")]
     public abstract record ServerMessage;
 
-    // The login didn't happen, for a reason that's a whole sentence for the Human. The server closes the connection after it.
+    // The login didn't happen, or the Mind sent something the protocol doesn't allow, for a reason that's a whole sentence for the Human. The server closes the connection after it.
+    // `Retry` says whether the same hello can succeed later, for example once the server has removed a linkdead Character.
     public sealed record RefusedMessage(string Reason, bool Retry) : ServerMessage;
 
     // The Character is in the world.
@@ -78,6 +100,9 @@ namespace DOL.GS.Agents
 
     // Whether the Primitive's packet was queued for the Harness client's next tick, and why not if it wasn't. Never whether it worked (ADR 0004).
     public sealed record PrimitiveResultMessage(int Id, bool Queued, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Reason) : ServerMessage;
+
+    // Another Mind has taken over the Agent's connection, and the Character stays in the world. The server closes the connection after it.
+    public sealed record ReplacedMessage : ServerMessage;
 
     /// <summary>
     /// One entry in the Harness's vocabulary of things an Agent decides to do.
