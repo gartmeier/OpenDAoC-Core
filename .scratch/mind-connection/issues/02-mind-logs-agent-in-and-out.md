@@ -18,17 +18,17 @@ See the spec: `.scratch/mind-connection/spec.md`.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] Starting a Mind for an Agent's Character puts the Character in the world at its saved location, and the Mind reports that it entered
-- [ ] A refused login (unknown Character, a Human's Account, no token configured) gets a clear reason in the Mind, which then exits
-- [ ] The Mind prints a Percept for every call the server makes on the Agent's packet library, in order, with sequence and time
+- [x] Starting a Mind for an Agent's Character puts the Character in the world at its saved location, and the Mind reports that it entered
+- [x] A refused login (unknown Character, a Human's Account, no token configured) gets a clear reason in the Mind, which then exits
+- [x] The Mind prints a Percept for every call the server makes on the Agent's packet library, in order, with sequence and time
 - [x] Percepts never block the game loop: no network I/O on the game loop thread, and a stalled Mind doesn't hold it up
-- [ ] An idle Agent with a connected Mind stays online without link death or timeout
-- [ ] Ctrl+C on the Mind makes the Agent quit through the normal quit path, and the Mind exits after the server disconnects it
+- [x] An idle Agent with a connected Mind stays online without link death or timeout
+- [x] Ctrl+C on the Mind makes the Agent quit through the normal quit path, and the Mind exits after the server disconnects it
 - [x] Killing the Mind's process makes the Agent go linkdead, and it's gone after the link-death window
 - [x] The Agent's Character is saved and its session released after either way out
-- [ ] Shutting the server down with a Mind connected behaves as it does for an online Human
+- [x] Shutting the server down with a Mind connected behaves as it does for an online Human
 - [x] A unit test generates the TypeScript protocol types from the C# types and fails if the checked-in file differs, naming the command that regenerates it
 - [x] The milestone 1 trace still records every call, one file per login
 
@@ -95,3 +95,21 @@ Still to check, with the Ctrl+C fix:
 4. Refusals for a Character on a Human's Account, a wrong token, and an empty `agent_mind_token`.
 5. `/shutdown 10` with a Mind connected.
 6. `/agent login` and `/agent logout` still work.
+
+**2026-10-20 (Human, recorded by agent from the server log, traces and the Mind's terminal):** Reran the remaining checks with the Ctrl+C fix (`d0b6bbe18`), on the branch rebased onto `main`:
+1. **Ctrl+C in the terminal panel.** The 09:14:17 run quit cleanly. The quit started at 230.7 s, counted down, and the client disconnected at 250.7 s (`SendPlayerQuit`, saved, character screen) without a link death. Only then did the Mind's connection close (09:18:27), and the tab stayed open.
+2. **Idle.** The same run was online for almost 4 minutes before the quit, without a link death or timeout.
+3. **Entering the world.** Greeen appeared at his saved location. The Mind printed "greeen is in the world." and numbered Percepts with their times, from world entry on: `#1` to `#353` before `entered`, then a steady stream of `SendObjectUpdate`, `SendPingReply` and `SendMessage`.
+4. **Refusals.** Each came with a clear reason:
+   - A Human's Character: "Vue belongs to 'admin', which isn't an Agent Account (its name doesn't start with 'agent')."
+   - A wrong token: "The token is wrong. It must match the server property agent_mind_token."
+   - An empty token: "The server has no Mind token configured, so it refuses every Mind. Set the server property agent_mind_token."
+   - Unknown Characters: `greeex`, `admin`.
+5. **Shutdown.** `/shutdown 10` at 09:21:27 with a Mind connected since 09:21:16. The server stopped at 09:21:39 without hanging and saved 2 players, Greeen and the Human's Character. The Mind printed "The connection was lost (code 1006, Connection ended)." and exited. After the restart, Greeen logged in again.
+6. **`/agent` commands.** `/agent login greeen` at 09:24:43 and `/agent logout greeen` at 09:24:51 still work: he quit after the 20 s delay and disconnected at 09:25:11.
+- **Killing the Mind** (09:18:59) was a link death again, removed 60 s later.
+
+All acceptance items are met.
+
+Left over:
+- **The name in the Mind's status lines is as typed** ("greeen is in the world."), not the Character's own name. `entered` doesn't carry the name. Cosmetic; worth fixing when a message next changes.
