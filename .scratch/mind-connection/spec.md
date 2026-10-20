@@ -1,6 +1,6 @@
 # Milestone 2: Mind connection
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -183,3 +183,7 @@ The Mind receives Percepts and can send Primitives. Each Percept carries only wh
 - Risk: three group-member calls take a span argument that the runtime proxy can't box (found in milestone 1). They can't produce Percepts until that's solved, which matters at milestone 8.
 - Risk: a Mind that stops reading its socket makes the server's send queue for it grow. Milestone 1 accepted the same risk for the trace. Revisit when several Agents are online.
 - Milestone ladder for context: 1 login and logout (done) → 2 Mind connection (this spec) → 3 movement → 4 hand-written grind Tactic → 5 LLM Planning → 6 Reflection and Tactic Library → 7 Agent character creation → 8 multiple Agents and grouping.
+
+## Comments
+
+**2026-10-20 (Human, recorded by agent):** Milestone 2 is done. All five tickets are resolved, and the manual acceptance test in Testing Decisions passed across the in-game checks of tickets 02 to 05: an echo Mind logs Greeen in, answers each say line exactly once, quits cleanly on Ctrl+C, goes linkdead when killed, is taken over by a second Mind, retries while Greeen is linkdead, and refuses everything it should. Next on the ladder is milestone 3 (movement).

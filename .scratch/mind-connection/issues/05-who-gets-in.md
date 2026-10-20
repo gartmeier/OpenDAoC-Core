@@ -10,13 +10,13 @@ See the spec: `.scratch/mind-connection/spec.md`.
 
 **Blocked by:** 02
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] Starting a second Mind for an online Agent hands it the connection, the first Mind reports it was replaced and exits, and the Character stays in the world throughout
-- [ ] Starting a Mind while its Agent is linkdead makes it retry until the Character is gone, then log in
-- [ ] Logging into the Agent's Account with the real client while a Mind is connected is refused
-- [ ] A wrong token, a missing or malformed `hello`, and unknown or malformed messages each get a clear refusal and a closed connection, with no effect on any Agent
-- [ ] Refusals that shouldn't be retried make the Mind exit with the reason
+- [x] Starting a second Mind for an online Agent hands it the connection, the first Mind reports it was replaced and exits, and the Character stays in the world throughout
+- [x] Starting a Mind while its Agent is linkdead makes it retry until the Character is gone, then log in
+- [x] Logging into the Agent's Account with the real client while a Mind is connected is refused
+- [x] A wrong token, a missing or malformed `hello`, and unknown or malformed messages each get a clear refusal and a closed connection, with no effect on any Agent
+- [x] Refusals that shouldn't be retried make the Mind exit with the reason
 
 ## Comments
 
@@ -87,3 +87,17 @@ Known gaps:
 - **The server logs every refusal**, so a Mind retrying through a link death leaves about a dozen "was refused" lines.
 - **The real client's refusal doesn't say why.** It's the client's own "account already logged in" message.
 - **The name in the Mind's status lines is as typed** ("greeen"), as ticket 02 noted.
+
+**2026-10-20 (Human, recorded by agent):** Ran the checks above on a server built from main at `5f4057b38` and reports all of them passed. The server log agrees:
+- **Takeover** at 13:13:48: a second Mind took over Greeen's connection, the old one disconnected, and Greeen stayed in the world.
+- **Link-death retry:** the Mind's connection was lost at 13:14:17 and Greeen went linkdead. A new Mind was refused with retry every 5 s from 13:14:18 to 13:15:13, and logged in at 13:15:18, 61 s after the loss.
+- **Real client refused** at 13:16:10 ("User already logged in!") while a Mind was connected.
+- **Refusals the Mind exits on**, 13:17:59 to 13:18:27: a wrong token (twice), `vue` on the admin Account (twice) and `nobody`.
+- **Hand-made client (`poke.ts`):**
+  - `silent` was refused at 13:20:01 after 10 s without a hello.
+  - `garbage` was refused at 13:21:00 as not JSON, and no Agent was touched.
+  - `dance` at 13:21:10: its valid hello took over from the echo Mind still running from 13:15:18. Its unknown message was refused at 13:21:13 and Greeen went linkdead, then quit at 13:22:13.
+  - `twice` logged Greeen in at 13:32:45, was refused at 13:32:48 for its second hello, and Greeen went linkdead.
+- The server kept running throughout, with no exceptions from the Harness.
+
+All acceptance items are met.
