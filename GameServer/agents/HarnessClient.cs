@@ -101,6 +101,7 @@ namespace DOL.GS.Agents
             ClientPacket packet = primitive switch
             {
                 QuitPrimitive => ClientPackets1127.Quit(),
+                SayPrimitive say => ClientPackets1127.Say(say.Text),
                 _ => null
             };
 

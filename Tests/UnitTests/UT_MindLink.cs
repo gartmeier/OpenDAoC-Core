@@ -17,6 +17,7 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendUpdatePoints = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePoints));
         private static readonly MethodInfo SendPlayerQuit = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerQuit));
         private static readonly MethodInfo GetBowPrepare = typeof(IPacketLib).GetProperty(nameof(IPacketLib.BowPrepare)).GetMethod;
+        private static readonly GameClient Client = new(null) { ClientState = GameClient.eClientState.Playing };
 
         [Test]
         public async Task Perceive_ShouldSendOnePerceptPerCall_InCallOrder_WithSequenceAndTime()
@@ -24,8 +25,8 @@ namespace DOL.GS.Tests
             FakeMind mind = new();
             MindLink link = mind.Link;
 
-            link.Perceive(SendUpdatePoints, []);
-            link.Perceive(SendPlayerQuit, [false]);
+            link.Perceive(Client,SendUpdatePoints, []);
+            link.Perceive(Client,SendPlayerQuit, [false]);
             link.Close();
             await link.Completion;
 
@@ -41,7 +42,7 @@ namespace DOL.GS.Tests
         {
             FakeMind mind = new();
 
-            mind.Link.Perceive(GetBowPrepare, []);
+            mind.Link.Perceive(Client,GetBowPrepare, []);
             mind.Link.Close();
             await mind.Link.Completion;
 
@@ -56,7 +57,7 @@ namespace DOL.GS.Tests
             FakeMind mind = new(gate);
 
             for (int i = 0; i < 100; i++)
-                mind.Link.Perceive(SendUpdatePoints, []);
+                mind.Link.Perceive(Client,SendUpdatePoints, []);
 
             Assert.That(mind.Sent, Is.Empty);
 

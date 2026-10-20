@@ -39,10 +39,10 @@ namespace DOL.GS.Agents
             _outbox.Writer.TryWrite(message);
         }
 
-        // One call the server made on the Agent's packet library. Called on the game loop.
-        public void Perceive(MethodInfo method, object[] args)
+        // One call the server made on the Agent's packet library, which belongs to `client`. Called on the game loop.
+        public void Perceive(GameClient client, MethodInfo method, object[] args)
         {
-            Percept percept = PerceptProjection.Project(method, args);
+            Percept percept = PerceptProjection.Project(client, method, args);
 
             if (percept != null)
                 Send(new PerceptMessage(Interlocked.Increment(ref _perceptSequence), _stopwatch.ElapsedMilliseconds, percept));

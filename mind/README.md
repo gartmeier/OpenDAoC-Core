@@ -8,12 +8,13 @@ The part of an Agent that lives outside the server and makes its decisions (see 
 2. Copy `mind/.env.example` to `mind/.env` and set `MIND_TOKEN` to the same secret.
 3. From the repository root: `bun mind/agent.ts <character>`. The Character must belong to an Agent Account.
 
-The Mind prints every Percept to stdout and status lines to stderr. Ctrl+C makes the Agent quit through the normal quit path, and the Mind exits once the server has disconnected it. A second Ctrl+C drops the connection instead, and the Character goes linkdead.
+The Mind prints every Percept to stdout and status lines to stderr. It's an echo Mind: when someone says something next to the Agent, the Agent says it back. Ctrl+C makes the Agent quit through the normal quit path, and the Mind exits once the server has disconnected it. A second Ctrl+C drops the connection instead, and the Character goes linkdead.
 
 ## Layout
 
 - `agent.ts`: the entry point.
 - `src/connection.ts`: the connection to the server. It knows nothing about what the Mind decides.
+- `src/echo.ts`: what the echo Mind decides. Given a Percept and the Agent's Character, it returns a `say` Primitive or nothing.
 - `src/protocol.ts`: the message types, generated from `GameServer/agents/MindProtocol.cs`. Don't edit it by hand. A server unit test fails when it's stale and names the command that regenerates it.
 
 `bun test` runs the Mind's tests and `bun run typecheck` checks the types (after `bun install`).

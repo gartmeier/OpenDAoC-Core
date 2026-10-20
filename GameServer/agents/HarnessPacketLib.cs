@@ -29,7 +29,7 @@ namespace DOL.GS.Agents
             if (!targetMethod.IsSpecialName)
                 _trace.Record(_client.ClientState, targetMethod, args);
 
-            _client.Mind.Perceive(targetMethod, args);
+            _client.Mind.Perceive(_client, targetMethod, args);
 
             if (targetMethod.Name is nameof(IPacketLib.SendPlayerQuit))
                 _client.OnPlayerQuit((bool) args[0]);
