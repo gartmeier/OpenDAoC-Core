@@ -124,10 +124,87 @@ namespace DOL.GS.Agents
     [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
     [JsonDerivedType(typeof(BarePercept), "bare")]
     [JsonDerivedType(typeof(MessagePercept), "message")]
+    [JsonDerivedType(typeof(BarePacketPercept), "barePacket")]
+    [JsonDerivedType(typeof(PlayerCreatePercept), "playerCreate")]
+    [JsonDerivedType(typeof(PlayerPositionPercept), "playerPosition")]
+    [JsonDerivedType(typeof(ObjectDeletePercept), "objectDelete")]
     public abstract record Percept;
 
     // A packet-library call without a projection yet. Only its name.
     public sealed record BarePercept(string Call) : Percept;
+
+    // A packet the server built itself and handed whole to `SendUDP` or `SendTCP` (`Call`), in a layout that isn't decoded. Only its packet code.
+    public sealed record BarePacketPercept(string Call, int Code) : Percept;
+
+    // Another player came into view. Positions are global.
+    // `Realm` is the player's realm as the Agent's Character sees it. The face fields are the bytes the client draws the face from.
+    // `Horse` is there only while the player rides a horse.
+    public sealed record PlayerCreatePercept(
+        float X,
+        float Y,
+        float Z,
+        int SessionId,
+        int ObjectId,
+        int Heading,
+        int Model,
+        int Level,
+        PacketRealm Realm,
+        bool Dead,
+        bool Swimming,
+        bool Stealthed,
+        bool Wireframe,
+        bool Vampiir,
+        int EyeSize,
+        int LipSize,
+        int MoodType,
+        int EyeColor,
+        int HairColor,
+        int FaceType,
+        int HairStyle,
+        string Name,
+        string GuildName,
+        string LastName,
+        string PrefixName,
+        string Title,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] PlayerCreateHorse Horse) : Percept;
+
+    // The horse a player rides when it comes into view. `BardingColor` carries the rider's guild emblem instead when the barding has no colour and the rider has a guild.
+    public sealed record PlayerCreateHorse(int Id, int Barding, int BardingColor, int Saddle, int SaddleColor);
+
+    // Another player moved, turned or changed state, decoded from the ready-built 1.127 position packet (ADR 0001). Positions are global.
+    // `Heading` is 0 to 4095, and `HeadingFlags` the bits above it that the player's client sent. While the player rides, the server puts its steed's object ID in their place.
+    // `StateFlags` and `ActionFlags` are the server's `PlayerPositionUpdateHandler.StateFlags` and `ActionFlags`. `Attacking` is whether the player is in attack mode.
+    public sealed record PlayerPositionPercept(
+        float X,
+        float Y,
+        float Z,
+        float Speed,
+        float FallSpeed,
+        int SessionId,
+        int ObjectId,
+        int ZoneId,
+        int StateFlags,
+        int SteedSeat,
+        int Heading,
+        int HeadingFlags,
+        int ActionFlags,
+        bool Roleplay,
+        int HealthPercent,
+        bool Attacking,
+        int ManaPercent,
+        int EndurancePercent) : Percept;
+
+    // An object went out of view, or is gone.
+    public sealed record ObjectDeletePercept(int ObjectId) : Percept;
+
+    // A realm as the packets carry it, in two bits.
+    public enum PacketRealm
+    {
+        None,
+        Albion,
+        Midgard,
+        Hibernia
+    }
 
     // A line for the chat window, or a popup: chat, system messages, combat text. The text is whole, with any speaker in it (`Vue says, "hello"`).
     // The 1.127 packet only marks popups, so `ChatLocation` is `CL_PopupWindow` or `CL_ChatWindow`. The client picks the window for the rest by `ChatType`.

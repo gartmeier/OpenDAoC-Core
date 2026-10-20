@@ -56,7 +56,7 @@ export interface SayPrimitive {
   text: string;
 }
 
-export type Percept = BarePercept | MessagePercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | ObjectDeletePercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -70,6 +70,80 @@ export interface MessagePercept {
   chatLocation: eChatLoc;
 }
 
+export interface BarePacketPercept {
+  kind: "barePacket";
+  call: string;
+  code: number;
+}
+
+export interface PlayerCreatePercept {
+  kind: "playerCreate";
+  x: number;
+  y: number;
+  z: number;
+  sessionId: number;
+  objectId: number;
+  heading: number;
+  model: number;
+  level: number;
+  realm: PacketRealm;
+  dead: boolean;
+  swimming: boolean;
+  stealthed: boolean;
+  wireframe: boolean;
+  vampiir: boolean;
+  eyeSize: number;
+  lipSize: number;
+  moodType: number;
+  eyeColor: number;
+  hairColor: number;
+  faceType: number;
+  hairStyle: number;
+  name: string;
+  guildName: string;
+  lastName: string;
+  prefixName: string;
+  title: string;
+  horse?: PlayerCreateHorse;
+}
+
+export interface PlayerPositionPercept {
+  kind: "playerPosition";
+  x: number;
+  y: number;
+  z: number;
+  speed: number;
+  fallSpeed: number;
+  sessionId: number;
+  objectId: number;
+  zoneId: number;
+  stateFlags: number;
+  steedSeat: number;
+  heading: number;
+  headingFlags: number;
+  actionFlags: number;
+  roleplay: boolean;
+  healthPercent: number;
+  attacking: boolean;
+  manaPercent: number;
+  endurancePercent: number;
+}
+
+export interface ObjectDeletePercept {
+  kind: "objectDelete";
+  objectId: number;
+}
+
 export type eChatType = "CT_Say" | "CT_Send" | "CT_Group" | "CT_Guild" | "CT_Broadcast" | "CT_Emote" | "CT_Help" | "CT_Chat" | "CT_Advise" | "CT_Officer" | "CT_Alliance" | "CT_BattleGroup" | "CT_BattleGroupLeader" | "CT_Staff" | "CT_Spell" | "CT_YouHit" | "CT_System" | "CT_Items" | "CT_Merchant" | "CT_YourDeath" | "CT_OthersDeath" | "CT_OthersCombat" | "CT_ResistsChanged" | "CT_SpellExpires" | "CT_Loot" | "CT_SpellResisted" | "CT_Important" | "CT_Damaged" | "CT_Action" | "CT_SpellPulse" | "CT_KilledByAlb" | "CT_KilledByMid" | "CT_KilledByHib" | "CT_LookingForGroup" | "CT_Trade" | "CT_SocialInterface" | "CT_ScreenCenter" | "CT_ScreenCenterSmaller" | "CT_ScreenCenter_And_CT_System" | "CT_ScreenCenterSmaller_And_CT_System";
 
 export type eChatLoc = "CL_ChatWindow" | "CL_PopupWindow" | "CL_SystemWindow";
+
+export type PacketRealm = "None" | "Albion" | "Midgard" | "Hibernia";
+
+export interface PlayerCreateHorse {
+  id: number;
+  barding: number;
+  bardingColor: number;
+  saddle: number;
+  saddleColor: number;
+}

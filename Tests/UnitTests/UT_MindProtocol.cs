@@ -80,6 +80,17 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Write_ShouldWriteAPlayerCreate_WithItsRealmAsANameAndWithoutAHorse_WhenThePlayerIsntRiding()
+        {
+            PlayerCreatePercept percept = new(531234, 478901, 2345.5f, 0x0304, 0x0123, 2048, 0x02BE, 23, PacketRealm.Midgard, false, false, false, false, false, 0, 0, 0, 0, 0, 0, 0, "Vue", "", "", "", "", null);
+            string json = Write(new PerceptMessage(4, 1500, percept));
+
+            Assert.That(json, Does.StartWith("""{"type":"percept","sequence":4,"elapsedMs":1500,"percept":{"kind":"playerCreate","x":531234,"y":478901,"z":2345.5,"""));
+            Assert.That(json, Does.Contain("\"realm\":\"Midgard\""));
+            Assert.That(json, Does.Not.Contain("horse"));
+        }
+
+        [Test]
         public void Write_ShouldWriteAQueuedPrimitiveResult_WithoutAReason()
         {
             Assert.That(Write(new PrimitiveResultMessage(7, true, null)), Is.EqualTo("""{"type":"primitiveResult","id":7,"queued":true}"""));

@@ -54,5 +54,18 @@ function describe(percept: Percept): string {
       return percept.call;
     case "message":
       return `${percept.chatType} ${percept.chatLocation}\t${percept.text}`;
+    case "barePacket":
+      return `${percept.call} 0x${percept.code.toString(16).toUpperCase().padStart(2, "0")}`;
+    case "playerCreate":
+      return `playerCreate #${percept.objectId} ${percept.name}\t${at(percept)} heading ${percept.heading}`;
+    case "playerPosition":
+      return `playerPosition #${percept.objectId}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} zone ${percept.zoneId}`;
+    case "objectDelete":
+      return `objectDelete #${percept.objectId}`;
   }
+}
+
+// As `/gloc` prints a position.
+function at({ x, y, z }: { x: number; y: number; z: number }): string {
+  return `X:${x} Y:${y} Z:${z}`;
 }
