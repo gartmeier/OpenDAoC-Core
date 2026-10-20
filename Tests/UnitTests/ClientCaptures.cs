@@ -11,7 +11,13 @@ namespace DOL.GS.Tests
     /// </summary>
     public static class ClientCaptures
     {
+        // Login, idle and quit sessions of the same Character.
         public static readonly string[] Names = ["login-idle-quit-1", "login-idle-quit-2"];
+
+        // A Character already in the world saying one line.
+        public const string SAY = "say-hello";
+
+        public static readonly string[] All = [.. Names, SAY];
 
         public static CapturedPacket[] Load(string capture)
         {

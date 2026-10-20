@@ -46,7 +46,7 @@ namespace DOL.GS.Tests
         // Player init and the ping that follows it arrive in either order.
         private static readonly Range EitherOrder = 6..8;
 
-        [TestCaseSource(nameof(Captures))]
+        [TestCaseSource(typeof(ClientCaptures), nameof(ClientCaptures.All))]
         public void EveryPacket_ShouldHaveAValidChecksum(string capture)
         {
             CapturedPacket[] packets = ClientCaptures.Load(capture);

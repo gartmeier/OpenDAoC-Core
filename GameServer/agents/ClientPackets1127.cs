@@ -124,6 +124,12 @@ namespace DOL.GS.Agents
             return Command("&quit");
         }
 
+        // Says `text` to those nearby, as a chat line typed without a slash: the client sends it as the `/say` command's `&s` alias.
+        public static ClientPacket Say(string text)
+        {
+            return Command($"&s {text}");
+        }
+
         // Sent by the client at the end of world entry. Its first byte isn't a code the server acts on.
         public static ClientPacket ShowWarmapRequest()
         {

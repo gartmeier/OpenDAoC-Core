@@ -125,6 +125,16 @@ namespace DOL.GS.Tests
             AssertMatches(quit with { Data = captured.Data }, captured);
         }
 
+        [Test]
+        public void Say_ShouldMatchCapture()
+        {
+            // The Human typed `hello` without a slash. It's the first command in the capture.
+            CapturedPacket captured = ClientCaptures.WhilePlaying(ClientCaptures.SAY, eClientPackets.CommandHandler).First();
+            Assert.That(captured.Data, Is.EqualTo("\0&s hello\0"u8.ToArray()), "captured command");
+
+            AssertMatches(ClientPackets1127.Say("hello"), captured);
+        }
+
         [TestCaseSource(nameof(Captures))]
         public void ShowWarmapRequest_ShouldMatchCapture(string capture)
         {
