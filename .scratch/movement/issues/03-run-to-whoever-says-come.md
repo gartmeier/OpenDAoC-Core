@@ -62,11 +62,11 @@ What exists now:
 
 For the Human, with the server running a build of this branch (the Mind setup is unchanged; a fresh worktree needs `CoreServer/config/serverconfig.xml` copied in before it builds). Test on flat open ground: runs go in a straight line, through anything in the way.
 1. `bun mind/agent.ts greeen`. While he enters the world, the Mind prints `ownPosition` and `maxSpeed 100% (191.0 per second)` (or Greeen's own percentage).
-2. Stand about 30 m (about 1000 units) from Greeen, in view, with `/gmstealth off`, and `/say come`. The Mind prints `Sending moveTo ...` and `moved` lines about five a second. In your client he turns towards where you stood and runs there with the running animation, smoothly, without jumps, speeding up at the start and slowing at the end. He stops about 100 units short of you, and the Mind prints `arrived`. He doesn't turn to face you yet (ticket 04).
+2. Stand 300 to 500 units from Greeen, in view, with `/gmstealth off`, and `/say come`. A say only reaches players within 512 units (`WorldMgr.SAY_DISTANCE`), so from farther away Greeen never hears it and nothing happens. The Mind's `ownPosition` and your `playerPosition` lines give both positions. The Mind prints `Sending moveTo ...` and `moved` lines about five a second. In your client he turns towards where you stood and runs there with the running animation, smoothly, without jumps, speeding up at the start and slowing at the end. He stops about 100 units short of you, and the Mind prints `arrived`. He doesn't turn to face you yet (ticket 04).
 3. `/gloc` standing where he stopped, or `/gloc` on him: his position matches the `arrived` line to within a unit or two.
 4. Walk away, `/say come`, and `/say stop` while he runs. He stops at once, and the Mind prints `stopped (Stop)`.
 5. `/say come` again, and press Ctrl+C in the Mind's terminal while he runs. He stops, then quits through the normal path, quit delay included. The Mind exits once the server has disconnected him.
-6. Start the Mind again. Have him do one long run (about 3000 units), and mid-run `/say come` from somewhere else. The Mind prints `stopped (Replaced)`, and he turns towards the new spot without stopping.
+6. Start the Mind again. `/say come`, run a few steps to the side while he runs, and `/say come` again while you're still within 512 units of him. The Mind prints `stopped (Replaced)`, and he turns towards the new spot without stopping.
 7. Search the server log and the cheat log (`Debug/logs/server.log`, `Debug/logs/cheat.log`) for `Speed hack`. There are no entries for Greeen.
 
 Known gaps:
@@ -75,3 +75,5 @@ Known gaps:
 - **A server move doesn't end a run** (a `/jump`, a pull-back by the speed check), and a maximum speed of 0 makes a run wait rather than end (ticket 05).
 - **The target field** (data offsets 22–23) of running position updates stays 0, since the Harness has no target yet.
 - **Not tested automatically:** the movement loop through the server's handlers and its speed check. Steps 2, 6 and 7 cover them.
+
+**2026-10-21 (agent):** The Human said `/say come` and nothing happened. Greeen's trace (`Greeen-20261021-085215-217.tsv`) has no say line after Vue's `playerCreate` at 35.3 s: the say never reached Greeen's client. A say only reaches players within 512 units (`GameLiving.Say`, `WorldMgr.SAY_DISTANCE`), and step 2 said to stand about 1000 units away. Steps 2 and 6 now say to stay within 512 units. The spec's "about 30 m" can't be met by a say: a `come` run is at most about 410 units (512 minus the 100 stand-off).
