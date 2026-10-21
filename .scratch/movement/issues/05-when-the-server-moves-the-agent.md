@@ -67,3 +67,16 @@ Known gaps:
 Fixed in `b58888c39`: when the Harness gets a player position for a player it hasn't had the create of, it sends the create request with that player's session ID. It asks once, then again after 5 s if no create came. A delete or remove makes the player unknown again. The request's layout is what the handler reads from a 1.126 or later client: the session ID, low byte first. None of the captures has another player around, so it isn't checked against a real client yet. A `/agent capture` of the Human's client logging in next to someone would settle it. Server 250 passing in Release (this branch now has main's ticket 03 fix merged in), Mind 53, typecheck clean.
 
 Re-check, with the server rebuilt from `b58888c39` and restarted: log Vue in first, then start Greeen's Mind. The Mind prints `playerCreate #<Vue's id> Vue` within a second or so of Vue's first `playerPosition` line. Then `/say come` from within 512 units works, and the steps above apply.
+
+**2026-10-21 (Human, recorded by agent):** On a server built from `b58888c39`, with Vue logged in before Greeen, Greeen got Vue's player create 0.36 s after entering the world, in answer to his create request. The Human then captured his own client logging in next to Greeen. It sends the request with parameter 0x0000 and data `0400 0000` (Greeen's session ID 4, low byte first, then two zero bytes). The Harness now sends exactly that (`70d8d8bb2`), and the first 189 s of the capture are checked in as `login-next-to-agent.tsv` with a golden-bytes test. Server 252 passing in Release.
+
+Step 5 holds. The Mind printed, for a `come` and a `/speed 0` on Greeen 0.4 s later:
+
+    #42813  852.799 s  CT_Say CL_ChatWindow  Vue says, "come"
+    Sending moveTo X:296158 Y:642934 Z:4852.
+    #42814  852.832 s  moved  X:296105 Y:642820 Z:4850 heading 3809 speed 0.0 to X:296158 Y:642934 Z:4852
+    #42818  853.032 s  moved  X:296107 Y:642825 Z:4850 heading 3809 speed 53.0 to X:296158 Y:642934 Z:4852
+    #42820  853.166 s  maxSpeed 0% (0.0 per second)
+    #42821  853.166 s  stopped (UnableToMove)  X:296111 Y:642833 Z:4850
+
+The run ended where he was, in the tick the maximum speed arrived, with the unable-to-move reason. The server log has no `Speed hack` entries for Greeen. The jump mid-run (step 3) and the box are still to do.
