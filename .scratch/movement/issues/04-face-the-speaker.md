@@ -10,12 +10,12 @@ See the spec: `.scratch/movement/spec.md`.
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] `face` sends the heading update bytes the capture shows (golden bytes via ticket 01's builder)
 - [x] Come (`bun test`): `arrived` after `come` gives a `face` towards the speaker; a speaker within 100 units gives a `face` only
-- [ ] In game: after `/say come`, Greeen arrives and turns to face the Human
-- [ ] In game: `/say come` from right next to him makes him turn without moving
+- [x] In game: after `/say come`, Greeen arrives and turns to face the Human
+- [x] In game: `/say come` from right next to him makes him turn without moving
 
 ## Comments
 
@@ -48,4 +48,6 @@ Known gaps:
 - **Turning disabled isn't honoured.** The max speed packet says when the client mustn't turn (`turningDisabled`), and a real client then sends no heading update. `face` still sends one, and the server's heading handler doesn't check either. Ticket 05 changes how the max speed Percept is handled, so it can take this.
 - **A `come` from close by while he runs** gives a `face`, which the run overtakes; he carries on to the first speaker and faces them on arrival.
 - **Not tested automatically:** how the server and other clients take the heading update. Steps 2 to 5 cover it.
+
+**2026-10-21 (Human, recorded by agent):** Ran the in-game steps on a server built from this branch (started 12:02). All held: Greeen faced the Human on arrival, turned without moving for a `come` from close by, kept facing the Human after his next idle position update, and on arrival faced where the Human had walked to. The one-update turn looks fine in the client, so it stays; no turn rate is needed. The server log has no speed-check entries for Greeen (its only `speed hack` match is the `/speedhack` command being registered), and there's no cheat log. All acceptance items are met.
 
