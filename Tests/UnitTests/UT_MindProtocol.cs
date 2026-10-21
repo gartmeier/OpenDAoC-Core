@@ -34,6 +34,63 @@ namespace DOL.GS.Tests
             Assert.That(message, Is.EqualTo(new PrimitiveMessage(8, new SayPrimitive("hello"))));
         }
 
+        [Test]
+        public void Read_ShouldReadAMoveToPrimitive()
+        {
+            MindMessage message = Read("""{"type":"primitive","id":9,"primitive":{"name":"moveTo","x":531234.5,"y":478901,"z":2345}}""");
+
+            Assert.That(message, Is.EqualTo(new PrimitiveMessage(9, new MoveToPrimitive(531234.5f, 478901, 2345))));
+        }
+
+        [Test]
+        public void Read_ShouldReadAStopPrimitive()
+        {
+            MindMessage message = Read("""{"type":"primitive","id":10,"primitive":{"name":"stop"}}""");
+
+            Assert.That(message, Is.EqualTo(new PrimitiveMessage(10, new StopPrimitive())));
+        }
+
+        [Test]
+        public void Read_ShouldReadAFacePrimitive()
+        {
+            MindMessage message = Read("""{"type":"primitive","id":11,"primitive":{"name":"face","heading":1523}}""");
+
+            Assert.That(message, Is.EqualTo(new PrimitiveMessage(11, new FacePrimitive(1523))));
+        }
+
+        // A missing heading isn't heading 0.
+        [Test]
+        public void Read_ShouldSayWhy_ForAFaceWithoutAHeading()
+        {
+            MindMessage message = MindProtocol.Read("""{"type":"primitive","id":11,"primitive":{"name":"face"}}"""u8, out string error);
+
+            Assert.That(message, Is.Null);
+            Assert.That(error, Does.Contain("'heading'"));
+        }
+
+        // All three coordinates are required: a missing Z isn't the ground at 0.
+        [Test]
+        public void Read_ShouldSayWhy_ForAMoveToWithoutAllThreeCoordinates()
+        {
+            MindMessage message = MindProtocol.Read("""{"type":"primitive","id":9,"primitive":{"name":"moveTo","x":531234,"y":478901}}"""u8, out string error);
+
+            Assert.That(message, Is.Null);
+            Assert.That(error, Does.Contain("'z'"));
+        }
+
+        [Test]
+        public void Write_ShouldWriteAStoppedPercept_WithItsReasonAsAName()
+        {
+            Assert.That(Write(new PerceptMessage(5, 2000, new StoppedPercept(1.5f, 2, 3, StopReason.Replaced))),
+                Is.EqualTo("""{"type":"percept","sequence":5,"elapsedMs":2000,"percept":{"kind":"stopped","x":1.5,"y":2,"z":3,"reason":"Replaced"}}"""));
+        }
+
+        [Test]
+        public void Write_ShouldLeaveOutAMissingServerName_FromAnOwnPositionPercept()
+        {
+            Assert.That(Write(new PerceptMessage(6, 2100, new OwnPositionPercept(1, 2, 3, 4, 5, 0, 0, 201, false, false, null))), Does.Not.Contain("serverName"));
+        }
+
         [TestCase("not json")]
         [TestCase("null")]
         [TestCase("""{"token":"secret","character":"Greeen"}""")]

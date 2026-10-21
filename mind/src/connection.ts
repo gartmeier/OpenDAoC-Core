@@ -36,7 +36,7 @@ export type Ending =
  * One Agent's connection to the server, which is the Agent's network connection (ADR 0005).
  * It logs the Character in, hands Percepts to a handler and sends Primitives. It knows nothing about what the Mind decides.
  * While a refusal says to retry, for example because the Character is still linkdead, it tries again every few seconds.
- * Ctrl+C quits the Agent through the normal quit path and waits for the server to disconnect it. A second Ctrl+C drops the connection, which leaves the Character linkdead.
+ * Ctrl+C stops the Agent's Character, then quits it through the normal quit path and waits for the server to disconnect it. A second Ctrl+C drops the connection, which leaves the Character linkdead.
  * Ctrl+C while waiting to retry stops retrying.
  */
 export class Connection {
@@ -104,7 +104,8 @@ export class Connection {
   }
 
   /**
-   * What Ctrl+C does. In the world, the first quits the Agent. Otherwise, or the second time, it drops the connection.
+   * What Ctrl+C does. In the world, the first stops the Agent's Character and quits it. Otherwise, or the second time, it drops the connection.
+   * The server refuses `/quit` while the Character is moving, so a run in progress is stopped first. The Harness has the Character standing before it takes the next Primitive.
    * Dropping it while in the world makes the Character go linkdead, as a crashed client would.
    */
   interrupt(): void {
@@ -125,8 +126,12 @@ export class Connection {
     }
 
     this.#quitting = true;
-    log(`${character} is quitting. Waiting for the server to disconnect ${character}. Ctrl+C again drops the connection instead.`);
+    log(`${character} is stopping and quitting. Waiting for the server to disconnect ${character}. Ctrl+C again drops the connection instead.`);
 
+    void this.send({ name: "stop" }).then((result) => {
+      if (!result.queued)
+        log(`The stop wasn't sent: ${result.reason}`);
+    });
     void this.send({ name: "quit" }).then((result) => {
       if (!result.queued)
         log(`The quit wasn't sent: ${result.reason}`);

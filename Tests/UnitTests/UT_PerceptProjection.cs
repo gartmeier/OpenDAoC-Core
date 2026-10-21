@@ -25,6 +25,9 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendNPCCreate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendNPCCreate));
         private static readonly MethodInfo SendObjectUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectUpdate));
         private static readonly MethodInfo SendObjectRemove = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectRemove));
+        private static readonly MethodInfo SendPlayerPositionAndObjectID = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerPositionAndObjectID));
+        private static readonly MethodInfo SendUpdateMaxSpeed = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateMaxSpeed));
+        private static readonly MethodInfo SendPlayerJump = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerJump));
         private static readonly MethodInfo SendUDP =typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUDP));
         private static readonly MethodInfo SendTCP = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendTCP));
 
@@ -594,6 +597,114 @@ namespace DOL.GS.Tests
             PerceptProjection.Project(Playing(), SendUDP, [udp]);
 
             Assert.That((udp.ToArray(), udp.Position), Is.EqualTo((before, position)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveWhatThePacketCarries_ForTheOwnPositionCall()
+        {
+            Zone zone = WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0];
+            GameClient client = AgentInWorld(zone);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            (greeen.X, greeen.Y, greeen.Z) = (531234, 478901, 2345);
+            greeen.ObjectID = 0x0123;
+            greeen.TestHeading = 2048;
+
+            Percept percept = PerceptProjection.Project(client, SendPlayerPositionAndObjectID, []);
+
+            Assert.That(percept, Is.EqualTo(new OwnPositionPercept(531234, 478901, 2345, 0x0123, 2048, 0, 0, 201, false, false, null)));
+        }
+
+        // In a dungeon the packet carries the zone's offsets, in units of 8192.
+        [Test]
+        public void Project_ShouldGiveTheZonesOffsets_ForTheOwnPositionCallInADungeon()
+        {
+            Zone zone = WorldDoubles.Region(20, (20, 16384, 40960, 32768, 32768)).Zones[0];
+            GameClient client = AgentInWorld(zone);
+
+            OwnPositionPercept percept = (OwnPositionPercept) PerceptProjection.Project(client, SendPlayerPositionAndObjectID, []);
+
+            Assert.That((percept.ZoneXOffset, percept.ZoneYOffset, percept.Region), Is.EqualTo((2, 5, 20)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheOwnPositionCallOutsideAnyZone()
+        {
+            Zone zone = WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0];
+            GameClient client = AgentInWorld(zone);
+            client.Player.X = 0;
+
+            Assert.That(PerceptProjection.Project(client, SendPlayerPositionAndObjectID, []), Is.Null);
+        }
+
+        // The packet carries a percentage of the base speed of 191: 117 for 225, rounded down.
+        [Test]
+        public void Project_ShouldGiveWhatThePacketCarries_ForTheMaxSpeedCall()
+        {
+            Zone zone = WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0];
+            GameClient client = AgentInWorld(zone);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            greeen.Modified[eProperty.MaxSpeed] = 225;
+            greeen.Modified[eProperty.WaterSpeed] = 80;
+            greeen.TurningDisabled = true;
+
+            Percept percept = PerceptProjection.Project(client, SendUpdateMaxSpeed, []);
+
+            Assert.That(percept, Is.EqualTo(new MaxSpeedPercept(117, true, 80)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheMaxSpeedCallBeforeTheAgentHasACharacter()
+        {
+            Assert.That(PerceptProjection.Project(Playing(), SendUpdateMaxSpeed, []), Is.Null);
+        }
+
+        [Test]
+        public void Project_ShouldGiveWhatThePacketCarries_ForTheJumpCall()
+        {
+            Zone zone = WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0];
+            GameClient client = AgentInWorld(zone);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            (greeen.X, greeen.Y, greeen.Z) = (531234, 478901, 2345);
+            greeen.ObjectID = 0x0123;
+            greeen.TestHeading = 2048;
+
+            Percept percept = PerceptProjection.Project(client, SendPlayerJump, [false]);
+
+            Assert.That(percept, Is.EqualTo(new JumpPercept(531234, 478901, 2345, 0x0123, 2048, 0)));
+        }
+
+        // As `/faceloc` sends it: the client keeps its position and takes only the heading.
+        [Test]
+        public void Project_ShouldGiveNoPosition_ForTheJumpCallWithOnlyTheHeading()
+        {
+            Zone zone = WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0];
+            GameClient client = AgentInWorld(zone);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            greeen.ObjectID = 0x0123;
+            greeen.TestHeading = 1024;
+
+            Percept percept = PerceptProjection.Project(client, SendPlayerJump, [true]);
+
+            Assert.That(percept, Is.EqualTo(new JumpPercept(0, 0, 0, 0x0123, 1024, 0)));
+        }
+
+        // The packet carries Z in 16 bits.
+        [Test]
+        public void Project_ShouldGiveZAsThePacketCarriesIt_ForTheJumpCall()
+        {
+            Zone zone = WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0];
+            GameClient client = AgentInWorld(zone);
+            client.Player.Z = -10;
+
+            JumpPercept percept = (JumpPercept) PerceptProjection.Project(client, SendPlayerJump, [false]);
+
+            Assert.That(percept.Z, Is.EqualTo(65526));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheJumpCallBeforeTheAgentHasACharacter()
+        {
+            Assert.That(PerceptProjection.Project(Playing(), SendPlayerJump, [false]), Is.Null);
         }
 
         private static GameClient AgentInWorld(Zone zone)

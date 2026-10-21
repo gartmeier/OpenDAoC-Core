@@ -16,7 +16,7 @@ namespace DOL.GS.Agents
     /// Inbound packets come from a queue instead of the network and go through the normal packet processor, at the same point in the client tick as a Human's.
     /// Outbound packets go to <see cref="HarnessPacketLib"/>, which records them in the Agent's trace and tells the Agent's Mind.
     /// </summary>
-    public sealed class HarnessClient : GameClient
+    public sealed class HarnessClient : GameClient, IMovingClient
     {
         private static readonly Logger log = LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -26,18 +26,26 @@ namespace DOL.GS.Agents
         // A real client's version check and login request are packets 1 and 2. The Harness skips both.
         private const ushort FIRST_SEQUENCE = 3;
 
+        // Headings are the low 12 bits of a heading update, 4096 to a full turn.
+        private const int MAX_HEADING = 4095;
+
         private readonly ConcurrentQueue<ClientPacket> _inbound = new();
         private readonly TaskCompletionSource _disconnected = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private ushort _sequence = FIRST_SEQUENCE;
         private WorldEntry _worldEntry;
         private Liveness _liveness;
         private WorldExit _worldExit;
+        private readonly HarnessMovement _movement;
+        private readonly PlayerCreateRequests _playerCreateRequests = new();
+        // The heading of a heading update still in the inbound queue, which the server hasn't set on the Character yet.
+        private ushort? _queuedHeading;
         private AgentTrace _trace;
         private bool _mindLost;
 
         public HarnessClient(MindLink mind) : base(null)
         {
             Mind = mind;
+            _movement = new(this);
         }
 
         // The Agent's Mind connection, which is the client's network connection (ADR 0005). Told every call the server makes on the packet library.
@@ -130,6 +138,38 @@ namespace DOL.GS.Agents
             if (!IsInWorld)
                 return $"{CharacterName} isn't in the world.";
 
+            // Movement is the client's own: it sends the position updates while it runs.
+            switch (primitive)
+            {
+                case MoveToPrimitive moveTo:
+                {
+                    _movement.MoveTo(new(moveTo.X, moveTo.Y, moveTo.Z), GameLoop.GameLoopTime);
+                    return null;
+                }
+                case StopPrimitive:
+                {
+                    if (_movement.Stop(GameLoop.GameLoopTime))
+                        _liveness?.OnPositionUpdate(GameLoop.GameLoopTime);
+
+                    return null;
+                }
+                case FacePrimitive face:
+                {
+                    if (face.Heading is < 0 or > MAX_HEADING)
+                        return $"A heading is 0 to {MAX_HEADING}, not {face.Heading}.";
+
+                    // A running client sends no heading update, as captured: the run's own heading, in its next position update, overtakes the face at once.
+                    if (_movement.IsRunning)
+                        return null;
+
+                    // One heading update with the final heading, as a client turned by the mouse can send: the server and other clients see only the heading each one carries.
+                    // Position updates keep their idle cadence, as while the captured client turns.
+                    _queuedHeading = (ushort) face.Heading;
+                    Enqueue(HeadingUpdate(_queuedHeading.Value));
+                    return null;
+                }
+            }
+
             ClientPacket packet = primitive switch
             {
                 QuitPrimitive => ClientPackets1127.Quit(),
@@ -150,9 +190,50 @@ namespace DOL.GS.Agents
             _worldExit ??= new(totalOut, Player?.Realm ?? eRealm.None);
         }
 
+        // What the client does with what the server told it. Called on the game loop, after the Mind was told.
+        public void OnPerceived(Percept percept)
+        {
+            if (_playerCreateRequests.OnPerceived(percept, GameLoop.GameLoopTime) is ushort sessionId)
+                Enqueue(ClientPackets1127.CreatePlayerRequest(sessionId));
+
+            switch (percept)
+            {
+                case MaxSpeedPercept maxSpeed:
+                {
+                    if (_movement.OnMaxSpeed(maxSpeed, GameLoop.GameLoopTime))
+                        _liveness?.OnPositionUpdate(GameLoop.GameLoopTime);
+
+                    break;
+                }
+                case JumpPercept jump:
+                {
+                    // The server set the Character's heading too, and the client takes it: a `face` still queued would turn the Character back.
+                    Unqueue((byte) eClientPackets.PlayerHeadingUpdate);
+                    _queuedHeading = null;
+                    _movement.OnJump(jump);
+                    break;
+                }
+            }
+        }
+
         public void Enqueue(ClientPacket packet)
         {
             _inbound.Enqueue(packet);
+        }
+
+        // Called on the game loop, like everything that queues a packet, so nothing is queued while it goes through the queue.
+        public void Unqueue(byte code)
+        {
+            for (int count = _inbound.Count; count > 0 && _inbound.TryDequeue(out ClientPacket packet); count--)
+            {
+                if (packet.Code != code)
+                    _inbound.Enqueue(packet);
+            }
+        }
+
+        void IMovingClient.Perceive(Percept percept)
+        {
+            Mind.Perceive(percept);
         }
 
         // Stamped with a millisecond tick counter, like a real client's.
@@ -161,12 +242,19 @@ namespace DOL.GS.Agents
             return ClientPackets1127.Ping((uint) Environment.TickCount);
         }
 
-        // What a client standing still tells the server about its Character.
+        // What a client standing still tells the server about its Character. It faces the way it last turned to, even if the server hasn't read that heading update yet.
         public ClientPacket PositionUpdate()
         {
             GamePlayer player = Player;
             PlayerPositionUpdateHandler.StateFlags stateFlags = player.IsSitting ? PlayerPositionUpdateHandler.StateFlags.SITTING : 0;
-            return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, player.Heading, 0, player.HealthPercent, SessionID, stateFlags, player.ActionFlags);
+            return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, _queuedHeading ?? player.Heading, 0, player.HealthPercent, SessionID, stateFlags, player.ActionFlags);
+        }
+
+        // What a client turning on the spot tells the server, once it faces `heading` (0 to 4095).
+        public ClientPacket HeadingUpdate(ushort heading)
+        {
+            GamePlayer player = Player;
+            return ClientPackets1127.HeadingUpdate(heading, player.HealthPercent, SessionID, player.ActionFlags);
         }
 
         // Called by the client service on the game loop, where a real client's received bytes are processed.
@@ -215,9 +303,15 @@ namespace DOL.GS.Agents
                 }
             }
 
-            // Only while a Mind is connected, as only a running client keeps its connection alive.
+            // Only while a Mind is connected, as only a running client keeps its connection alive and moves its Character (ADR 0005).
+            // A running Character's position updates stand in for the idle ones.
             if (_liveness != null && !_mindLost)
+            {
+                if (IsInWorld && _movement.Tick(GameLoop.GameLoopTime))
+                    _liveness.OnPositionUpdate(GameLoop.GameLoopTime);
+
                 StayAlive(_liveness.Tick(GameLoop.GameLoopTime));
+            }
 
             while (_inbound.TryDequeue(out ClientPacket clientPacket))
             {
@@ -239,6 +333,9 @@ namespace DOL.GS.Agents
                     packet.ReleasePooledObject();
                 }
             }
+
+            // The server has read every heading update, so the Character's heading is the client's again.
+            _queuedHeading = null;
         }
 
         // What an idle client sends so the server doesn't time it out or link-dead it. A position update repeats where the Character is, so it needs the Character in the world.

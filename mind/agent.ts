@@ -1,12 +1,13 @@
-// The echo Mind: logs an Agent's Character in, prints every Percept it gets and says back what others say next to it, until the Agent leaves the world. Ctrl+C quits.
-// Every Percept also goes to the Agent's Surroundings, which the printed lines name players and NPCs from.
+// The Come Mind: logs an Agent's Character in, prints every Percept it gets, and runs to whoever says `come` next to it and turns to face them, until the Agent leaves the world. `stop` stops it. Ctrl+C stops it and quits.
+// Every Percept also goes to the Agent's Self and Surroundings, which the printed lines name players and NPCs from.
 // Usage: bun mind/agent.ts <character>
 // The server address and token come from mind/.env (see mind/.env.example).
 
+import { Come } from "./src/come.ts";
 import { Connection } from "./src/connection.ts";
-import { echo } from "./src/echo.ts";
 import { loadEnvFile } from "./src/env.ts";
-import type { Percept, PerceptMessage } from "./src/protocol.ts";
+import type { Percept, PerceptMessage, Primitive } from "./src/protocol.ts";
+import { Self } from "./src/self.ts";
 import { type Position, Surroundings } from "./src/surroundings.ts";
 
 const character = Bun.argv[2];
@@ -25,22 +26,26 @@ if (!token) {
   process.exit(2);
 }
 
+// Not `self`, which is a JavaScript global.
+const agentSelf = new Self();
 const surroundings = new Surroundings();
+const come = new Come(character);
 
 // Status lines go to stderr, so stdout holds only Percepts.
 const connection = new Connection({ url, token, character, log: (line) => console.error(line) }, {
   onPercept: (message, connection) => {
+    agentSelf.perceive(message);
     surroundings.perceive(message);
     console.log(formatPercept(message));
-    const reply = echo(message.percept, character);
+    const primitive = come.decide(message.percept, agentSelf, surroundings);
 
-    if (!reply)
+    if (!primitive)
       return;
 
-    console.error(`Saying "${reply.text}".`);
-    void connection.send(reply).then((result) => {
+    console.error(`Sending ${describePrimitive(primitive)}.`);
+    void connection.send(primitive).then((result) => {
       if (!result.queued)
-        console.error(`The say wasn't sent: ${result.reason}`);
+        console.error(`The ${primitive.name} wasn't sent: ${result.reason}`);
     });
   },
 });
@@ -76,10 +81,35 @@ function describe(percept: Percept): string {
       return `objectDelete #${percept.objectId}`;
     case "objectRemove":
       return `objectRemove #${percept.objectId} type ${percept.objectType}`;
+    case "ownPosition":
+      return `ownPosition #${percept.objectId}	${at(percept)} heading ${percept.heading} region ${percept.region}`;
+    case "jump":
+      return percept.x === 0 && percept.y === 0 ? `jump #${percept.objectId}\theading ${percept.heading}` : `jump #${percept.objectId}\t${at(percept)} heading ${percept.heading}`;
+    case "maxSpeed":
+      return `maxSpeed ${percept.maxSpeedPercent}% (${agentSelf.maxSpeed.toFixed(1)} per second)`;
+    case "moved":
+      return `moved	${at(percept)} heading ${percept.heading} speed ${percept.speed.toFixed(1)} to ${at({ x: percept.targetX, y: percept.targetY, z: percept.targetZ })}`;
+    case "arrived":
+      return `arrived	${at(percept)}`;
+    case "stopped":
+      return `stopped (${percept.reason})	${at(percept)}`;
   }
 }
 
-// As `/gloc` prints a position.
+function describePrimitive(primitive: Primitive): string {
+  switch (primitive.name) {
+    case "moveTo":
+      return `moveTo ${at(primitive)}`;
+    case "say":
+      return `say "${primitive.text}"`;
+    case "face":
+      return `face heading ${primitive.heading}`;
+    default:
+      return primitive.name;
+  }
+}
+
+// As `/gloc` prints a position, in whole units.
 function at({ x, y, z }: Position): string {
-  return `X:${x} Y:${y} Z:${z}`;
+  return `X:${Math.round(x)} Y:${Math.round(y)} Z:${Math.round(z)}`;
 }

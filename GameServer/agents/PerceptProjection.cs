@@ -39,6 +39,9 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendObjectUpdate) => ObjectUpdate(client, (GameObject) args[0]),
                 nameof(IPacketLib.SendObjectDelete) => ObjectDelete(args[0]),
                 nameof(IPacketLib.SendObjectRemove) => ObjectRemove((GameObject) args[0]),
+                nameof(IPacketLib.SendPlayerPositionAndObjectID) => OwnPosition(client),
+                nameof(IPacketLib.SendPlayerJump) => Jump(client, (bool) args[0]),
+                nameof(IPacketLib.SendUpdateMaxSpeed) => MaxSpeed(client),
                 nameof(IPacketLib.SendUDP) => RawPacket(method.Name, (PacketOut) args[0], UDP_HEADER_LENGTH),
                 nameof(IPacketLib.SendTCP) => RawPacket(method.Name, (PacketOut) args[0], TCP_HEADER_LENGTH),
                 _ => new BarePercept(method.Name)
@@ -347,6 +350,57 @@ namespace DOL.GS.Agents
             };
 
             return new(gameObject.ObjectID, objectType);
+        }
+
+        // Mirrors `PacketLib1124.SendPlayerPositionAndObjectID`, which 1.125 to 1.127 don't override.
+        private static OwnPositionPercept OwnPosition(GameClient client)
+        {
+            GamePlayer player = client.Player;
+            Zone zone = player?.CurrentZone;
+
+            if (zone == null)
+                return null;
+
+            return new OwnPositionPercept(
+                player.X,
+                player.Y,
+                player.Z,
+                player.ObjectID,
+                player.Heading,
+                zone.IsDungeon ? (ushort) (zone.XOffset / 0x2000) : 0,
+                zone.IsDungeon ? (ushort) (zone.YOffset / 0x2000) : 0,
+                player.CurrentRegion.Skin,
+                zone.IsDivingEnabled,
+                zone.IsDivingEnabled && player.IsUnderwater,
+                player.CurrentRegion.IsHousing ? Encoded(GameServer.Instance.Configuration.ServerName) : null);
+        }
+
+        // Mirrors `PacketLib168.SendPlayerJump`, which no later library overrides. `headingOnly` sends 0 for the position.
+        private static JumpPercept Jump(GameClient client, bool headingOnly)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new JumpPercept(
+                headingOnly ? 0 : (uint) player.X,
+                headingOnly ? 0 : (uint) player.Y,
+                headingOnly ? 0 : (ushort) player.Z,
+                player.ObjectID,
+                player.Heading,
+                player.InHouse && player.CurrentHouse != null ? (ushort) player.CurrentHouse.HouseNumber : 0);
+        }
+
+        // Mirrors `PacketLib168.SendUpdateMaxSpeed`, which no later library overrides.
+        private static MaxSpeedPercept MaxSpeed(GameClient client)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new MaxSpeedPercept((ushort) player.movementComponent.MaxSpeedPercent, player.IsTurningDisabled, (byte) player.GetModified(eProperty.WaterSpeed));
         }
 
         // A packet the server built itself (ADR 0001). Only the 1.127 player position is decoded, mirroring `PlayerPositionUpdateHandler.CreateOutPak1127`.

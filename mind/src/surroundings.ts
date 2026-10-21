@@ -1,4 +1,8 @@
 import type { PerceptMessage } from "./protocol.ts";
+import { ownPositionIn } from "./self.ts";
+
+/** How far, in game units, the Agent's Character sees objects (`WorldMgr.VISIBILITY_DISTANCE` in the server). Static knowledge, as the client has it. */
+export const VISIBILITY_DISTANCE = 6000;
 
 /** A point in global coordinates. */
 export interface Position {
@@ -36,13 +40,23 @@ export type KnownObject = KnownPlayer | KnownNpc;
  * What the Agent currently believes is around it, built only from Percepts (see `CONTEXT.md`).
  * One collection of known objects by object ID, since the server gives players and NPCs IDs from the same range and a delete or remove Percept doesn't say which it was.
  * An object is known from its create Percept until a delete Percept (it went out of view) or a remove Percept (it left the world, for example by quitting or despawning). Position and object update Percepts move it.
+ * Whenever the Agent's own Character moves, by running or by the server moving it, everything farther than the visibility distance from it is forgotten too, as the client forgets it: the server doesn't always say, and never does for an NPC that goes out of view.
  * Nothing is forgotten by time, because the server doesn't send a player who stands still again.
  * An update for an object it doesn't know is ignored: without its create, the Agent doesn't know what it is.
  */
 export class Surroundings {
   readonly #objects = new Map<number, KnownObject>();
+  // Where the Agent's own Character is, from the same Percepts Self takes it from.
+  #ownPosition: Position | undefined;
 
   perceive({ elapsedMs, percept }: PerceptMessage): void {
+    const ownPosition = ownPositionIn(percept);
+
+    if (ownPosition && !samePosition(ownPosition, this.#ownPosition)) {
+      this.#ownPosition = ownPosition;
+      this.#forgetOutOfView(ownPosition);
+    }
+
     switch (percept.kind) {
       case "playerCreate":
       case "npcCreate":
@@ -111,9 +125,34 @@ export class Surroundings {
     const wanted = name.toLowerCase();
     return this.objects.find((known) => known.name.toLowerCase() === wanted);
   }
+
+  #forgetOutOfView(from: Position): void {
+    for (const [objectId, known] of this.#objects) {
+      if (distance(from, known.position) > VISIBILITY_DISTANCE)
+        this.#objects.delete(objectId);
+    }
+  }
+}
+
+function samePosition(a: Position, b: Position | undefined): boolean {
+  return b !== undefined && a.x === b.x && a.y === b.y && a.z === b.z;
 }
 
 /** How far apart two points are, in game units, Z included. Worked out when asked, so it's never stale. */
 export function distance(from: Position, to: Position): number {
   return Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
+}
+
+/**
+ * The heading, 0 to 4095, that faces `to` from `from`, as the server measures headings: heading `h` points along (−sin θ, cos θ) with θ = `h` × 2π / 4096, so 0 points towards +Y.
+ * Only X and Y count. Nothing faces a point straight above, below or at `from`.
+ */
+export function headingTowards(from: Position, to: Position): number | undefined {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+
+  if (dx === 0 && dy === 0)
+    return undefined;
+
+  return (Math.round((Math.atan2(-dx, dy) * 4096) / (2 * Math.PI)) + 4096) % 4096;
 }
