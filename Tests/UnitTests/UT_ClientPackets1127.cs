@@ -194,7 +194,15 @@ namespace DOL.GS.Tests
             AssertMatches(ClientPackets1127.ShowWarmapRequest(), FromWorldEntry(capture, eClientPackets.ShowWarmapRequest, 0));
         }
 
-        // No capture has another player around yet, so this checks the request against how `PlayerCreationRequestHandler` reads it from a 1.126 or later client.
+        // The Human's client logged in next to Greeen, whose session ID was 4.
+        [Test]
+        public void CreatePlayerRequest_ShouldMatchCapture()
+        {
+            CapturedPacket captured = ClientCaptures.WhilePlaying(ClientCaptures.LOGIN_NEXT_TO_AGENT, eClientPackets.CreatePlayerRequest).Single();
+
+            AssertMatches(ClientPackets1127.CreatePlayerRequest(4), captured);
+        }
+
         [Test]
         public void CreatePlayerRequest_ShouldCarryTheSessionIdAsTheHandlerReadsIt()
         {

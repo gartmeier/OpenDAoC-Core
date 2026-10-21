@@ -6,6 +6,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - Recorded with `/agent capture agent1` on 2026-10-03 and split per session, otherwise unmodified.
 - `say-hello.tsv` is 17 s of account `admin`'s Hibernia Character standing in the world while the Human types `hello` (plain, no slash), then `/send greeen hello` and `/agent capture off`. Recorded with `/agent capture admin` on 2026-10-20, unmodified. See Say.
 - `run-turn-stop.tsv` is 62 s of the same Character on flat open ground in zone 202. It stands, runs in a straight line and stops, strafes right, turns on the spot with the keyboard, runs past an NPC and stops, then targets the NPC. Before each part the Human said `run`, `turn` and `npc`, which mark the parts in the capture as say commands. Recorded with `/agent capture admin` on 2026-10-20, unmodified. See Movement.
+- `login-next-to-agent.tsv` is 189 s of the same Character next to the Agent Greeen, who is already in the world. The Human says `come` and types `/speed 0` with Greeen targeted, quits to the character screen with `/q`, logs back in next to Greeen, says `come`, types `/speed 191`, says `come` three more times and types `/jump greeen to vue`. The first 189 s of a recording with `/agent capture admin` on 2026-10-21, taken while it was still running, otherwise unmodified. See Players already in the world.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
 ## Format
@@ -124,6 +125,10 @@ Full packet, the first of the turn: `000E 0068 0001 FFFF 00BA 0001 0000 06D6 00 
 
 While running past the NPC, the client sends a create object request (0xBE) for an object the server sent, as when idling. After stopping, the Human targeted the NPC: target (0xB0) with data `1F0B E000`, the NPC's object ID and two bytes the server reads as flags. From then on, position updates carry 0x1F0B at data offsets 22–23 and action flags 0xB0.
 
+## Players already in the world
+
+The server sends a player's create to those around only when that player enters the world (`GamePlayer.AddToWorld`). A client that enters after it learns of the player from the player's position updates, and asks for its create: create player request (0xD5), parameter 0x0000, data `0400 0000` for Greeen, whose session ID was 4. That's the session ID low byte first, as in the create object request (0xBE), then two bytes of 0. `PlayerCreationRequestHandler` reads the session ID and answers with the player's create. In `login-next-to-agent.tsv` the client sent it right after game open, with the rest of world entry's burst, having had Greeen's position updates during world entry.
+
 ## Fields that vary between captures
 
 These hold for every packet:
@@ -133,7 +138,7 @@ These hold for every packet:
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
 
-Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0x1D, 0xAC and 0xB8; 0xFFFE for 0xFC; 0xFFFF for the rest.
+Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xD5, 0x1D, 0xAC and 0xB8; 0xFFFE for 0xFC; 0xFFFF for the rest.
 
 Packet data, by data offset:
 

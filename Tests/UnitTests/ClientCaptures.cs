@@ -22,7 +22,10 @@ namespace DOL.GS.Tests
         // The same Character running, strafing, turning on the spot and stopping.
         public const string MOVEMENT = "run-turn-stop";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT];
+        // A Character logging in next to an Agent already in the world, and asking for its create.
+        public const string LOGIN_NEXT_TO_AGENT = "login-next-to-agent";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT];
 
         public static CapturedPacket[] Load(string capture)
         {
