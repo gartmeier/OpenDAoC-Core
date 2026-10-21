@@ -52,7 +52,7 @@ namespace DOL.GS.Tests
 
             _movement.Stop(500);
 
-            Vector3 there = RunOnItsOwn().At(500).Position;
+            Vector3 there = HarnessMovement.WholeUnits(RunOnItsOwn().At(500).Position);
             Assert.That(_client.Perceived.Last(), Is.EqualTo(new StoppedPercept(there.X, there.Y, there.Z, StopReason.Stop)));
             Assert.That(_client.Queued.Select(Read).Last(), Is.EqualTo((there, 0f)));
             Assert.That(_movement.IsRunning, Is.False);
@@ -142,7 +142,7 @@ namespace DOL.GS.Tests
 
             bool sent = _movement.OnMaxSpeed(Rooted, 500);
 
-            Vector3 there = RunOnItsOwn().At(500).Position;
+            Vector3 there = HarnessMovement.WholeUnits(RunOnItsOwn().At(500).Position);
             Assert.That(sent, Is.True);
             Assert.That(_client.Perceived.Last(), Is.EqualTo(new StoppedPercept(there.X, there.Y, there.Z, StopReason.UnableToMove)));
             Assert.That(_client.Queued.Select(Read).Last(), Is.EqualTo((there, 0f)));
@@ -175,6 +175,20 @@ namespace DOL.GS.Tests
             Assert.That(_movement.IsRunning, Is.False);
             Assert.That(_movement.Tick(100), Is.False);
             Assert.That(_client.Queued, Is.Empty);
+        }
+
+        // `PlayerMovementComponent.UpdatePosition` keeps whole units of each coordinate, and the idle position update sends those back.
+        // Where a run ends must survive that unchanged, or the idle update is a move that stands the Character up and cancels a quit.
+        [TestCase(298900.4f, 642000.9f, 4848.5f)]
+        [TestCase(31234.5f, 29123.25f, 2100.75f)]
+        [TestCase(296000f, 642000f, 4848f)]
+        public void WholeUnits_ShouldBeWhatTheServerKeeps(float x, float y, float z)
+        {
+            Vector3 sent = HarnessMovement.WholeUnits(new(x, y, z));
+            Vector3 repeated = new((int) sent.X, (int) sent.Y, (int) sent.Z);
+
+            Assert.That(repeated, Is.EqualTo(sent));
+            Assert.That(Vector3.Distance(sent, new(x, y, z)), Is.LessThan(2));
         }
 
         // At full speed from `Start` to `Target`, started at 0 with position updates at 0, 200 and 400, which the client tick has sent off.
