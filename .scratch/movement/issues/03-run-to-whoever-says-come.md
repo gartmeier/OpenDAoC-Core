@@ -31,7 +31,7 @@ See the spec: `.scratch/movement/spec.md`.
 - [x] Come (`bun test`): another speaker's `come` gives the right `moveTo`; an unknown speaker, own lines, other chat types and longer lines give nothing; `stop` gives `stop`
 - [x] Connection (`bun test`): Ctrl+C sends `stop` before `quit`
 - [x] In game: `/say come` from about 30 m on flat ground makes Greeen run, smoothly in the Human's client with the running animation, to about 100 units short of the Human; the Mind prints `arrived`
-- [ ] In game: `/say come` then `/say stop` stops him mid-run; the Mind prints `stopped` with the stop reason
+- [x] In game: `/say come` then `/say stop` stops him mid-run; the Mind prints `stopped` with the stop reason
 - [ ] In game: Ctrl+C during a run stops him, and he quits through the normal path
 - [ ] The server log has no speed-check entries for Greeen after these runs
 
@@ -79,3 +79,7 @@ Known gaps:
 **2026-10-21 (agent):** The Human said `/say come` and nothing happened. Greeen's trace (`Greeen-20261021-085215-217.tsv`) has no say line after Vue's `playerCreate` at 35.3 s: the say never reached Greeen's client. A say only reaches players within 512 units (`GameLiving.Say`, `WorldMgr.SAY_DISTANCE`), and step 2 said to stand about 1000 units away. Steps 2 and 6 now say to stay within 512 units. The spec's "about 30 m" can't be met by a say: a `come` run is at most about 410 units (512 minus the 100 stand-off).
 
 **2026-10-21 (Human, recorded by agent):** From within say range, `/say come` works: Greeen runs to the Human. Greeen's trace shows three `come` lines from Vue (at 193.0, 218.7 and 235.2 s), and `server.log` has no `Speed hack` entries so far (no `cheat.log` was written). Still to check: `/say stop` mid-run (step 4), Ctrl+C mid-run (step 5), a replaced run (step 6), and the logs after all of them (step 7).
+
+**2026-10-21 (Human, recorded by agent):** `/say stop` stops him mid-run (trace: two `stop` lines from Vue, at 285.6 and 292.2 s). **Ctrl+C found a bug.** The stop and the quit went through ("You will quit after sitting for 20 seconds" at 323.7 s), but 2.1 s later he stood up ("You are no longer waiting to quit"), and the second Ctrl+C dropped the connection, so he went linkdead as designed.
+
+The cause: a run ended on a fraction of a unit. `PlayerMovementComponent.UpdatePosition` keeps only whole units (`Owner.X = (int) newPosition.X`), and the next idle position update repeats `player.X`. To the server, the difference of a fraction is a move (`EqualsXY` compares exactly), so `OnPlayerMove` stood the sitting Character up, which cancels a quit. It would also stand him up after any sit following a run. Fixed by ending every run on whole units (`HarnessMovement.WholeUnits`), so the idle update repeats exactly what the client last sent. `arrived` and `stopped` carry those whole units. Server 226 tests pass. Re-check step 5 (Ctrl+C mid-run) on a build with this fix.
