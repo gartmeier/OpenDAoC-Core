@@ -25,7 +25,7 @@ The Mind exits with 0 when the server disconnected its Agent or another Mind too
 - `src/connection.ts`: the connection to the server. It knows nothing about what the Mind decides.
 - `src/come.ts`: what the Come Mind decides. Given a Percept, Self and Surroundings, it returns a `moveTo`, `face` or `stop` Primitive, or nothing. It's the only part about coming.
 - `src/self.ts`: what the Agent believes about its own Character, built only from Percepts: where it is, which way it faces, how fast it may run, and one movement status (standing, moving to a target, arrived, or stopped with a reason).
-- `src/surroundings.ts`: what the Agent believes is around it, built only from Percepts: the players it knows of, by object ID, with their names and where they last were. It never forgets by time.
+- `src/surroundings.ts`: what the Agent believes is around it, built only from Percepts: the players and NPCs it knows of, in one collection by object ID, with their names and where they last were. It forgets what's out of view when the Agent's Character moves, never by time.
 - `src/protocol.ts`: the message types, generated from `GameServer/agents/MindProtocol.cs`. Don't edit it by hand. A server unit test fails when it's stale and names the command that regenerates it.
 
 `bun test` runs the Mind's tests and `bun run typecheck` checks the types (after `bun install`).

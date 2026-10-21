@@ -141,6 +141,8 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(BarePacketPercept), "barePacket")]
     [JsonDerivedType(typeof(PlayerCreatePercept), "playerCreate")]
     [JsonDerivedType(typeof(PlayerPositionPercept), "playerPosition")]
+    [JsonDerivedType(typeof(NpcCreatePercept), "npcCreate")]
+    [JsonDerivedType(typeof(ObjectUpdatePercept), "objectUpdate")]
     [JsonDerivedType(typeof(ObjectDeletePercept), "objectDelete")]
     [JsonDerivedType(typeof(ObjectRemovePercept), "objectRemove")]
     [JsonDerivedType(typeof(OwnPositionPercept), "ownPosition")]
@@ -214,6 +216,61 @@ namespace DOL.GS.Agents
         bool Attacking,
         int ManaPercent,
         int EndurancePercent) : Percept;
+
+    // An NPC came into view. Positions are global. The server sends it again whenever the NPC's look changes.
+    // `Speed` and `ZSpeed` are 0 unless the NPC is on its way somewhere. `Level` is the level the Agent's Character sees, and `Realm` the realm it sees.
+    // `Equipped` means the client should wait for the NPC's equipment before drawing it. `Pet` means someone controls it.
+    // `Untargetable` and `NameHidden` are never set for a GM, whose `Name` instead ends in `-DOR` and `-NON`, after the name in brackets.
+    public sealed record NpcCreatePercept(
+        int X,
+        int Y,
+        int Z,
+        int ObjectId,
+        int Speed,
+        int ZSpeed,
+        int Heading,
+        int Model,
+        int Size,
+        int Level,
+        bool Statue,
+        PacketRealm Realm,
+        bool Ghost,
+        bool Equipped,
+        bool Torch,
+        bool Peaceful,
+        bool Flying,
+        bool Pet,
+        bool Untargetable,
+        bool NameHidden,
+        bool Stealthed,
+        eQuestIndicator QuestIndicator,
+        string Name,
+        string GuildName) : Percept;
+
+    // Where an object is now, usually an NPC, sent about every 5 s while it's in view and whenever it starts or stops moving. Positions are global, turned back from the zone-relative ones the packet carries.
+    // `Speed` is the horizontal speed and `ZSpeed` a quarter of the vertical one, signed. `Heading` is 0 to 4095. `ZoneId` is the zone's skin ID.
+    // `TargetId` is 0, or while the NPC attacks, the object it attacks, or 65535 when it isn't standing within reach of it.
+    // `Untargetable` is also set for a statue. `Destination` is there only while the NPC is on its way to a known point.
+    public sealed record ObjectUpdatePercept(
+        int X,
+        int Y,
+        int Z,
+        int ObjectId,
+        int Speed,
+        int ZSpeed,
+        int Heading,
+        int TargetId,
+        int HealthPercent,
+        PacketRealm Realm,
+        bool Untargetable,
+        bool NameHidden,
+        bool Underwater,
+        bool Flying,
+        int ZoneId,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ObjectUpdateDestination Destination) : Percept;
+
+    // Where an NPC is going, in global coordinates, and the zone's skin ID there.
+    public sealed record ObjectUpdateDestination(int X, int Y, int Z, int ZoneId);
 
     // An object went out of view, for example a player who stealthed.
     public sealed record ObjectDeletePercept(int ObjectId) : Percept;

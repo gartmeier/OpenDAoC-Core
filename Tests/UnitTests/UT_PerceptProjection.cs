@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using DOL.AI;
+using DOL.AI.Brain;
+using DOL.Database;
 using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
@@ -18,6 +22,8 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendPlayerCreate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerCreate));
         private static readonly MethodInfo SendObjectDeleteObject = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectDelete), [typeof(GameObject)]);
         private static readonly MethodInfo SendObjectDeleteId = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectDelete), [typeof(ushort)]);
+        private static readonly MethodInfo SendNPCCreate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendNPCCreate));
+        private static readonly MethodInfo SendObjectUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectUpdate));
         private static readonly MethodInfo SendObjectRemove = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectRemove));
         private static readonly MethodInfo SendPlayerPositionAndObjectID = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerPositionAndObjectID));
         private static readonly MethodInfo SendUpdateMaxSpeed = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateMaxSpeed));
@@ -201,6 +207,296 @@ namespace DOL.GS.Tests
             Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
 
             Assert.That(PerceptProjection.Project(Playing(), SendPlayerCreate, [PlayerIn(zone, "Vue")]), Is.Null);
+        }
+
+        [Test]
+        public void Project_ShouldGiveWhatThePacketCarries_ForTheNpcCreateCall()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc rat = NpcIn(zone, "rat");
+            rat.Place(531234, 478901, 2345);
+            rat.ObjectID = 0x0456;
+            rat.TestHeading = 3072;
+            rat.TestModel = 0x0190;
+            rat.Size = 40;
+            rat.DisplayLevel = 3;
+            rat.GuildName = "Vermin";
+            _rules.LivingRealm = (byte) eRealm.None;
+
+            Percept percept = PerceptProjection.Project(agent, SendNPCCreate, [rat]);
+
+            Assert.That(percept, Is.EqualTo(new NpcCreatePercept(
+                531234, 478901, 2345, 0x0456, 0, 0, 3072, 0x0190, 40, 3,
+                false, PacketRealm.None, false, false, false, false, false, false, false, false, false,
+                eQuestIndicator.None, "rat", "Vermin")));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheNpcsFlags_ForTheNpcCreateCall()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc guard = NpcIn(zone, "guard");
+            guard.Flags = GameNPC.eFlags.STATUE | GameNPC.eFlags.GHOST | GameNPC.eFlags.TORCH | GameNPC.eFlags.PEACE | GameNPC.eFlags.FLYING | GameNPC.eFlags.CANTTARGET | GameNPC.eFlags.DONTSHOWNAME | GameNPC.eFlags.STEALTH;
+            guard.HasInventory = true;
+            guard.OwnBrain = (ABrain) RuntimeHelpers.GetUninitializedObject(typeof(ControlledMobBrain));
+            guard.DisplayLevel = 50;
+            _rules.LivingRealm = (byte) eRealm.Albion;
+
+            NpcCreatePercept percept = (NpcCreatePercept) PerceptProjection.Project(agent, SendNPCCreate, [guard]);
+
+            Assert.That(
+                (percept.Level, percept.Statue, percept.Realm, percept.Ghost, percept.Equipped, percept.Torch, percept.Peaceful, percept.Flying, percept.Pet, percept.Untargetable, percept.NameHidden, percept.Stealthed, percept.Name),
+                Is.EqualTo((50, true, PacketRealm.Albion, true, true, true, true, true, true, true, true, true, "guard")));
+        }
+
+        // A GM's client shows the hiding flags as name suffixes instead.
+        [Test]
+        public void Project_ShouldGiveTheHidingFlagsInTheName_ForTheNpcCreateCallToAGm()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            agent.Account.PrivLevel = 3;
+            TestNpc guard = NpcIn(zone, "guard");
+            guard.Flags = GameNPC.eFlags.CANTTARGET | GameNPC.eFlags.DONTSHOWNAME;
+
+            NpcCreatePercept percept = (NpcCreatePercept) PerceptProjection.Project(agent, SendNPCCreate, [guard]);
+
+            Assert.That((percept.Untargetable, percept.NameHidden, percept.Name), Is.EqualTo((false, false, "[guard]-DOR-NON")));
+        }
+
+        [Test]
+        public void Project_ShouldCutTheNamesToWhatThePacketHoldsForThem_ForTheNpcCreateCall()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc npc = NpcIn(zone, new string('n', 60));
+            npc.GuildName = new string('g', 60);
+
+            NpcCreatePercept percept = (NpcCreatePercept) PerceptProjection.Project(agent, SendNPCCreate, [npc]);
+
+            Assert.That((percept.Name, percept.GuildName), Is.EqualTo((new string('n', 45), new string('g', 47))));
+        }
+
+        [TestCase(eQuestIndicator.Available)]
+        [TestCase(eQuestIndicator.Finish)]
+        [TestCase(eQuestIndicator.Lesson)]
+        [TestCase(eQuestIndicator.Lore)]
+        [TestCase(eQuestIndicator.Pending)]
+        public void Project_ShouldGiveTheQuestIndicator_ForTheNpcCreateCall(eQuestIndicator indicator)
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc npc = NpcIn(zone, "Elvar");
+            npc.QuestIndicator = indicator;
+
+            NpcCreatePercept percept = (NpcCreatePercept) PerceptProjection.Project(agent, SendNPCCreate, [npc]);
+
+            Assert.That(percept.QuestIndicator, Is.EqualTo(indicator));
+        }
+
+        // The packet has no bits for anything else.
+        [Test]
+        public void Project_ShouldGiveNoQuestIndicator_ForOneThePacketCantCarry()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc npc = NpcIn(zone, "Elvar");
+            npc.QuestIndicator = eQuestIndicator.Available | eQuestIndicator.Lore;
+
+            NpcCreatePercept percept = (NpcCreatePercept) PerceptProjection.Project(agent, SendNPCCreate, [npc]);
+
+            Assert.That(percept.QuestIndicator, Is.EqualTo(eQuestIndicator.None));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheSpeed_ForTheNpcCreateCallOnAMovingNpc()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc rat = NpcIn(zone, "rat");
+            rat.Move(120, new Vector3(0, 120, 30), 120, new Vector3(rat.X, rat.Y + 1000, rat.Z + 250));
+
+            NpcCreatePercept percept = (NpcCreatePercept) PerceptProjection.Project(agent, SendNPCCreate, [rat]);
+
+            Assert.That((percept.Speed, percept.ZSpeed), Is.EqualTo((120, 30)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForAnNpcCreateTheAgentCantSee()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc rat = NpcIn(zone, "rat");
+            rat.Visible = false;
+
+            Assert.That(PerceptProjection.Project(agent, SendNPCCreate, [rat]), Is.Null);
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForAnNpcCreateBeforeTheAgentHasACharacter()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+
+            Assert.That(PerceptProjection.Project(Playing(), SendNPCCreate, [NpcIn(zone, "rat")]), Is.Null);
+        }
+
+        // The library sends a moving object create for it instead.
+        [Test]
+        public void Project_ShouldGiveABarePerceptNamingTheMovingObjectCreate_ForTheNpcCreateCallOnAMovingObject()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            GameMine mine = Mine(zone);
+            _rules.AllowedToAttack = false;
+
+            Assert.That(PerceptProjection.Project(agent, SendNPCCreate, [mine]), Is.EqualTo(new BarePercept("SendMovingObjectCreate")));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheNpcCreateCallOnAnEnemysMine()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            GameMine mine = Mine(zone);
+            _rules.AllowedToAttack = true;
+
+            Assert.That(PerceptProjection.Project(agent, SendNPCCreate, [mine]), Is.Null);
+        }
+
+        // The packet carries the position relative to the zone. The Percept has it global again.
+        [Test]
+        public void Project_ShouldGiveWhatThePacketCarriesWithAGlobalPosition_ForTheObjectUpdateCallOnAStandingNpc()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc rat = NpcIn(zone, "rat");
+            rat.Place(531234, 478901, 2345);
+            rat.ObjectID = 0x0456;
+            rat.TestHeading = 3072;
+            rat.Health = 75;
+            rat.Underwater = true;
+            _rules.LivingRealm = (byte) eRealm.Hibernia;
+
+            Percept percept = PerceptProjection.Project(agent, SendObjectUpdate, [rat, true]);
+
+            Assert.That(percept, Is.EqualTo(new ObjectUpdatePercept(
+                531234, 478901, 2345, 0x0456, 0, 0, 3072, 0, 75, PacketRealm.Hibernia, false, false, true, false, 101, null)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheSpeedAndGlobalDestination_ForTheObjectUpdateCallOnAMovingNpc()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc rat = NpcIn(zone, "rat");
+            rat.Place(531234, 478901, 2345);
+            rat.TestHeading = 1024;
+            // A quarter of the vertical speed is 0x5A, split over the top bits of both fields.
+            rat.Move(191, new Vector3(150, 0, 360), 150.6, new Vector3(533234, 478901, 2845));
+
+            ObjectUpdatePercept percept = (ObjectUpdatePercept) PerceptProjection.Project(agent, SendObjectUpdate, [rat, true]);
+
+            Assert.That((percept.X, percept.Y, percept.Z, percept.Speed, percept.ZSpeed, percept.Heading, percept.Destination),
+                Is.EqualTo((531234, 478901, 2345, 150, 90, 1024, new ObjectUpdateDestination(533234, 478901, 2845, 101))));
+        }
+
+        [Test]
+        public void Project_ShouldGiveANegativeVerticalSpeed_ForTheObjectUpdateCallOnAnNpcGoingDown()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc rat = NpcIn(zone, "rat");
+            rat.Move(191, new Vector3(150, 0, -360), 150, new Vector3(rat.X + 2000, rat.Y, rat.Z - 500));
+
+            ObjectUpdatePercept percept = (ObjectUpdatePercept) PerceptProjection.Project(agent, SendObjectUpdate, [rat, true]);
+
+            Assert.That((percept.Speed, percept.ZSpeed), Is.EqualTo((150, -90)));
+        }
+
+        // The library hides the real target unless the NPC stands within reach of it.
+        [Test]
+        public void Project_ShouldGiveThePlaceholderTarget_ForTheObjectUpdateCallOnAnNpcAttackingWhileMoving()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc rat = NpcIn(zone, "rat");
+            rat.Attacking = true;
+            rat.TargetObject = agent.Player;
+            rat.Move(191, new Vector3(150, 0, 0), 150, new Vector3(rat.X + 2000, rat.Y, rat.Z));
+
+            ObjectUpdatePercept percept = (ObjectUpdatePercept) PerceptProjection.Project(agent, SendObjectUpdate, [rat, true]);
+
+            Assert.That(percept.TargetId, Is.EqualTo(65535));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheNpcsFlags_ForTheObjectUpdateCall()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc guard = NpcIn(zone, "guard");
+            guard.Flags = GameNPC.eFlags.CANTTARGET | GameNPC.eFlags.DONTSHOWNAME | GameNPC.eFlags.FLYING;
+
+            ObjectUpdatePercept percept = (ObjectUpdatePercept) PerceptProjection.Project(agent, SendObjectUpdate, [guard, true]);
+
+            Assert.That((percept.Untargetable, percept.NameHidden, percept.Flying), Is.EqualTo((true, true, true)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveOnlyAStatueAsUntargetable_ForTheObjectUpdateCallToAGm()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            agent.Account.PrivLevel = 3;
+            TestNpc guard = NpcIn(zone, "guard");
+            guard.Flags = GameNPC.eFlags.CANTTARGET | GameNPC.eFlags.DONTSHOWNAME;
+            TestNpc statue = NpcIn(zone, "statue");
+            statue.Flags = GameNPC.eFlags.STATUE;
+
+            ObjectUpdatePercept guardsUpdate = (ObjectUpdatePercept) PerceptProjection.Project(agent, SendObjectUpdate, [guard, true]);
+            ObjectUpdatePercept statuesUpdate = (ObjectUpdatePercept) PerceptProjection.Project(agent, SendObjectUpdate, [statue, true]);
+
+            Assert.That((guardsUpdate.Untargetable, guardsUpdate.NameHidden, statuesUpdate.Untargetable), Is.EqualTo((false, false, true)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheGlobalPositionAndNoNpcFields_ForTheObjectUpdateCallOnAnotherObject()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            GameStaticItem item = (GameStaticItem) RuntimeHelpers.GetUninitializedObject(typeof(GameStaticItem));
+            item.CurrentRegion = zone.ZoneRegion;
+            (item.X, item.Y, item.Z) = (531234, 478901, 2345);
+            item.ObjectID = 0x0789;
+            item.Heading = 512;
+
+            Percept percept = PerceptProjection.Project(agent, SendObjectUpdate, [item, false]);
+
+            Assert.That(percept, Is.EqualTo(new ObjectUpdatePercept(
+                531234, 478901, 2345, 0x0789, 0, 0, 512, 0, 0, PacketRealm.None, false, false, false, false, 101, null)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForAnObjectUpdateTheAgentCantSee()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            ((TestPlayer) agent.Player).Visible = false;
+
+            Assert.That(PerceptProjection.Project(agent, SendObjectUpdate, [NpcIn(zone, "rat"), true]), Is.Null);
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForAnObjectUpdateOutsideAnyZone()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            TestNpc rat = NpcIn(zone, "rat");
+            rat.Place(0, 0, 0);
+
+            Assert.That(PerceptProjection.Project(agent, SendObjectUpdate, [rat, true]), Is.Null);
         }
 
         [Test]
@@ -415,6 +711,7 @@ namespace DOL.GS.Tests
         {
             GameClient client = WorldDoubles.Client(0x0101);
             client.ClientState = GameClient.eClientState.Playing;
+            client.Account = new DbAccount { PrivLevel = 1 };
             TestPlayer greeen = WorldDoubles.Player(client, "Greeen");
             greeen.Region = zone.ZoneRegion;
             (greeen.X, greeen.Y) = (zone.XOffset + 1000, zone.YOffset + 1000);
@@ -427,6 +724,22 @@ namespace DOL.GS.Tests
             player.Region = zone.ZoneRegion;
             (player.X, player.Y) = (zone.XOffset + 2000, zone.YOffset + 2000);
             return player;
+        }
+
+        private static TestNpc NpcIn(Zone zone, string name)
+        {
+            TestNpc npc = WorldDoubles.Npc(name);
+            npc.Region = zone.ZoneRegion;
+            npc.Place(zone.XOffset + 3000, zone.YOffset + 3000, 1000);
+            return npc;
+        }
+
+        private static GameMine Mine(Zone zone)
+        {
+            GameMine mine = (GameMine) RuntimeHelpers.GetUninitializedObject(typeof(GameMine));
+            mine.CurrentRegion = zone.ZoneRegion;
+            (mine.X, mine.Y) = (zone.XOffset + 3000, zone.YOffset + 3000);
+            return mine;
         }
 
         // Calls one of `PlayerPositionUpdateHandler`'s own position packet builders.
@@ -445,12 +758,14 @@ namespace DOL.GS.Tests
         public class TestRules : DispatchProxy
         {
             public byte LivingRealm { get; set; }
+            public bool AllowedToAttack { get; set; }
 
             protected override object Invoke(MethodInfo targetMethod, object[] args)
             {
                 return targetMethod.Name switch
                 {
                     nameof(IServerRules.GetLivingRealm) => LivingRealm,
+                    nameof(IServerRules.IsAllowedToAttack) => AllowedToAttack,
                     nameof(IServerRules.GetPlayerName) => ((GamePlayer) args[1]).Name,
                     nameof(IServerRules.GetPlayerGuildName) => $"{((GamePlayer) args[1]).Name}'s guild",
                     nameof(IServerRules.GetPlayerLastName) => $"{((GamePlayer) args[1]).Name}'s last name",

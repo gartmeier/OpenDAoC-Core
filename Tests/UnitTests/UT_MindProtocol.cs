@@ -148,6 +148,28 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Write_ShouldWriteAnNpcCreate_WithItsQuestIndicatorAsAName()
+        {
+            NpcCreatePercept percept = new(531234, 478901, 2345, 0x0456, 0, 0, 3072, 0x0190, 40, 3, false, PacketRealm.None, false, false, false, false, false, false, false, false, false, eQuestIndicator.Available, "rat", "");
+            string json = Write(new PerceptMessage(5, 1600, percept));
+
+            Assert.That(json, Does.StartWith("""{"type":"percept","sequence":5,"elapsedMs":1600,"percept":{"kind":"npcCreate","x":531234,"y":478901,"z":2345,"""));
+            Assert.That(json, Does.Contain("\"questIndicator\":\"Available\""));
+        }
+
+        [Test]
+        public void Write_ShouldWriteAnObjectUpdate_WithoutADestination_WhenTheNpcIsntGoingAnywhere()
+        {
+            ObjectUpdatePercept standing = new(531234, 478901, 2345, 0x0456, 0, 0, 3072, 0, 75, PacketRealm.None, false, false, false, false, 101, null);
+            ObjectUpdatePercept moving = standing with { Destination = new(533234, 478901, 2845, 101) };
+
+            Assert.That(Write(new PerceptMessage(6, 1700, standing)), Does.StartWith("""{"type":"percept","sequence":6,"elapsedMs":1700,"percept":{"kind":"objectUpdate","x":531234,""").And.Not.Contain("destination"));
+            Assert.That(Write(new PerceptMessage(7, 1800, moving)), Does.Contain("""
+            "destination":{"x":533234,"y":478901,"z":2845,"zoneId":101}
+            """));
+        }
+
+        [Test]
         public void Write_ShouldWriteAQueuedPrimitiveResult_WithoutAReason()
         {
             Assert.That(Write(new PrimitiveResultMessage(7, true, null)), Is.EqualTo("""{"type":"primitiveResult","id":7,"queued":true}"""));
