@@ -50,6 +50,24 @@ namespace DOL.GS.Tests
             Assert.That(message, Is.EqualTo(new PrimitiveMessage(10, new StopPrimitive())));
         }
 
+        [Test]
+        public void Read_ShouldReadAFacePrimitive()
+        {
+            MindMessage message = Read("""{"type":"primitive","id":11,"primitive":{"name":"face","heading":1523}}""");
+
+            Assert.That(message, Is.EqualTo(new PrimitiveMessage(11, new FacePrimitive(1523))));
+        }
+
+        // A missing heading isn't heading 0.
+        [Test]
+        public void Read_ShouldSayWhy_ForAFaceWithoutAHeading()
+        {
+            MindMessage message = MindProtocol.Read("""{"type":"primitive","id":11,"primitive":{"name":"face"}}"""u8, out string error);
+
+            Assert.That(message, Is.Null);
+            Assert.That(error, Does.Contain("'heading'"));
+        }
+
         // All three coordinates are required: a missing Z isn't the ground at 0.
         [Test]
         public void Read_ShouldSayWhy_ForAMoveToWithoutAllThreeCoordinates()
