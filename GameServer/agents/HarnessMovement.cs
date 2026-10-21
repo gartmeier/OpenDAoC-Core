@@ -94,7 +94,7 @@ namespace DOL.GS.Agents
         private void Send(StraightRun.Step step, long now)
         {
             GamePlayer player = _client.Player;
-            Vector3 position = step.Position;
+            Vector3 position = step.Ended ? WholeUnits(step.Position) : step.Position;
             _client.Enqueue(ClientPackets1127.PositionUpdate(position, step.ZoneId, (ushort) (step.Heading | HEADING_FLAG), step.Speed, player.HealthPercent, _client.SessionID, 0, player.ActionFlags));
             NextPositionUpdate(now);
 
@@ -107,6 +107,13 @@ namespace DOL.GS.Agents
 
             _run = null;
             Perceive(step.Arrived ? new ArrivedPercept(position.X, position.Y, position.Z) : new StoppedPercept(position.X, position.Y, position.Z, StopReason.Stop));
+        }
+
+        // Where a run ends. The server keeps only whole units of the position a client sends, and the idle position update repeats what the server kept.
+        // A fraction of a unit between the two is a move to the server, which stands a sitting Character up and so cancels a quit.
+        public static Vector3 WholeUnits(Vector3 position)
+        {
+            return new((int) position.X, (int) position.Y, (int) position.Z);
         }
 
         // Keeps to the interval like the client's own clock, however the server's ticks fall. After a stall it sends once instead of catching up, as liveness does.
