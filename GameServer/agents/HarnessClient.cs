@@ -32,12 +32,14 @@ namespace DOL.GS.Agents
         private WorldEntry _worldEntry;
         private Liveness _liveness;
         private WorldExit _worldExit;
+        private readonly HarnessMovement _movement;
         private AgentTrace _trace;
         private bool _mindLost;
 
         public HarnessClient(MindLink mind) : base(null)
         {
             Mind = mind;
+            _movement = new(this);
         }
 
         // The Agent's Mind connection, which is the client's network connection (ADR 0005). Told every call the server makes on the packet library.
@@ -130,6 +132,23 @@ namespace DOL.GS.Agents
             if (!IsInWorld)
                 return $"{CharacterName} isn't in the world.";
 
+            // Movement is the client's own: it sends the position updates while it runs.
+            switch (primitive)
+            {
+                case MoveToPrimitive moveTo:
+                {
+                    _movement.MoveTo(new(moveTo.X, moveTo.Y, moveTo.Z), GameLoop.GameLoopTime);
+                    return null;
+                }
+                case StopPrimitive:
+                {
+                    if (_movement.Stop(GameLoop.GameLoopTime))
+                        _liveness?.OnPositionUpdate(GameLoop.GameLoopTime);
+
+                    return null;
+                }
+            }
+
             ClientPacket packet = primitive switch
             {
                 QuitPrimitive => ClientPackets1127.Quit(),
@@ -148,6 +167,13 @@ namespace DOL.GS.Agents
         public void OnPlayerQuit(bool totalOut)
         {
             _worldExit ??= new(totalOut, Player?.Realm ?? eRealm.None);
+        }
+
+        // What the client does with what the server told it. Called on the game loop, after the Mind was told.
+        public void OnPerceived(Percept percept)
+        {
+            if (percept is MaxSpeedPercept maxSpeed)
+                _movement.OnMaxSpeed(maxSpeed, GameLoop.GameLoopTime);
         }
 
         public void Enqueue(ClientPacket packet)
@@ -215,9 +241,15 @@ namespace DOL.GS.Agents
                 }
             }
 
-            // Only while a Mind is connected, as only a running client keeps its connection alive.
+            // Only while a Mind is connected, as only a running client keeps its connection alive and moves its Character (ADR 0005).
+            // A running Character's position updates stand in for the idle ones.
             if (_liveness != null && !_mindLost)
+            {
+                if (IsInWorld && _movement.Tick(GameLoop.GameLoopTime))
+                    _liveness.OnPositionUpdate(GameLoop.GameLoopTime);
+
                 StayAlive(_liveness.Tick(GameLoop.GameLoopTime));
+            }
 
             while (_inbound.TryDequeue(out ClientPacket clientPacket))
             {

@@ -45,7 +45,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -56,7 +56,18 @@ export interface SayPrimitive {
   text: string;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | ObjectDeletePercept | ObjectRemovePercept;
+export interface MoveToPrimitive {
+  name: "moveTo";
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface StopPrimitive {
+  name: "stop";
+}
+
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | MaxSpeedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -140,6 +151,55 @@ export interface ObjectRemovePercept {
   objectType: number;
 }
 
+export interface OwnPositionPercept {
+  kind: "ownPosition";
+  x: number;
+  y: number;
+  z: number;
+  objectId: number;
+  heading: number;
+  zoneXOffset: number;
+  zoneYOffset: number;
+  region: number;
+  divingEnabled: boolean;
+  underwater: boolean;
+  serverName?: string;
+}
+
+export interface MaxSpeedPercept {
+  kind: "maxSpeed";
+  maxSpeedPercent: number;
+  turningDisabled: boolean;
+  waterSpeed: number;
+}
+
+export interface MovedPercept {
+  kind: "moved";
+  x: number;
+  y: number;
+  z: number;
+  heading: number;
+  speed: number;
+  targetX: number;
+  targetY: number;
+  targetZ: number;
+}
+
+export interface ArrivedPercept {
+  kind: "arrived";
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface StoppedPercept {
+  kind: "stopped";
+  x: number;
+  y: number;
+  z: number;
+  reason: StopReason;
+}
+
 export type eChatType = "CT_Say" | "CT_Send" | "CT_Group" | "CT_Guild" | "CT_Broadcast" | "CT_Emote" | "CT_Help" | "CT_Chat" | "CT_Advise" | "CT_Officer" | "CT_Alliance" | "CT_BattleGroup" | "CT_BattleGroupLeader" | "CT_Staff" | "CT_Spell" | "CT_YouHit" | "CT_System" | "CT_Items" | "CT_Merchant" | "CT_YourDeath" | "CT_OthersDeath" | "CT_OthersCombat" | "CT_ResistsChanged" | "CT_SpellExpires" | "CT_Loot" | "CT_SpellResisted" | "CT_Important" | "CT_Damaged" | "CT_Action" | "CT_SpellPulse" | "CT_KilledByAlb" | "CT_KilledByMid" | "CT_KilledByHib" | "CT_LookingForGroup" | "CT_Trade" | "CT_SocialInterface" | "CT_ScreenCenter" | "CT_ScreenCenterSmaller" | "CT_ScreenCenter_And_CT_System" | "CT_ScreenCenterSmaller_And_CT_System";
 
 export type eChatLoc = "CL_ChatWindow" | "CL_PopupWindow" | "CL_SystemWindow";
@@ -153,3 +213,5 @@ export interface PlayerCreateHorse {
   saddle: number;
   saddleColor: number;
 }
+
+export type StopReason = "Stop" | "Replaced";

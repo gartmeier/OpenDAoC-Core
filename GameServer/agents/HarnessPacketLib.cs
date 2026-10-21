@@ -7,7 +7,7 @@ namespace DOL.GS.Agents
     /// <summary>
     /// The Harness client's outbound packet library (ADR 0001): every `Send*` call the server makes to tell the Agent's client something arrives in <see cref="Invoke"/>.
     /// A runtime proxy rather than a hand-written <see cref="IPacketLib"/>, so that every call of the large and changing interface ends up in one place.
-    /// Every call is recorded in the Agent's trace and told to its Mind as a Percept, and the client reacts to its Character quitting. It's called on the game loop and must never block.
+    /// Every call is recorded in the Agent's trace and told to its Mind as a Percept. The client reacts to what the Percept says, as a real client does to the packet, and to its Character quitting. It's called on the game loop and must never block.
     /// </summary>
     public class HarnessPacketLib : DispatchProxy
     {
@@ -29,7 +29,10 @@ namespace DOL.GS.Agents
             if (!targetMethod.IsSpecialName)
                 _trace.Record(_client.ClientState, targetMethod, args);
 
-            _client.Mind.Perceive(_client, targetMethod, args);
+            Percept percept = _client.Mind.Perceive(_client, targetMethod, args);
+
+            if (percept != null)
+                _client.OnPerceived(percept);
 
             if (targetMethod.Name is nameof(IPacketLib.SendPlayerQuit))
                 _client.OnPlayerQuit((bool) args[0]);

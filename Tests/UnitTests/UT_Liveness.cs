@@ -53,6 +53,18 @@ namespace DOL.GS.Tests
             Assert.That(liveness.Tick(20033), Is.EqualTo(Liveness.Due.None));
         }
 
+        // While the Character runs, its running position updates keep the server informed. The idle ones resume one interval after the last.
+        [Test]
+        public void PositionUpdate_ShouldBeDueOneIntervalAfterOneSentAnotherWay()
+        {
+            Liveness liveness = new(0);
+
+            liveness.OnPositionUpdate(2000);
+
+            Assert.That(liveness.Tick(2133), Is.EqualTo(Liveness.Due.None));
+            Assert.That(liveness.Tick(2000 + Liveness.POSITION_UPDATE_INTERVAL), Is.EqualTo(Liveness.Due.PositionUpdate));
+        }
+
         // When the packet was due on each tick of a game loop running from 0 for `duration` ms.
         private static List<long> Simulate(int tickDuration, Liveness.Due packet, long duration = SIMULATED_MILLISECONDS)
         {

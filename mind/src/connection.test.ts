@@ -75,20 +75,26 @@ test("ends as refused, with the server's reason", async () => {
   expect(ending).toEqual({ kind: "refused", reason: "No Character is named 'Greeen'." });
 });
 
-test("interrupting in the world sends a quit and waits for the server to close the connection", async () => {
+test("interrupting in the world sends a stop, then a quit, and waits for the server to close the connection", async () => {
   const server = fakeServer((message, socket) => {
     if (message.type === "hello")
       send(socket, { type: "entered" });
 
     if (message.type === "primitive") {
       send(socket, { type: "primitiveResult", id: message.id, queued: true });
-      socket.close(1000);
+
+      if (message.primitive.name === "quit")
+        socket.close(1000);
     }
   });
 
   const ending = await connect(server.url, { onEntered: (connection) => connection.interrupt() }).run({ handleCtrlC: false });
 
-  expect(server.received[1]).toEqual({ type: "primitive", id: 1, primitive: { name: "quit" } });
+  // The server refuses `/quit` while the Character is moving.
+  expect(server.received.slice(1)).toEqual([
+    { type: "primitive", id: 1, primitive: { name: "stop" } },
+    { type: "primitive", id: 2, primitive: { name: "quit" } },
+  ]);
   expect(ending).toEqual({ kind: "left" });
 });
 
