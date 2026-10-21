@@ -33,6 +33,7 @@ namespace DOL.GS.Agents
         private Liveness _liveness;
         private WorldExit _worldExit;
         private readonly HarnessMovement _movement;
+        private readonly PlayerCreateRequests _playerCreateRequests = new();
         private AgentTrace _trace;
         private bool _mindLost;
 
@@ -172,6 +173,9 @@ namespace DOL.GS.Agents
         // What the client does with what the server told it. Called on the game loop, after the Mind was told.
         public void OnPerceived(Percept percept)
         {
+            if (_playerCreateRequests.OnPerceived(percept, GameLoop.GameLoopTime) is ushort sessionId)
+                Enqueue(ClientPackets1127.CreatePlayerRequest(sessionId));
+
             switch (percept)
             {
                 case MaxSpeedPercept maxSpeed:

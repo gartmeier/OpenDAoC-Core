@@ -194,6 +194,18 @@ namespace DOL.GS.Tests
             AssertMatches(ClientPackets1127.ShowWarmapRequest(), FromWorldEntry(capture, eClientPackets.ShowWarmapRequest, 0));
         }
 
+        // No capture has another player around yet, so this checks the request against how `PlayerCreationRequestHandler` reads it from a 1.126 or later client.
+        [Test]
+        public void CreatePlayerRequest_ShouldCarryTheSessionIdAsTheHandlerReadsIt()
+        {
+            byte[] wire = ClientPackets1127.CreatePlayerRequest(0x1234).ToWire(7, 0x0101);
+            GSPacketIn packet = new();
+            packet.Load(wire, 0, wire.Length);
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.CreatePlayerRequest));
+            Assert.That(packet.ReadShortLowEndian(), Is.EqualTo(0x1234));
+        }
+
         [TestCase(100, 0x00)]
         [TestCase(109, 0x09)]
         [TestCase(200, 0x0A)]
