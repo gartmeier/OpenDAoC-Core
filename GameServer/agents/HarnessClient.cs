@@ -207,6 +207,9 @@ namespace DOL.GS.Agents
                 }
                 case JumpPercept jump:
                 {
+                    // The server set the Character's heading too, and the client takes it: a `face` still queued would turn the Character back.
+                    Unqueue((byte) eClientPackets.PlayerHeadingUpdate);
+                    _queuedHeading = null;
                     _movement.OnJump(jump);
                     break;
                 }
