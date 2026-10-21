@@ -12,7 +12,7 @@ See the spec: `.scratch/movement/spec.md`.
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] The jump call gives a typed Percept with exactly what the 1.127 packet carries
 - [x] Server unit tests: a jump mid-run ends the run at the server's position; a maximum speed of 0 ends it
