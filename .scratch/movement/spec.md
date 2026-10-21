@@ -1,6 +1,6 @@
 # Milestone 3: Movement
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -164,3 +164,7 @@ Terrain and pathing are not part of this milestone. The server has no navmeshes 
 - Risk: the running update rate and speed fields come from one capture. If the server's speed check still triggers in the acceptance test, compare the Harness's updates with the capture before touching thresholds.
 - Risk: straight runs go through walls, trees and water. Fine for the acceptance test on flat open ground; milestone 3b fixes it.
 - Milestone ladder for context: 1 login and logout (done) → 2 Mind connection (done) → 3 movement (this spec) → 3b terrain and pathing → 4 hand-written grind Tactic → 5 LLM Planning → 6 Reflection and Tactic Library → 7 Agent character creation → 8 multiple Agents and grouping.
+
+## Comments
+
+**2026-10-21 (Human, recorded by agent):** Milestone 3 is done. All six tickets are resolved and merged into main, and the manual acceptance test in Testing Decisions passed across the in-game checks of tickets 03 to 06: a Come Mind runs Greeen to about 100 units short of whoever says `come` and turns him to face them, `stop` stops him, a GM `/jump` mid-run ends the run where the server put him, Ctrl+C stops him and quits, a `come` from someone he can't see does nothing, and the server log has no speed-check entries for him. The Mind keeps Self and Surroundings, players and NPCs, from Percepts only. Next on the ladder is milestone 3b (terrain and pathing).
