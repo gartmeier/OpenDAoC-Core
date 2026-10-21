@@ -30,7 +30,7 @@ See the spec: `.scratch/movement/spec.md`.
 - [x] Self (`bun test`): status through `moved`, `arrived`, `stopped`; maximum speed
 - [x] Come (`bun test`): another speaker's `come` gives the right `moveTo`; an unknown speaker, own lines, other chat types and longer lines give nothing; `stop` gives `stop`
 - [x] Connection (`bun test`): Ctrl+C sends `stop` before `quit`
-- [ ] In game: `/say come` from about 30 m on flat ground makes Greeen run, smoothly in the Human's client with the running animation, to about 100 units short of the Human; the Mind prints `arrived`
+- [x] In game: `/say come` from about 30 m on flat ground makes Greeen run, smoothly in the Human's client with the running animation, to about 100 units short of the Human; the Mind prints `arrived`
 - [ ] In game: `/say come` then `/say stop` stops him mid-run; the Mind prints `stopped` with the stop reason
 - [ ] In game: Ctrl+C during a run stops him, and he quits through the normal path
 - [ ] The server log has no speed-check entries for Greeen after these runs
@@ -77,3 +77,5 @@ Known gaps:
 - **Not tested automatically:** the movement loop through the server's handlers and its speed check. Steps 2, 6 and 7 cover them.
 
 **2026-10-21 (agent):** The Human said `/say come` and nothing happened. Greeen's trace (`Greeen-20261021-085215-217.tsv`) has no say line after Vue's `playerCreate` at 35.3 s: the say never reached Greeen's client. A say only reaches players within 512 units (`GameLiving.Say`, `WorldMgr.SAY_DISTANCE`), and step 2 said to stand about 1000 units away. Steps 2 and 6 now say to stay within 512 units. The spec's "about 30 m" can't be met by a say: a `come` run is at most about 410 units (512 minus the 100 stand-off).
+
+**2026-10-21 (Human, recorded by agent):** From within say range, `/say come` works: Greeen runs to the Human. Greeen's trace shows three `come` lines from Vue (at 193.0, 218.7 and 235.2 s), and `server.log` has no `Speed hack` entries so far (no `cheat.log` was written). Still to check: `/say stop` mid-run (step 4), Ctrl+C mid-run (step 5), a replaced run (step 6), and the logs after all of them (step 7).
