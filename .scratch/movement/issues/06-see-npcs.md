@@ -10,13 +10,13 @@ See the spec: `.scratch/movement/spec.md`.
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] NPC create gives a typed Percept with exactly what the 1.127 packet carries, positions global
 - [x] Object update gives a typed Percept with position (converted to global), heading, speed, target and health
 - [x] Surroundings (`bun test`): NPC create, update and delete
-- [ ] In game: the NPCs near Greeen show up in the Mind's output with positions that match their `/loc` when targeted
-- [ ] In game: someone Greeen can't see says `come` and nothing happens (needs ticket 03; check it once both are done)
+- [x] In game: the NPCs near Greeen show up in the Mind's output with positions that match their `/loc` when targeted
+- [x] In game: someone Greeen can't see says `come` and nothing happens (needs ticket 03; check it once both are done)
 
 ## Comments
 
@@ -42,3 +42,12 @@ Known gaps:
 - NPC name translations (`LanguageMgr`) are mirrored but untested; the tests have no translations loaded.
 - The real `targetId` (NPC standing within reach of its target) is untested: `AttackRange` needs a real attack component. 0 and 65535 are tested.
 - Moving objects stay bare Percepts.
+
+**2026-10-21 (Human, recorded by agent):** Ran the checks above on a server built from this branch with main merged in (`d02923d07`, so ticket 03's Come Mind runs too). The Mind's output, read from the terminal:
+- At 0.28 s the Mind printed 207 `npcCreate` lines for the NPCs around Greeen in zone 202, then `objectUpdate` lines for the same IDs about every 5 s. Standing NPCs keep their position. Roaming ones show `speed 70` and a ` to X:… Y:… Z:…` destination, then stand again where it said.
+- The Guardian's `/mob info` gave `295856, 642418, 4848, 713`. The Mind had `npcCreate #1400 Guardian	X:295856 Y:642418 Z:4848 heading 713 speed 0 level 42` at 0.28 s and the same position in every `objectUpdate #1400` up to 415 s. A first try with roaming mudmen couldn't be compared: they move every 30 s or so, and the terminal keeps only about 20 s of this output. Use an NPC that doesn't roam, or `bun mind/agent.ts greeen | tee percepts.log`.
+- Killing a beach rat gave `objectRemove #2168 type 0` (a dead NPC), so Surroundings forgets it. It respawned later with the same object ID.
+- GM-stealthed, the Human was forgotten (`objectDelete #17736`), then `/say come` reached the Mind as `Vue says, "come"` at 230.9 s and Greeen didn't move: no `moved`, `arrived` or `stopped` followed.
+- `#7999` is an NPC with an empty name, one unit above Channeler Glasny. It's what the server sends, not a gap.
+
+All acceptance items are met.
