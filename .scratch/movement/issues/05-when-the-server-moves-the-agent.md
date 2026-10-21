@@ -18,7 +18,7 @@ See the spec: `.scratch/movement/spec.md`.
 - [x] Server unit tests: a jump mid-run ends the run at the server's position; a maximum speed of 0 ends it
 - [x] Self (`bun test`): a jump sets position and status
 - [x] Surroundings (`bun test`): objects beyond 6000 from Self are forgotten when Self moves, including on a jump; nothing is forgotten by time
-- [ ] In game: `/say come`, then a GM `/jump`s Greeen mid-run; he's at the new spot, and the Mind prints `stopped` with the server-move reason
+- [x] In game: `/say come`, then a GM `/jump`s Greeen mid-run; he's at the new spot, and the Mind prints `stopped` with the server-move reason
 
 ## Comments
 
@@ -80,3 +80,16 @@ Step 5 holds. The Mind printed, for a `come` and a `/speed 0` on Greeen 0.4 s la
     #42821  853.166 s  stopped (UnableToMove)  X:296111 Y:642833 Z:4850
 
 The run ended where he was, in the tick the maximum speed arrived, with the unable-to-move reason. The server log has no `Speed hack` entries for Greeen. The jump mid-run (step 3) and the box are still to do.
+
+**2026-10-21 (Human, recorded by agent):** Step 3 and the last box hold, on the same server and Mind. The Human said `come` from about 470 units, and pressed a macro for `/jump Greeen to 296493 643830 4856` while Greeen ran. The Mind printed:
+
+    #51007  1015.740 s  CT_Say CL_ChatWindow  Vue says, "come"
+    Sending moveTo X:296122 Y:643203 Z:4855.
+    #51008  1015.766 s  moved  X:296111 Y:642833 Z:4850 heading 4076 speed 0.0 to X:296122 Y:643203 Z:4855
+    #51013  1015.966 s  moved  X:296111 Y:642838 Z:4850 heading 4076 speed 53.0 to X:296122 Y:643203 Z:4855
+    #51015  1016.166 s  moved  X:296112 Y:642854 Z:4850 heading 4076 speed 106.0 to X:296122 Y:643203 Z:4855
+    #51018  1016.366 s  moved  X:296112 Y:642881 Z:4851 heading 4076 speed 159.0 to X:296122 Y:643203 Z:4855
+    #51044  1016.499 s  jump #17737  X:296493 Y:643830 Z:4856 heading 4076
+    #51045  1016.499 s  stopped (MovedByServer)  X:296493 Y:643830 Z:4856
+
+The run ended in the tick of the jump, at the server's position, with the server-move reason. The macro fired twice; the second jump, 0.6 s later, found him standing and ended nothing. The server log has no `Speed hack` entries for Greeen. Every box holds.
