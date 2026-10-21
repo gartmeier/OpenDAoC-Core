@@ -1,4 +1,4 @@
-// The Come Mind: logs an Agent's Character in, prints every Percept it gets, and runs to whoever says `come` next to it until the Agent leaves the world. `stop` stops it. Ctrl+C stops it and quits.
+// The Come Mind: logs an Agent's Character in, prints every Percept it gets, and runs to whoever says `come` next to it and turns to face them, until the Agent leaves the world. `stop` stops it. Ctrl+C stops it and quits.
 // Every Percept also goes to the Agent's Self and Surroundings, which the printed lines name players from.
 // Usage: bun mind/agent.ts <character>
 // The server address and token come from mind/.env (see mind/.env.example).
@@ -95,6 +95,8 @@ function describePrimitive(primitive: Primitive): string {
       return `moveTo ${at(primitive)}`;
     case "say":
       return `say "${primitive.text}"`;
+    case "face":
+      return `face heading ${primitive.heading}`;
     default:
       return primitive.name;
   }

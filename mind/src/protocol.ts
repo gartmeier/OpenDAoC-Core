@@ -45,7 +45,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -65,6 +65,11 @@ export interface MoveToPrimitive {
 
 export interface StopPrimitive {
   name: "stop";
+}
+
+export interface FacePrimitive {
+  name: "face";
+  heading: number;
 }
 
 export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | MovedPercept | ArrivedPercept | StoppedPercept;

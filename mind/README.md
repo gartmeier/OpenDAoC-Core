@@ -8,7 +8,7 @@ The part of an Agent that lives outside the server and makes its decisions (see 
 2. Copy `mind/.env.example` to `mind/.env` and set `MIND_TOKEN` to the same secret.
 3. From the repository root: `bun mind/agent.ts <character>`. The Character must belong to an Agent Account.
 
-The Mind prints every Percept to stdout and status lines to stderr. It's a Come Mind: when someone the Agent can see says `come` next to it, the Agent runs in a straight line to 100 units short of where they stood, and `stop` stops it. The Mind prints `moved` lines while it runs, then `arrived`, or `stopped` with the reason. Ctrl+C stops the Agent and makes it quit through the normal quit path (the server refuses `/quit` while the Character moves), and the Mind exits once the server has disconnected it. A second Ctrl+C drops the connection instead, and the Character goes linkdead.
+The Mind prints every Percept to stdout and status lines to stderr. It's a Come Mind: when someone the Agent can see says `come` next to it, the Agent runs in a straight line to 100 units short of where they stood and turns to face them, and `stop` stops it. From within 100 units it only turns. The Mind prints `moved` lines while it runs, then `arrived`, or `stopped` with the reason. Ctrl+C stops the Agent and makes it quit through the normal quit path (the server refuses `/quit` while the Character moves), and the Mind exits once the server has disconnected it. A second Ctrl+C drops the connection instead, and the Character goes linkdead.
 
 There's no terrain yet: runs go in a straight line, through walls and trees, and Z goes linearly from start to target, so test on flat open ground.
 
@@ -23,7 +23,7 @@ The Mind exits with 0 when the server disconnected its Agent or another Mind too
 
 - `agent.ts`: the entry point.
 - `src/connection.ts`: the connection to the server. It knows nothing about what the Mind decides.
-- `src/come.ts`: what the Come Mind decides. Given a Percept, Self and Surroundings, it returns a `moveTo` or `stop` Primitive, or nothing. It's the only part about coming.
+- `src/come.ts`: what the Come Mind decides. Given a Percept, Self and Surroundings, it returns a `moveTo`, `face` or `stop` Primitive, or nothing. It's the only part about coming.
 - `src/self.ts`: what the Agent believes about its own Character, built only from Percepts: where it is, which way it faces, how fast it may run, and one movement status (standing, moving to a target, arrived, or stopped with a reason).
 - `src/surroundings.ts`: what the Agent believes is around it, built only from Percepts: the players it knows of, by object ID, with their names and where they last were. It never forgets by time.
 - `src/protocol.ts`: the message types, generated from `GameServer/agents/MindProtocol.cs`. Don't edit it by hand. A server unit test fails when it's stale and names the command that regenerates it.

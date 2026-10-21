@@ -26,6 +26,9 @@ namespace DOL.GS.Agents
         // A real client's version check and login request are packets 1 and 2. The Harness skips both.
         private const ushort FIRST_SEQUENCE = 3;
 
+        // Headings are the low 12 bits of a heading update, 4096 to a full turn.
+        private const int MAX_HEADING = 4095;
+
         private readonly ConcurrentQueue<ClientPacket> _inbound = new();
         private readonly TaskCompletionSource _disconnected = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private ushort _sequence = FIRST_SEQUENCE;
@@ -34,6 +37,8 @@ namespace DOL.GS.Agents
         private WorldExit _worldExit;
         private readonly HarnessMovement _movement;
         private readonly PlayerCreateRequests _playerCreateRequests = new();
+        // The heading of a heading update still in the inbound queue, which the server hasn't set on the Character yet.
+        private ushort? _queuedHeading;
         private AgentTrace _trace;
         private bool _mindLost;
 
@@ -148,6 +153,21 @@ namespace DOL.GS.Agents
 
                     return null;
                 }
+                case FacePrimitive face:
+                {
+                    if (face.Heading is < 0 or > MAX_HEADING)
+                        return $"A heading is 0 to {MAX_HEADING}, not {face.Heading}.";
+
+                    // A running client sends no heading update, as captured: the run's own heading, in its next position update, overtakes the face at once.
+                    if (_movement.IsRunning)
+                        return null;
+
+                    // One heading update with the final heading, as a client turned by the mouse can send: the server and other clients see only the heading each one carries.
+                    // Position updates keep their idle cadence, as while the captured client turns.
+                    _queuedHeading = (ushort) face.Heading;
+                    Enqueue(HeadingUpdate(_queuedHeading.Value));
+                    return null;
+                }
             }
 
             ClientPacket packet = primitive switch
@@ -219,12 +239,19 @@ namespace DOL.GS.Agents
             return ClientPackets1127.Ping((uint) Environment.TickCount);
         }
 
-        // What a client standing still tells the server about its Character.
+        // What a client standing still tells the server about its Character. It faces the way it last turned to, even if the server hasn't read that heading update yet.
         public ClientPacket PositionUpdate()
         {
             GamePlayer player = Player;
             PlayerPositionUpdateHandler.StateFlags stateFlags = player.IsSitting ? PlayerPositionUpdateHandler.StateFlags.SITTING : 0;
-            return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, player.Heading, 0, player.HealthPercent, SessionID, stateFlags, player.ActionFlags);
+            return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, _queuedHeading ?? player.Heading, 0, player.HealthPercent, SessionID, stateFlags, player.ActionFlags);
+        }
+
+        // What a client turning on the spot tells the server, once it faces `heading` (0 to 4095).
+        public ClientPacket HeadingUpdate(ushort heading)
+        {
+            GamePlayer player = Player;
+            return ClientPackets1127.HeadingUpdate(heading, player.HealthPercent, SessionID, player.ActionFlags);
         }
 
         // Called by the client service on the game loop, where a real client's received bytes are processed.
@@ -303,6 +330,9 @@ namespace DOL.GS.Agents
                     packet.ReleasePooledObject();
                 }
             }
+
+            // The server has read every heading update, so the Character's heading is the client's again.
+            _queuedHeading = null;
         }
 
         // What an idle client sends so the server doesn't time it out or link-dead it. A position update repeats where the Character is, so it needs the Character in the world.

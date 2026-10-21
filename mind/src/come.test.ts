@@ -44,6 +44,13 @@ function playerCreate(objectId: number, name: string, x: number, y: number, z: n
   };
 }
 
+// The Harness's arrived Percept, which Self hears before Come, as in the Come Mind.
+function arrive(agentSelf: Self, x: number, y: number, z: number): Percept {
+  const percept: Percept = { kind: "arrived", x, y, z };
+  agentSelf.perceive(message(percept));
+  return percept;
+}
+
 // Greeen stands at (296000, 642000, 4848), and Vue 3000 units away along +X, 2 units higher.
 function world() {
   const agentSelf = new Self();
@@ -91,11 +98,69 @@ test("come before Self knows where it is gives nothing", () => {
   expect(come.decide(sayLine('Vue says, "come"'), new Self(), surroundings)).toBeUndefined();
 });
 
-test("come from a speaker already within 100 units gives nothing", () => {
+test("come from a speaker already within 100 units only turns to face them", () => {
   const { come, agentSelf, surroundings } = world();
+  // 60 units along +X and 50 along +Y: atan2(-60, 50) is -571 of a 4096 turn, heading 3525.
   surroundings.perceive(message(playerCreate(292, "Ruwen", 296060, 642050, 4848)));
 
+  expect(come.decide(sayLine('Ruwen says, "come"'), agentSelf, surroundings)).toEqual({ name: "face", heading: 3525 });
+});
+
+test("come from a speaker straight above the Agent gives nothing: there's no way to face them", () => {
+  const { come, agentSelf, surroundings } = world();
+  surroundings.perceive(message(playerCreate(292, "Ruwen", 296000, 642000, 4900)));
+
   expect(come.decide(sayLine('Ruwen says, "come"'), agentSelf, surroundings)).toBeUndefined();
+});
+
+test("arriving after a come turns to face the speaker", () => {
+  const { come, agentSelf, surroundings } = world();
+  come.decide(sayLine('Vue says, "come"'), agentSelf, surroundings);
+
+  // Vue is along +X from where Greeen arrives, which is heading 3072.
+  expect(come.decide(arrive(agentSelf, 298900, 642000, 4848), agentSelf, surroundings)).toEqual({ name: "face", heading: 3072 });
+});
+
+test("arriving faces where the speaker was last known to be, not where they said come", () => {
+  const { come, agentSelf, surroundings } = world();
+  come.decide(sayLine('Vue says, "come"'), agentSelf, surroundings);
+  // Vue walked on to 500 units along +Y of where Greeen arrives.
+  surroundings.perceive(message(playerCreate(291, "Vue", 298900, 642500, 4850)));
+
+  expect(come.decide(arrive(agentSelf, 298900, 642000, 4848), agentSelf, surroundings)).toEqual({ name: "face", heading: 0 });
+});
+
+test("arriving faces only once per come", () => {
+  const { come, agentSelf, surroundings } = world();
+  come.decide(sayLine('Vue says, "come"'), agentSelf, surroundings);
+  come.decide(arrive(agentSelf, 298900, 642000, 4848), agentSelf, surroundings);
+
+  expect(come.decide(arrive(agentSelf, 298900, 642000, 4848), agentSelf, surroundings)).toBeUndefined();
+});
+
+test("arriving faces whoever said the latest come that ran", () => {
+  const { come, agentSelf, surroundings } = world();
+  surroundings.perceive(message(playerCreate(292, "Ruwen", 296000, 645000, 4848)));
+  come.decide(sayLine('Vue says, "come"'), agentSelf, surroundings);
+  come.decide(sayLine('Ruwen says, "come"'), agentSelf, surroundings);
+  come.decide({ kind: "stopped", x: 296500, y: 642000, z: 4848, reason: "Replaced" }, agentSelf, surroundings);
+
+  // Ruwen is along +Y from where Greeen arrives.
+  expect(come.decide(arrive(agentSelf, 296000, 644900, 4848), agentSelf, surroundings)).toEqual({ name: "face", heading: 0 });
+});
+
+test("arriving after a stop, or once the speaker has gone from Surroundings, gives nothing", () => {
+  const stopped = world();
+  stopped.come.decide(sayLine('Vue says, "come"'), stopped.agentSelf, stopped.surroundings);
+  stopped.come.decide(sayLine('Vue says, "stop"'), stopped.agentSelf, stopped.surroundings);
+
+  expect(stopped.come.decide(arrive(stopped.agentSelf, 298900, 642000, 4848), stopped.agentSelf, stopped.surroundings)).toBeUndefined();
+
+  const gone = world();
+  gone.come.decide(sayLine('Vue says, "come"'), gone.agentSelf, gone.surroundings);
+  gone.surroundings.perceive(message({ kind: "objectDelete", objectId: 291 }));
+
+  expect(gone.come.decide(arrive(gone.agentSelf, 298900, 642000, 4848), gone.agentSelf, gone.surroundings)).toBeUndefined();
 });
 
 test("another speaker's stop gives stop", () => {

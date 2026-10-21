@@ -52,10 +52,16 @@ namespace DOL.GS.Tests
         public static GameClient Client(ushort sessionId)
         {
             GameClient client = new(null);
+            SetSessionId(client, sessionId);
+            return client;
+        }
+
+        // As if the server had given the client `sessionId` when it connected.
+        public static void SetSessionId(GameClient client, ushort sessionId)
+        {
             SessionId id = new(new SessionIdAllocator());
             typeof(SessionId).GetField("_value", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(id, sessionId);
             typeof(BaseClient).GetProperty(nameof(BaseClient.SessionId)).SetValue(client, id);
-            return client;
         }
 
         public static TestPlayer Player(GameClient client, string name)
@@ -99,6 +105,7 @@ namespace DOL.GS.Tests
 
         public GameClient TestClient { get; private set; }
         public ushort TestHeading { get; set; }
+        public byte TestHealthPercent { get; set; }
         public ushort TestModel { get; set; }
         public byte DisplayLevel { get; set; }
         public bool Alive { get; set; }
@@ -116,6 +123,7 @@ namespace DOL.GS.Tests
 
         public override GameClient Client => TestClient;
         public override ushort Heading { get => TestHeading; set => TestHeading = value; }
+        public override byte HealthPercent => TestHealthPercent;
         public override ushort Model { get => TestModel; set => TestModel = value; }
         public override bool IsAlive => Alive;
         public override bool IsUnderwater => Underwater;
