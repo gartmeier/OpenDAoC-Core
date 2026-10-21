@@ -23,7 +23,7 @@ See the spec: `.scratch/movement/spec.md`.
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Stepping (server unit tests): exact arrival, heading towards the target, Z interpolation, no overshoot after a stall, a stop mid-run, the zone ID changing at a zone border within a region
 - [x] Own position at world entry and maximum speed give typed Percepts
@@ -32,8 +32,8 @@ See the spec: `.scratch/movement/spec.md`.
 - [x] Connection (`bun test`): Ctrl+C sends `stop` before `quit`
 - [x] In game: `/say come` from about 30 m on flat ground makes Greeen run, smoothly in the Human's client with the running animation, to about 100 units short of the Human; the Mind prints `arrived`
 - [x] In game: `/say come` then `/say stop` stops him mid-run; the Mind prints `stopped` with the stop reason
-- [ ] In game: Ctrl+C during a run stops him, and he quits through the normal path
-- [ ] The server log has no speed-check entries for Greeen after these runs
+- [x] In game: Ctrl+C during a run stops him, and he quits through the normal path
+- [x] The server log has no speed-check entries for Greeen after these runs
 
 ## Comments
 
@@ -83,3 +83,5 @@ Known gaps:
 **2026-10-21 (Human, recorded by agent):** `/say stop` stops him mid-run (trace: two `stop` lines from Vue, at 285.6 and 292.2 s). **Ctrl+C found a bug.** The stop and the quit went through ("You will quit after sitting for 20 seconds" at 323.7 s), but 2.1 s later he stood up ("You are no longer waiting to quit"), and the second Ctrl+C dropped the connection, so he went linkdead as designed.
 
 The cause: a run ended on a fraction of a unit. `PlayerMovementComponent.UpdatePosition` keeps only whole units (`Owner.X = (int) newPosition.X`), and the next idle position update repeats `player.X`. To the server, the difference of a fraction is a move (`EqualsXY` compares exactly), so `OnPlayerMove` stood the sitting Character up, which cancels a quit. It would also stand him up after any sit following a run. Fixed by ending every run on whole units (`HarnessMovement.WholeUnits`), so the idle update repeats exactly what the client last sent. `arrived` and `stopped` carry those whole units. Server 226 tests pass. Re-check step 5 (Ctrl+C mid-run) on a build with this fix.
+
+**2026-10-21 (Human, recorded by agent):** Re-checked Ctrl+C on a server built from `88015384e`. Trace `Greeen-20261021-095412-064.tsv`: `come` at 56.5 s, then "You will quit after sitting for 20 seconds" at 57.2 s, the 15, 10 and 5 second warnings, and `SendPlayerQuit` at 77.2 s, then the character screen. He stayed sitting and quit through the normal path. `server.log` has no `Speed hack` entries, and no `cheat.log` was written. All acceptance items are met.
