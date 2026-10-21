@@ -72,7 +72,7 @@ export interface FacePrimitive {
   heading: number;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | MaxSpeedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -171,6 +171,16 @@ export interface OwnPositionPercept {
   serverName?: string;
 }
 
+export interface JumpPercept {
+  kind: "jump";
+  x: number;
+  y: number;
+  z: number;
+  objectId: number;
+  heading: number;
+  houseNumber: number;
+}
+
 export interface MaxSpeedPercept {
   kind: "maxSpeed";
   maxSpeedPercent: number;
@@ -219,4 +229,4 @@ export interface PlayerCreateHorse {
   saddleColor: number;
 }
 
-export type StopReason = "Stop" | "Replaced";
+export type StopReason = "Stop" | "Replaced" | "MovedByServer" | "UnableToMove";

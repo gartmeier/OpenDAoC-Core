@@ -144,6 +144,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(ObjectDeletePercept), "objectDelete")]
     [JsonDerivedType(typeof(ObjectRemovePercept), "objectRemove")]
     [JsonDerivedType(typeof(OwnPositionPercept), "ownPosition")]
+    [JsonDerivedType(typeof(JumpPercept), "jump")]
     [JsonDerivedType(typeof(MaxSpeedPercept), "maxSpeed")]
     [JsonDerivedType(typeof(MovedPercept), "moved")]
     [JsonDerivedType(typeof(ArrivedPercept), "arrived")]
@@ -236,6 +237,10 @@ namespace DOL.GS.Agents
         bool Underwater,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string ServerName) : Percept;
 
+    // The server set where the Agent's Character is and which way it faces, for example by a GM's `/jump` or by pulling it back after its speed check. Positions are global.
+    // `X`, `Y` and `Z` are 0 when the server set only the heading, as for `/faceloc`, and the client then keeps its position. `Z` is the packet's 16 bits. `HouseNumber` is the house the Character is in, or 0.
+    public sealed record JumpPercept(float X, float Y, float Z, int ObjectId, int Heading, int HouseNumber) : Percept;
+
     // The server set how fast the Agent's Character may run, as a percentage of the base speed of 191 units per second. `WaterSpeed` is the same for swimming.
     public sealed record MaxSpeedPercept(int MaxSpeedPercent, bool TurningDisabled, int WaterSpeed) : Percept;
 
@@ -254,7 +259,11 @@ namespace DOL.GS.Agents
         // A `stop` Primitive.
         Stop,
         // A new `moveTo`.
-        Replaced
+        Replaced,
+        // The server set the Character's position itself, with a jump.
+        MovedByServer,
+        // The server set the maximum speed to 0, for example while the Character is rooted.
+        UnableToMove
     }
 
     // A realm as the packets carry it, in two bits.

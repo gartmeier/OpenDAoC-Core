@@ -119,6 +119,15 @@ namespace DOL.GS.Agents
             return new((byte) eClientPackets.PlayerHeadingUpdate, DEFAULT_PARAMETER, data);
         }
 
+        // Asks the server for a player the client got a position for but doesn't know, by its session ID. Read by `PlayerCreationRequestHandler`, which answers with the player's create.
+        // The session ID goes low byte first, as in the create object request, then 2 bytes that are 0 in the capture.
+        public static ClientPacket CreatePlayerRequest(ushort sessionId)
+        {
+            byte[] data = new byte[4];
+            BinaryPrimitives.WriteUInt16LittleEndian(data, sessionId);
+            return new((byte) eClientPackets.CreatePlayerRequest, NO_PARAMETER, data);
+        }
+
         // Ends world entry; the client is Playing from here on. The server reads the flag, which the real client leaves at 0.
         public static ClientPacket GameOpen()
         {

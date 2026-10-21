@@ -16,7 +16,7 @@ namespace DOL.GS.Agents
     /// Inbound packets come from a queue instead of the network and go through the normal packet processor, at the same point in the client tick as a Human's.
     /// Outbound packets go to <see cref="HarnessPacketLib"/>, which records them in the Agent's trace and tells the Agent's Mind.
     /// </summary>
-    public sealed class HarnessClient : GameClient
+    public sealed class HarnessClient : GameClient, IMovingClient
     {
         private static readonly Logger log = LoggerManager.Create(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -36,6 +36,7 @@ namespace DOL.GS.Agents
         private Liveness _liveness;
         private WorldExit _worldExit;
         private readonly HarnessMovement _movement;
+        private readonly PlayerCreateRequests _playerCreateRequests = new();
         // The heading of a heading update still in the inbound queue, which the server hasn't set on the Character yet.
         private ushort? _queuedHeading;
         private AgentTrace _trace;
@@ -192,13 +193,47 @@ namespace DOL.GS.Agents
         // What the client does with what the server told it. Called on the game loop, after the Mind was told.
         public void OnPerceived(Percept percept)
         {
-            if (percept is MaxSpeedPercept maxSpeed)
-                _movement.OnMaxSpeed(maxSpeed, GameLoop.GameLoopTime);
+            if (_playerCreateRequests.OnPerceived(percept, GameLoop.GameLoopTime) is ushort sessionId)
+                Enqueue(ClientPackets1127.CreatePlayerRequest(sessionId));
+
+            switch (percept)
+            {
+                case MaxSpeedPercept maxSpeed:
+                {
+                    if (_movement.OnMaxSpeed(maxSpeed, GameLoop.GameLoopTime))
+                        _liveness?.OnPositionUpdate(GameLoop.GameLoopTime);
+
+                    break;
+                }
+                case JumpPercept jump:
+                {
+                    // The server set the Character's heading too, and the client takes it: a `face` still queued would turn the Character back.
+                    Unqueue((byte) eClientPackets.PlayerHeadingUpdate);
+                    _queuedHeading = null;
+                    _movement.OnJump(jump);
+                    break;
+                }
+            }
         }
 
         public void Enqueue(ClientPacket packet)
         {
             _inbound.Enqueue(packet);
+        }
+
+        // Called on the game loop, like everything that queues a packet, so nothing is queued while it goes through the queue.
+        public void Unqueue(byte code)
+        {
+            for (int count = _inbound.Count; count > 0 && _inbound.TryDequeue(out ClientPacket packet); count--)
+            {
+                if (packet.Code != code)
+                    _inbound.Enqueue(packet);
+            }
+        }
+
+        void IMovingClient.Perceive(Percept percept)
+        {
+            Mind.Perceive(percept);
         }
 
         // Stamped with a millisecond tick counter, like a real client's.
