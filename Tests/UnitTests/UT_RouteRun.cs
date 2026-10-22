@@ -8,10 +8,10 @@ using NUnit.Framework;
 namespace DOL.GS.Tests
 {
     /// <summary>
-    /// The Harness runs an Agent's Character in a straight line the way the real 1.127 client in `Fixtures/Agents/v1127/run-turn-stop.tsv` runs.
+    /// The Harness runs an Agent's Character along a route the way the real 1.127 client in `Fixtures/Agents/v1127/run-turn-stop.tsv` runs. These runs are straight lines, the shape of every leg of a route.
     /// </summary>
     [TestFixture]
-    public class UT_StraightRun
+    public class UT_RouteRun
     {
         private const float MAX_SPEED = GamePlayer.PLAYER_BASE_SPEED;
 
@@ -27,9 +27,9 @@ namespace DOL.GS.Tests
         public void At_ShouldArriveExactlyAtTheTarget()
         {
             Vector3 target = new(31234.5f, 29123.25f, 2100);
-            StraightRun run = Run(Start, target);
+            RouteRun run = Run(Start, target);
 
-            StraightRun.Step last = Steps(run).Last();
+            RouteRun.Step last = Steps(run).Last();
 
             Assert.That(last.Position, Is.EqualTo(target));
             Assert.That(last.Speed, Is.Zero);
@@ -45,18 +45,18 @@ namespace DOL.GS.Tests
         [TestCase(-2930, -2830, 1523)]
         public void Heading_ShouldPointAtTheTarget(float dx, float dy, int heading)
         {
-            StraightRun run = Run(Start, Start + new Vector3(dx, dy, 0));
+            RouteRun run = Run(Start, Start + new Vector3(dx, dy, 0));
 
-            Assert.That((int) run.Heading, Is.EqualTo(heading).Within(1));
-            Assert.That(Steps(run).Select(static step => (int) step.Heading), Is.All.EqualTo(run.Heading));
+            Assert.That((int) run.At(0).Heading, Is.EqualTo(heading).Within(1));
+            Assert.That(Steps(run).Select(static step => (int) step.Heading), Is.All.EqualTo(run.At(0).Heading));
         }
 
         [Test]
         public void Heading_ShouldStayAsItWas_ForATargetStraightAbove()
         {
-            StraightRun run = new(Start, Start + new Vector3(0, 0, 100), 1234, 0, MAX_SPEED, Region, 0);
+            RouteRun run = new(Start, Start + new Vector3(0, 0, 100), 1234, 0, MAX_SPEED, Region, 0);
 
-            Assert.That(run.Heading, Is.EqualTo(1234));
+            Assert.That(run.At(0).Heading, Is.EqualTo(1234));
             Assert.That(run.At(0).Arrived, Is.True);
         }
 
@@ -64,9 +64,9 @@ namespace DOL.GS.Tests
         public void At_ShouldInterpolateZLinearlyAlongTheRun()
         {
             Vector3 target = Start + new Vector3(2000, 0, 400);
-            StraightRun run = Run(Start, target);
+            RouteRun run = Run(Start, target);
 
-            foreach (StraightRun.Step step in Steps(run))
+            foreach (RouteRun.Step step in Steps(run))
             {
                 float fraction = (step.Position.X - Start.X) / 2000;
                 Assert.That(step.Position.Z, Is.EqualTo(Start.Z + 400 * fraction).Within(0.01));
@@ -77,11 +77,11 @@ namespace DOL.GS.Tests
         public void At_ShouldNotOvershoot_AfterAStall()
         {
             Vector3 target = Start + new Vector3(500, 500, 0);
-            StraightRun run = Run(Start, target);
+            RouteRun run = Run(Start, target);
 
             // The game loop stalls for an hour after the first tick.
             run.At(TICK_DURATION);
-            StraightRun.Step step = run.At(60 * 60 * 1000);
+            RouteRun.Step step = run.At(60 * 60 * 1000);
 
             Assert.That(step.Position, Is.EqualTo(target));
             Assert.That(step.Arrived, Is.True);
@@ -91,7 +91,7 @@ namespace DOL.GS.Tests
         public void At_ShouldNeverPassTheTarget()
         {
             Vector3 target = Start + new Vector3(-300, 700, 0);
-            StraightRun run = Run(Start, target);
+            RouteRun run = Run(Start, target);
 
             for (long now = 0; now < 10000; now += 7)
                 Assert.That(Flat(run.At(now).Position - Start), Is.LessThanOrEqualTo(Flat(target - Start)));
@@ -101,14 +101,14 @@ namespace DOL.GS.Tests
         public void Stop_ShouldEndTheRunWhereTheCharacterIs()
         {
             Vector3 target = Start + new Vector3(3000, 0, 0);
-            StraightRun run = Run(Start, target);
+            RouteRun run = Run(Start, target);
             Vector3 there = run.At(2000).Position;
 
             run.Stop(2000);
 
             foreach (long now in new long[] { 2000, 2033, 60000 })
             {
-                StraightRun.Step step = run.At(now);
+                RouteRun.Step step = run.At(now);
                 Assert.That(step.Position, Is.EqualTo(there));
                 Assert.That(step.Speed, Is.Zero);
                 Assert.That(step.Ended, Is.True);
@@ -123,7 +123,7 @@ namespace DOL.GS.Tests
         public void Stop_ShouldChangeNothing_OnceArrived()
         {
             Vector3 target = Start + new Vector3(100, 0, 0);
-            StraightRun run = Run(Start, target);
+            RouteRun run = Run(Start, target);
 
             run.Stop(60000);
 
@@ -135,9 +135,9 @@ namespace DOL.GS.Tests
         public void ZoneId_ShouldChange_AtAZoneBorderWithinTheRegion()
         {
             Vector3 start = new(65000, 30000, 2000);
-            StraightRun run = Run(start, start + new Vector3(1000, 0, 0));
+            RouteRun run = Run(start, start + new Vector3(1000, 0, 0));
 
-            foreach (StraightRun.Step step in Steps(run))
+            foreach (RouteRun.Step step in Steps(run))
                 Assert.That(step.ZoneId, Is.EqualTo(step.Position.X < 65536 ? 101 : 102));
 
             Assert.That(run.At(0).ZoneId, Is.EqualTo(101));
@@ -148,7 +148,7 @@ namespace DOL.GS.Tests
         public void ZoneId_ShouldStayTheStarts_OutsideEveryZone()
         {
             Vector3 start = new(130000, 30000, 2000);
-            StraightRun run = Run(start, start + new Vector3(2000, 0, 0));
+            RouteRun run = Run(start, start + new Vector3(2000, 0, 0));
 
             Assert.That(Steps(run).Last().ZoneId, Is.EqualTo(102));
         }
@@ -157,7 +157,7 @@ namespace DOL.GS.Tests
         [Test]
         public void Speed_ShouldRampUpAsTheCapturedClientsDoes()
         {
-            StraightRun run = Run(Start, Start + new Vector3(5000, 0, 0));
+            RouteRun run = Run(Start, Start + new Vector3(5000, 0, 0));
 
             Assert.That(run.At(200).Speed - run.At(0).Speed, Is.EqualTo(53).Within(2));
             Assert.That(run.At(400).Speed - run.At(200).Speed, Is.EqualTo(53).Within(2));
@@ -171,7 +171,7 @@ namespace DOL.GS.Tests
         public void Speed_ShouldFallToZeroAtTheTargetAsTheCapturedClientsDoes()
         {
             Vector3 target = Start + new Vector3(5000, 0, 0);
-            StraightRun run = Run(Start, target);
+            RouteRun run = Run(Start, target);
             long arrival = Enumerable.Range(0, 100000).Select(static t => (long) t).First(now => run.At(now).Arrived);
 
             Assert.That(run.At(arrival - 400).Speed, Is.EqualTo(MAX_SPEED).Within(5));
@@ -183,7 +183,7 @@ namespace DOL.GS.Tests
         [Test]
         public void Distance_ShouldNeverExceedTheMaximumSpeed_BetweenTwoUpdates([Values(33, 200, 233)] int interval)
         {
-            StraightRun run = Run(Start, Start + new Vector3(4000, -1500, 0));
+            RouteRun run = Run(Start, Start + new Vector3(4000, -1500, 0));
             Vector3 previous = run.At(0).Position;
 
             for (long now = interval; now < 30000; now += interval)
@@ -198,9 +198,9 @@ namespace DOL.GS.Tests
         public void At_ShouldArriveExactly_OnARunTooShortToReachTheMaximumSpeed()
         {
             Vector3 target = Start + new Vector3(30, 0, 0);
-            StraightRun run = Run(Start, target);
+            RouteRun run = Run(Start, target);
 
-            List<StraightRun.Step> steps = Steps(run);
+            List<RouteRun.Step> steps = Steps(run);
 
             Assert.That(steps.Max(static step => step.Speed), Is.LessThan(MAX_SPEED));
             Assert.That(steps.Last().Position, Is.EqualTo(target));
@@ -211,7 +211,7 @@ namespace DOL.GS.Tests
         [Test]
         public void At_ShouldStartAtTheGivenSpeed()
         {
-            StraightRun run = new(Start, Start + new Vector3(0, 3000, 0), 0, MAX_SPEED, MAX_SPEED, Region, 0);
+            RouteRun run = new(Start, Start + new Vector3(0, 3000, 0), 0, MAX_SPEED, MAX_SPEED, Region, 0);
 
             Assert.That(run.At(0).Speed, Is.EqualTo(MAX_SPEED));
             Assert.That(run.At(200).Position.Y - Start.Y, Is.EqualTo(MAX_SPEED / 5).Within(0.1));
@@ -221,9 +221,9 @@ namespace DOL.GS.Tests
         public void At_ShouldNeverPassTheTarget_WhenStartingTooFastToStopInTime()
         {
             Vector3 target = Start + new Vector3(0, 5, 0);
-            StraightRun run = new(Start, target, 0, MAX_SPEED, MAX_SPEED, Region, 0);
+            RouteRun run = new(Start, target, 0, MAX_SPEED, MAX_SPEED, Region, 0);
 
-            List<StraightRun.Step> steps = Steps(run);
+            List<RouteRun.Step> steps = Steps(run);
 
             Assert.That(steps.Select(static step => step.Position.Y), Is.All.LessThanOrEqualTo(target.Y));
             Assert.That(steps.Last().Position, Is.EqualTo(target));
@@ -232,7 +232,7 @@ namespace DOL.GS.Tests
         [Test]
         public void ChangeMaxSpeed_ShouldDropTheSpeedAtOnce_WhenLower()
         {
-            StraightRun run = Run(Start, Start + new Vector3(5000, 0, 0));
+            RouteRun run = Run(Start, Start + new Vector3(5000, 0, 0));
 
             run.ChangeMaxSpeed(100, 2000);
 
@@ -243,7 +243,7 @@ namespace DOL.GS.Tests
         [Test]
         public void ChangeMaxSpeed_ShouldSpeedUpToIt_WhenHigher()
         {
-            StraightRun run = Run(Start, Start + new Vector3(8000, 0, 0));
+            RouteRun run = Run(Start, Start + new Vector3(8000, 0, 0));
 
             run.ChangeMaxSpeed(223, 2000);
 
@@ -256,25 +256,25 @@ namespace DOL.GS.Tests
         [Test]
         public void At_ShouldWaitWhereItIs_WithAMaximumSpeedOfZero()
         {
-            StraightRun run = new(Start, Start + new Vector3(1000, 0, 0), 0, 0, 0, Region, 0);
+            RouteRun run = new(Start, Start + new Vector3(1000, 0, 0), 0, 0, 0, Region, 0);
 
             Assert.That(run.At(60000).Position, Is.EqualTo(Start));
             Assert.That(run.At(60000).Ended, Is.False);
         }
 
-        private static StraightRun Run(Vector3 start, Vector3 target)
+        private static RouteRun Run(Vector3 start, Vector3 target)
         {
             return new(start, target, 0, 0, MAX_SPEED, Region, 0);
         }
 
         // Every tick of a game loop running from 0, up to the one where the run ends.
-        private static List<StraightRun.Step> Steps(StraightRun run)
+        private static List<RouteRun.Step> Steps(RouteRun run)
         {
-            List<StraightRun.Step> steps = [];
+            List<RouteRun.Step> steps = [];
 
             for (long now = 0; now < 10 * 60 * 1000; now += TICK_DURATION)
             {
-                StraightRun.Step step = run.At(now);
+                RouteRun.Step step = run.At(now);
                 steps.Add(step);
 
                 if (step.Ended)

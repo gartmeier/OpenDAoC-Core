@@ -96,6 +96,13 @@ namespace DOL.GS.Agents
             if (type == typeof(int) || type == typeof(long) || type == typeof(float))
                 return "number";
 
+            // Null only when it's left out, which the property's JSON attribute marks as optional.
+            if (Nullable.GetUnderlyingType(type) is Type underlying)
+                return TypeName(underlying, pending);
+
+            if (type.IsArray)
+                return $"{TypeName(type.GetElementType(), pending)}[]";
+
             // An enum is the union of its names, as they go over the wire. A record is an interface of its own.
             if (type.IsEnum || type.GetCustomAttribute<JsonPolymorphicAttribute>() != null || IsRecord(type))
             {

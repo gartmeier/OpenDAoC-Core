@@ -1,13 +1,13 @@
 import type { Percept, Primitive } from "./protocol.ts";
 import type { Self } from "./self.ts";
-import { distance, headingTowards, type Position, type Surroundings } from "./surroundings.ts";
+import { headingTowards, type Position, type Surroundings } from "./surroundings.ts";
 
 // How a say line reads to those who hear it (`GamePlayer.SayReceive.Says` in the server's English language file): `Vue says, "come"`.
 // The speaker is a Character's name, or an NPC's with its article (`the town guard`). The words are as said, quotes included.
 // The speaker's own line reads `You say, "come"`, and a yell or a language the listener doesn't understand reads differently, so none of them match.
 const SAY_LINE = /^(.+?) says, "(.+)"$/;
 
-/** How far short of the speaker the Agent stops, in game units, so that it stands next to them rather than inside them. */
+/** How far short of the speaker the Agent stops, along its route, in game units, so that it stands next to them rather than inside them. */
 export const STAND_OFF = 100;
 
 /**
@@ -40,7 +40,7 @@ export class Come {
 
     switch (words.toLowerCase()) {
       case "come":
-        return this.#comeTo(speaker, agentSelf, surroundings);
+        return this.#comeTo(speaker, surroundings);
       case "stop":
         this.#speaker = undefined;
         return { name: "stop" };
@@ -49,22 +49,15 @@ export class Come {
     }
   }
 
-  // A speaker the Agent doesn't know of is somewhere it couldn't know, and one already within the stand-off distance is close enough to only turn to.
-  #comeTo(speaker: string, agentSelf: Self, surroundings: Surroundings): Primitive | undefined {
-    const from = agentSelf.position;
+  // A speaker the Agent doesn't know of is somewhere it couldn't know. The Harness routes to the speaker, ends the run the stand-off distance short of them along the route, and arrives at once if it's that close already (ADR 0007).
+  #comeTo(speaker: string, surroundings: Surroundings): Primitive | undefined {
     const to = surroundings.named(speaker)?.position;
 
-    if (!from || !to)
+    if (!to)
       return undefined;
 
-    const apart = distance(from, to);
-
-    if (apart <= STAND_OFF)
-      return face(from, to);
-
     this.#speaker = speaker;
-    const { x, y, z } = shortOf(from, to, apart);
-    return { name: "moveTo", x, y, z };
+    return { name: "moveTo", x: to.x, y: to.y, z: to.z, within: STAND_OFF };
   }
 
   // The run to a speaker got there: it turns to where the speaker was last known to be, which may not be where they said `come`.
@@ -85,10 +78,4 @@ export class Come {
 function face(from: Position, to: Position): Primitive | undefined {
   const heading = headingTowards(from, to);
   return heading === undefined ? undefined : { name: "face", heading };
-}
-
-/** The point `STAND_OFF` short of `to`, on the line from `from`, `apart` away from it. */
-function shortOf(from: Position, to: Position, apart: number): Position {
-  const back = STAND_OFF / apart;
-  return { x: to.x + (from.x - to.x) * back, y: to.y + (from.y - to.y) * back, z: to.z + (from.z - to.z) * back };
 }

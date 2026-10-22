@@ -87,6 +87,8 @@ function describe(percept: Percept): string {
       return percept.x === 0 && percept.y === 0 ? `jump #${percept.objectId}\theading ${percept.heading}` : `jump #${percept.objectId}\t${at(percept)} heading ${percept.heading}`;
     case "maxSpeed":
       return `maxSpeed ${percept.maxSpeedPercent}% (${agentSelf.maxSpeed.toFixed(1)} per second)`;
+    case "routed":
+      return `routed (${percept.reachesTarget ? "reaches the target" : "can't reach the target"})\t${percept.corners.map(at).join(" → ")}`;
     case "moved":
       return `moved	${at(percept)} heading ${percept.heading} speed ${percept.speed.toFixed(1)} to ${at({ x: percept.targetX, y: percept.targetY, z: percept.targetZ })}`;
     case "arrived":
@@ -99,7 +101,7 @@ function describe(percept: Percept): string {
 function describePrimitive(primitive: Primitive): string {
   switch (primitive.name) {
     case "moveTo":
-      return `moveTo ${at(primitive)}`;
+      return primitive.within === undefined ? `moveTo ${at(primitive)}` : `moveTo ${at(primitive)} within ${primitive.within}`;
     case "say":
       return `say "${primitive.text}"`;
     case "face":

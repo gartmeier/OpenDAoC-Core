@@ -129,6 +129,16 @@ test("has stopped where it stands when it can't move, for example while rooted",
   expect(agentSelf.movement).toEqual({ kind: "stopped", reason: "UnableToMove" });
 });
 
+test("has stopped where the route ended when it can't get to the target", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+  agentSelf.perceive(message(moved(296591.7, 642621, 4848, 1523)));
+
+  agentSelf.perceive(message({ kind: "stopped", x: 296580, y: 642610, z: 4851, reason: "Unreachable" }));
+
+  expect(agentSelf.position).toEqual({ x: 296580, y: 642610, z: 4851 });
+  expect(agentSelf.movement).toEqual({ kind: "stopped", reason: "Unreachable" });
+});
+
 test("the Percepts that say where its own Character is give that position, and no others", () => {
   expect(ownPositionIn(ownPosition(1, 2, 3, 0))).toEqual({ x: 1, y: 2, z: 3 });
   expect(ownPositionIn(jump(4, 5, 6, 0))).toEqual({ x: 4, y: 5, z: 6 });
@@ -156,6 +166,8 @@ test("other Percepts change nothing", () => {
 
   agentSelf.perceive(message({ kind: "bare", call: "SendUpdatePoints" }));
   agentSelf.perceive(message({ kind: "message", text: 'Vue says, "come"', chatType: "CT_Say", chatLocation: "CL_ChatWindow" }));
+  // The route starts where the Character is, but `moved` says so once it runs.
+  agentSelf.perceive(message({ kind: "routed", corners: [{ x: 296000, y: 642000, z: 4848 }, { x: 299000, y: 642000, z: 4850 }], reachesTarget: true }));
 
   expect(agentSelf.position).toEqual({ x: 296600, y: 642629, z: 4848 });
   expect(agentSelf.movement).toEqual({ kind: "standing" });

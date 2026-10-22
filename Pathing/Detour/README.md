@@ -41,5 +41,7 @@ Create a "pathing" folder in your server's folder (where you have CoreServer.exe
 
 Caution: if you use all navmeshes, you will need at least 5GB of RAM.
 
+`../build-navmeshes.ps1` does all of this on Windows for the Agents' regions (Hibernia's home region, 200, by default): it builds Detour.dll and OpenDAoC-BuildNav, runs BuildNav on the game client, and installs both in the server's `Debug/` and `Release/` folders. Its help lists the tools to install first.
+
 ## Managed wrapper
 `../Detour.Managed` is a game-agnostic C# P/Invoke library over Detour. It is used by OpenDAoC-Core (`LocalPathfindingMgr`) and OpenDAoC-BuildNav (ladder off-mesh second pass).

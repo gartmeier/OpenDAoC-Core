@@ -54,9 +54,10 @@ The Come Mind sends `moveTo` to the speaker with `within: 100` and turns to face
 - **Routing in the Harness (ADR 0007).** `moveTo` keeps its X, Y and Z, and gains an optional `within` in game units.
   - The target is moved to the nearest walkable point on the zone's Navmesh, and the route starts from the nearest walkable point to the Character.
   - The route is worked out with the server's existing pathfinding interface, using only walkable polygons: never doors (open or closed), water, jump links or disabled polygons. Excluding doors whatever their state keeps the query independent of live door state (ADR 0006).
-  - A route that can't reach the target, or that's too long for the route buffer, is followed to its end, and the run then ends `stopped` with the new reason `unreachable`. No walkable point near the Character or the target ends it `stopped` `unreachable` at once.
+  - A route that can't reach the target is followed to its end, and the run then ends `stopped` with the new reason `unreachable`. That includes a target whose nearest walkable point is more than 128 units from it in X and Y, such as someone in deep water; how far above or below doesn't count. No walkable point near the Character or the target ends it `stopped` `unreachable` at once.
+  - One query to the server's pathfinding gives at most 256 corners, and it reports a route cut short by that limit as found. So whether a query got there is judged by where its route ends, and a long route is worked out on from there, a few queries at most per zone.
   - `within` trims that many units off the end of the route. A route no longer than `within` ends the run `arrived` at once, where the Character stands. `within` doesn't apply to a route that stops short of the target.
-  - Navmeshes are per zone. A target in another zone of the same region is routed to a crossing point on the zone border, as the server's NPC pathing does, and the route is worked out again in the next zone. Each new route sends a new `routed`.
+  - Navmeshes are per zone. A target in another zone of the same region is routed to a crossing point on the zone border, as the server's NPC pathing does, and on from there in the next zone. The whole route is worked out when the run starts, so there's one `routed` per `moveTo`.
   - A zone without a Navmesh (the pathfinding interface reports it unavailable) runs a straight line with interpolated Z, exactly as in milestone 3. `within` still applies, along the straight line.
 - **Stepping a routed run.**
   - The run goes corner to corner at the same speed profile as milestone 3: it speeds up from standing, holds the maximum speed through corners, and slows to stop at the end.
@@ -85,7 +86,7 @@ The Come Mind sends `moveTo` to the speaker with `within: 100` and turns to face
   - `within` trimming the route, and `arrived` at once when the route is no longer than `within`.
   - A route that stops short ending `stopped` `unreachable` at its end. No walkable point ending it at once.
   - `routed` sent before the first `moved`, with the corners and whether it reaches the target.
-  - A target in another zone: routed to the border, then a second `routed` in the next zone.
+  - A target in another zone: routed to the border and on in the next zone, with one `routed`.
   - Filters that never include doors, water or jump links.
   - A zone with no Navmesh giving milestone 3's straight run.
   - Speed and timing across corners: no overshoot after a stall, and `stop`, jump and maximum speed changes mid-route.

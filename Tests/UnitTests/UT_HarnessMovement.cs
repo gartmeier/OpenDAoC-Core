@@ -36,7 +36,7 @@ namespace DOL.GS.Tests
             greeen.Region = _region;
             (greeen.X, greeen.Y, greeen.Z) = ((int) Start.X, (int) Start.Y, (int) Start.Z);
             _client = new(greeen);
-            _movement = new(_client);
+            _movement = new(_client, PathfindingProvider.NullPathfindingMgr);
         }
 
         [TearDown]
@@ -104,7 +104,7 @@ namespace DOL.GS.Tests
             Running();
             ServerJumps(new(20000, 25000, 1500), 1024);
 
-            _movement.MoveTo(new(21000, 25000, 1500), 1000);
+            _movement.MoveTo(new(21000, 25000, 1500), null, 1000);
             _movement.Tick(1000);
 
             Assert.That(Read(_client.Queued.Single()).Position, Is.EqualTo(new Vector3(20000, 25000, 1500)));
@@ -169,7 +169,7 @@ namespace DOL.GS.Tests
             if (rooted)
                 _movement.OnMaxSpeed(Rooted, 0);
 
-            _movement.MoveTo(Target, 100);
+            _movement.MoveTo(Target, null, 100);
 
             Assert.That(_client.Perceived, Is.EqualTo(new[] { new StoppedPercept(Start.X, Start.Y, Start.Z, StopReason.UnableToMove) }));
             Assert.That(_movement.IsRunning, Is.False);
@@ -195,7 +195,7 @@ namespace DOL.GS.Tests
         private void Running()
         {
             _movement.OnMaxSpeed(FullSpeed, 0);
-            _movement.MoveTo(Target, 0);
+            _movement.MoveTo(Target, null, 0);
 
             for (long now = 0; now <= 400; now += 200)
                 Assert.That(_movement.Tick(now), Is.True);
@@ -204,7 +204,7 @@ namespace DOL.GS.Tests
         }
 
         // The same run, stepped on its own.
-        private StraightRun RunOnItsOwn()
+        private RouteRun RunOnItsOwn()
         {
             return new(Start, Target, 0, 0, GamePlayer.PLAYER_BASE_SPEED, _region, 0);
         }

@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { Come } from "./come.ts";
-import type { MoveToPrimitive, Percept, PerceptMessage, PlayerCreatePercept } from "./protocol.ts";
+import { Come, STAND_OFF } from "./come.ts";
+import type { Percept, PerceptMessage, PlayerCreatePercept } from "./protocol.ts";
 import { Self } from "./self.ts";
-import { distance, Surroundings } from "./surroundings.ts";
+import { Surroundings } from "./surroundings.ts";
 
 function message(percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs: 1000, percept };
@@ -60,16 +60,11 @@ function world() {
   return { come: new Come("Greeen"), agentSelf, surroundings };
 }
 
-test("another speaker's come runs to 100 units short of where they stand, along the line from Self", () => {
+test("another speaker's come runs to where they stand, ending 100 units short along the route", () => {
   const { come, agentSelf, surroundings } = world();
 
-  const primitive = come.decide(sayLine('Vue says, "come"'), agentSelf, surroundings) as MoveToPrimitive;
-
-  expect(primitive.name).toBe("moveTo");
-  expect(primitive.x).toBeCloseTo(298900);
-  expect(primitive.y).toBeCloseTo(642000);
-  expect(distance(primitive, { x: 299000, y: 642000, z: 4850 })).toBeCloseTo(100);
-  expect(distance(primitive, { x: 296000, y: 642000, z: 4848 })).toBeCloseTo(distance({ x: 296000, y: 642000, z: 4848 }, { x: 299000, y: 642000, z: 4850 }) - 100);
+  expect(come.decide(sayLine('Vue says, "come"'), agentSelf, surroundings)).toEqual({ name: "moveTo", x: 299000, y: 642000, z: 4850, within: STAND_OFF });
+  expect(STAND_OFF).toBe(100);
 });
 
 test("come works in any case", () => {
@@ -92,25 +87,29 @@ test("come from a speaker not in Surroundings gives nothing", () => {
   expect(come.decide(sayLine('the town guard says, "come"'), agentSelf, surroundings)).toBeUndefined();
 });
 
-test("come before Self knows where it is gives nothing", () => {
-  const { come, surroundings } = world();
-
-  expect(come.decide(sayLine('Vue says, "come"'), new Self(), surroundings)).toBeUndefined();
-});
-
-test("come from a speaker already within 100 units only turns to face them", () => {
+// Close in a straight line may still be far along the route, with a wall between them. The Harness arrives at once when it's close along the route too.
+test("come from a speaker already within 100 units still runs to them, and turns to face them on arriving", () => {
   const { come, agentSelf, surroundings } = world();
   // 60 units along +X and 50 along +Y: atan2(-60, 50) is -571 of a 4096 turn, heading 3525.
   surroundings.perceive(message(playerCreate(292, "Ruwen", 296060, 642050, 4848)));
 
-  expect(come.decide(sayLine('Ruwen says, "come"'), agentSelf, surroundings)).toEqual({ name: "face", heading: 3525 });
+  expect(come.decide(sayLine('Ruwen says, "come"'), agentSelf, surroundings)).toEqual({ name: "moveTo", x: 296060, y: 642050, z: 4848, within: STAND_OFF });
+  expect(come.decide(arrive(agentSelf, 296000, 642000, 4848), agentSelf, surroundings)).toEqual({ name: "face", heading: 3525 });
 });
 
-test("come from a speaker straight above the Agent gives nothing: there's no way to face them", () => {
+test("arriving under a speaker straight above the Agent gives nothing: there's no way to face them", () => {
   const { come, agentSelf, surroundings } = world();
   surroundings.perceive(message(playerCreate(292, "Ruwen", 296000, 642000, 4900)));
+  come.decide(sayLine('Ruwen says, "come"'), agentSelf, surroundings);
 
-  expect(come.decide(sayLine('Ruwen says, "come"'), agentSelf, surroundings)).toBeUndefined();
+  expect(come.decide(arrive(agentSelf, 296000, 642000, 4848), agentSelf, surroundings)).toBeUndefined();
+});
+
+test("a come that can't get to the speaker gives nothing more when the run ends", () => {
+  const { come, agentSelf, surroundings } = world();
+  come.decide(sayLine('Vue says, "come"'), agentSelf, surroundings);
+
+  expect(come.decide({ kind: "stopped", x: 298000, y: 642000, z: 4848, reason: "Unreachable" }, agentSelf, surroundings)).toBeUndefined();
 });
 
 test("arriving after a come turns to face the speaker", () => {

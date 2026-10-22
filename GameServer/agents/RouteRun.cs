@@ -4,13 +4,13 @@ using System.Numerics;
 namespace DOL.GS.Agents
 {
     /// <summary>
-    /// One run of the Agent's Character in a straight line to a target, stepped the way the real 1.127 client in `Tests/Fixtures/Agents/v1127/run-turn-stop.tsv` runs (see the README there).
+    /// One run of the Agent's Character along a route, corner to corner, stepped the way the real 1.127 client in `Tests/Fixtures/Agents/v1127/run-turn-stop.tsv` runs (see the README there).
     /// Given the game loop time, it gives where the Character is, which way it faces, how fast it goes and which zone it's in. It touches nothing in the game.
-    /// The speed ramps up from standing as the client's does, holds at the maximum speed, and falls to 0 so that the Character stops exactly at the target.
-    /// Only X and Y count towards the distance and the speed, as in the server's speed check. Z goes linearly from the start's to the target's, since there's no terrain to follow.
-    /// Every position follows from the time since the run started, so a stall in the game loop never carries the Character past the target.
+    /// The speed ramps up from standing as the client's does, holds at the maximum speed round every corner, and falls to 0 so that the Character stops exactly at the last corner.
+    /// Only X and Y count towards the distance and the speed, as in the server's speed check. Z is the floor under each position where there is one, and otherwise goes linearly between corners.
+    /// Every position follows from the time since the run started, so a stall in the game loop never carries the Character past the end.
     /// </summary>
-    public sealed class StraightRun
+    public sealed class RouteRun
     {
         // In game units per second per second. Both captured starts gain about 53 units per second every 200 ms.
         public const float ACCELERATION = 265;
@@ -18,48 +18,71 @@ namespace DOL.GS.Agents
         // In game units per second per second. Both captured stops fall from 191 to about 100 in one 200 ms update and to 0 in the next, about 40 units on.
         public const float DECELERATION = 480;
 
-        private readonly Vector3 _start;
-        private readonly Vector3 _target;
+        private readonly Vector3[] _corners;
+        // How far each corner is along the route from the first, in X and Y.
+        private readonly float[] _along;
+        // The heading along each leg, the leg from corner `i` to corner `i + 1` at `i`.
+        private readonly ushort[] _headings;
         private readonly Region _region;
-        // Along the line from the start, in X and Y.
+        private readonly Func<Vector3, float?> _floor;
         private readonly float _length;
-        private readonly Vector2 _direction;
         private readonly ushort _startZoneId;
         private Profile _profile;
         private bool _stopped;
 
         /// <summary>
-        /// Starts a run at `now` (the game loop time) from `start` to `target`, both global, with the Character going at `speed` already, for example when a new run replaces one.
-        /// `heading` is the one the Character has, which it keeps if the target is straight above or below it. `region` gives the zone at each position, from its static layout (ADR 0006).
+        /// Starts a run at `now` (the game loop time) through `corners`, all global, the first where the Character is, with the Character going at `speed` already, for example when a new run replaces one.
+        /// `heading` is the one the Character has, which it keeps on a leg that goes straight up or down. `region` gives the zone at each position, from its static layout (ADR 0006).
+        /// `floor` gives the Z of the ground under a position, or null where it doesn't know it.
         /// </summary>
-        public StraightRun(Vector3 start, Vector3 target, ushort heading, float speed, float maxSpeed, Region region, long now)
+        public RouteRun(Vector3[] corners, ushort heading, float speed, float maxSpeed, Region region, Func<Vector3, float?> floor, long now)
         {
-            _start = start;
-            _target = target;
+            _corners = corners;
             _region = region;
-            Vector2 offset = new(target.X - start.X, target.Y - start.Y);
-            _length = offset.Length();
-            _direction = _length > 0 ? offset / _length : Vector2.Zero;
-            Heading = _length > 0 ? HeadingAlong(offset) : heading;
-            _startZoneId = region.GetZone((int) start.X, (int) start.Y)?.ID ?? 0;
+            _floor = floor;
+            _along = new float[corners.Length];
+            _headings = new ushort[Math.Max(1, corners.Length - 1)];
+            _headings[0] = heading;
+
+            for (int i = 1; i < corners.Length; i++)
+            {
+                Vector2 leg = new(corners[i].X - corners[i - 1].X, corners[i].Y - corners[i - 1].Y);
+                _along[i] = _along[i - 1] + leg.Length();
+                _headings[i - 1] = leg != Vector2.Zero ? HeadingAlong(leg) : i > 1 ? _headings[i - 2] : heading;
+            }
+
+            _length = _along[^1];
+            _startZoneId = region.GetZone((int) corners[0].X, (int) corners[0].Y)?.ID ?? 0;
             _profile = new(now, 0, Math.Min(speed, maxSpeed), maxSpeed, _length);
         }
 
-        public Vector3 Target => _target;
+        // In a straight line from `start` to `target`, with no floor to follow.
+        public RouteRun(Vector3 start, Vector3 target, ushort heading, float speed, float maxSpeed, Region region, long now) : this([start, target], heading, speed, maxSpeed, region, static _ => null, now) { }
 
-        // Towards the target, 0 to 4095, as the server measures headings (`Point2D.GetHeading`). It doesn't change during a run.
-        public ushort Heading { get; }
-
-        // Whether `Stop` ended the run short of the target.
+        // Whether `Stop` ended the run short of the end.
         public bool IsStopped => _stopped;
 
         public Step At(long now)
         {
             (float distance, float speed, bool ended) = _profile.At(now);
-            float fraction = _length > 0 ? distance / _length : 1;
-            Vector2 flat = new Vector2(_start.X, _start.Y) + _direction * distance;
-            Vector3 position = fraction >= 1 ? _target : new(flat.X, flat.Y, _start.Z + (_target.Z - _start.Z) * fraction);
-            return new(position, ZoneAt(position), Heading, speed, ended, ended && !_stopped);
+            int leg = Leg(distance);
+            Vector3 position;
+
+            if (distance >= _length)
+                position = _corners[^1];
+            else
+            {
+                Vector3 from = _corners[leg];
+                Vector3 to = _corners[leg + 1];
+                float legLength = _along[leg + 1] - _along[leg];
+                float fraction = legLength > 0 ? (distance - _along[leg]) / legLength : 1;
+                position = new(from.X + (to.X - from.X) * fraction, from.Y + (to.Y - from.Y) * fraction, from.Z + (to.Z - from.Z) * fraction);
+            }
+
+            if (_floor(position) is float z)
+                position.Z = z;
+
+            return new(position, ZoneAt(position), _headings[leg], speed, ended, ended && !_stopped);
         }
 
         // Ends the run where the Character is at `now`, at once.
@@ -81,6 +104,17 @@ namespace DOL.GS.Agents
 
             if (!ended)
                 _profile = new(now, distance, Math.Min(speed, maxSpeed), maxSpeed, _length);
+        }
+
+        // The leg `distance` along the route falls on. A corner starts the leg after it, and the end is on the last leg.
+        private int Leg(float distance)
+        {
+            int leg = 0;
+
+            while (leg < _headings.Length - 1 && _along[leg + 1] <= distance)
+                leg++;
+
+            return leg;
         }
 
         // Where a position falls in the region's static zone layout. Outside every zone, the start's, since an unknown zone ID sends the client back to the character screen and a wrong one isn't checked.

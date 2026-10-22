@@ -43,6 +43,23 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Read_ShouldReadAMoveToPrimitive_WithAWithinDistance()
+        {
+            MindMessage message = Read("""{"type":"primitive","id":9,"primitive":{"name":"moveTo","x":531234.5,"y":478901,"z":2345,"within":100}}""");
+
+            Assert.That(message, Is.EqualTo(new PrimitiveMessage(9, new MoveToPrimitive(531234.5f, 478901, 2345, 100))));
+        }
+
+        [Test]
+        public void Write_ShouldWriteARoutedPercept_WithItsCornersInOrder()
+        {
+            RoutedPercept routed = new([new(1, 2, 3), new(4.5f, 5, 6)], false);
+
+            Assert.That(Write(new PerceptMessage(7, 2200, routed)),
+                Is.EqualTo("""{"type":"percept","sequence":7,"elapsedMs":2200,"percept":{"kind":"routed","corners":[{"x":1,"y":2,"z":3},{"x":4.5,"y":5,"z":6}],"reachesTarget":false}}"""));
+        }
+
+        [Test]
         public void Read_ShouldReadAStopPrimitive()
         {
             MindMessage message = Read("""{"type":"primitive","id":10,"primitive":{"name":"stop"}}""");
@@ -83,6 +100,12 @@ namespace DOL.GS.Tests
         {
             Assert.That(Write(new PerceptMessage(5, 2000, new StoppedPercept(1.5f, 2, 3, StopReason.Replaced))),
                 Is.EqualTo("""{"type":"percept","sequence":5,"elapsedMs":2000,"percept":{"kind":"stopped","x":1.5,"y":2,"z":3,"reason":"Replaced"}}"""));
+        }
+
+        [Test]
+        public void Write_ShouldWriteAnUnreachableStop()
+        {
+            Assert.That(Write(new PerceptMessage(5, 2000, new StoppedPercept(1, 2, 3, StopReason.Unreachable))), Does.EndWith("\"reason\":\"Unreachable\"}}"));
         }
 
         [Test]

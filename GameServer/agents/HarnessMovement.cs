@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Numerics;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
@@ -5,8 +6,8 @@ using DOL.GS.PacketHandler.Client.v168;
 namespace DOL.GS.Agents
 {
     /// <summary>
-    /// What the Agent's client does to move its Character, since a real client owns its own position (ADR 0002): it runs the Character to a target and tells the server where it is on the way.
-    /// While running it sends a position update about every 200 ms, as the captured client does, and tells the Mind what the client works out itself: `moved`, `arrived` and `stopped`.
+    /// What the Agent's client does to move its Character, since a real client owns its own position (ADR 0002): it runs the Character to a target, along a route on the navmesh where there is one (ADR 0007), and tells the server where it is on the way.
+    /// While running it sends a position update about every 200 ms, as the captured client does, and tells the Mind what the client works out itself: `routed`, `moved`, `arrived` and `stopped`.
     /// The position updates go into the Harness client's inbound queue, so the server's handlers and its speed check see them as a Human's.
     /// It moves only at the maximum speed the server last told the client, and a maximum speed of 0 ends the run. A jump ends it too: the server has set the Character's position, and the client takes it.
     /// Called on the game loop, only while the Character is in the world and a Mind is connected (ADR 0005).
@@ -20,12 +21,18 @@ namespace DOL.GS.Agents
         private const ushort HEADING_FLAG = 0x1000;
 
         private readonly IMovingClient _client;
-        private StraightRun _run;
+        private readonly IPathfindingMgr _pathfinding;
+        private RouteRun _run;
+        // The `moveTo`'s target, and whether the run's route gets to it.
+        private Vector3 _target;
+        private bool _reachesTarget;
         private long _nextPositionUpdate;
 
-        public HarnessMovement(IMovingClient client)
+        // `pathfinding` is the server's, with the zones' navmeshes (ADR 0007).
+        public HarnessMovement(IMovingClient client, IPathfindingMgr pathfinding)
         {
             _client = client;
+            _pathfinding = pathfinding;
         }
 
         // In game units per second, from the last maximum speed update. 0 until the server has sent one.
@@ -69,9 +76,11 @@ namespace DOL.GS.Agents
             Perceive(new StoppedPercept(jump.X, jump.Y, jump.Z, StopReason.MovedByServer));
         }
 
-        // Starts running to `target`, from where the Character is. A run in progress ends with `stopped` first, and the new one keeps its speed.
+        // Starts running to `target`, from where the Character is, along the route the navmesh gives, `within` short of its end (ADR 0007). The Mind hears the route first.
+        // A run in progress ends with `stopped` first, and the new one keeps its speed.
         // With a maximum speed of 0 it doesn't start, and the Mind hears `stopped` where the Character stands.
-        public void MoveTo(Vector3 target, long now)
+        // A route with nowhere to go ends at once where the Character stands: `arrived` if it's already there, `stopped` with `Unreachable` if it can't get anywhere.
+        public void MoveTo(Vector3 target, float? within, long now)
         {
             GamePlayer player = _client.Player;
             Vector3 start = new(player.X, player.Y, player.Z);
@@ -86,7 +95,7 @@ namespace DOL.GS.Agents
 
             if (_run != null)
             {
-                StraightRun.Step step = _run.At(now);
+                RouteRun.Step step = _run.At(now);
                 start = step.Position;
 
                 // It got there before its next position update.
@@ -100,11 +109,27 @@ namespace DOL.GS.Agents
                 }
             }
 
-            // The captured client sends its first position update as soon as the Character moves.
-            if (speed == 0)
-                _nextPositionUpdate = now;
+            Router router = new(_pathfinding, player.CurrentRegion);
+            Route route = router.Find(start, target, within);
+            Perceive(new RoutedPercept(route.Corners.Select(static corner => new RouteCorner(corner.X, corner.Y, corner.Z)).ToArray(), route.ReachesTarget));
+            _run = new(route.Corners, player.Heading, speed, MaxSpeed, player.CurrentRegion, router.FloorAt, now);
+            _target = target;
+            _reachesTarget = route.ReachesTarget;
 
-            _run = new(start, target, player.Heading, speed, MaxSpeed, player.CurrentRegion, now);
+            if (route.Corners.Length > 1)
+            {
+                // The captured client sends its first position update as soon as the Character moves.
+                if (speed == 0)
+                    _nextPositionUpdate = now;
+
+                return;
+            }
+
+            // Nowhere to go. A Character still going from the run it replaced stops, with a position update, and one standing stays as it is.
+            if (speed > 0)
+                Send(_run.At(now), now);
+            else
+                Ended(WholeUnits(start), true, StopReason.Stop);
         }
 
         // Ends the run in progress where the Character is. Returns whether there was one.
@@ -135,8 +160,9 @@ namespace DOL.GS.Agents
             Send(_run.At(now), now, reason);
         }
 
-        // A position update for where the run has got to, and what the client works out from it. `reason` is why the run ended, if it ended short of its target.
-        private void Send(StraightRun.Step step, long now, StopReason reason = StopReason.Stop)
+        // A position update for where the run has got to, and what the client works out from it. `reason` is why the run ended, if a stop ended it.
+        // A run that got to the end of a route that can't reach the target ends `Unreachable`.
+        private void Send(RouteRun.Step step, long now, StopReason reason = StopReason.Stop)
         {
             GamePlayer player = _client.Player;
             Vector3 position = step.Ended ? WholeUnits(step.Position) : step.Position;
@@ -145,13 +171,22 @@ namespace DOL.GS.Agents
 
             if (!step.Ended)
             {
-                Vector3 target = _run.Target;
-                Perceive(new MovedPercept(position.X, position.Y, position.Z, step.Heading, step.Speed, target.X, target.Y, target.Z));
+                Perceive(new MovedPercept(position.X, position.Y, position.Z, step.Heading, step.Speed, _target.X, _target.Y, _target.Z));
                 return;
             }
 
+            Ended(position, step.Arrived, reason);
+        }
+
+        // The run ended at `position`, at the end of its route or, if not, for `reason`. The end of a route that can't reach the target is `Unreachable`.
+        private void Ended(Vector3 position, bool atTheEnd, StopReason reason)
+        {
             _run = null;
-            Perceive(step.Arrived ? new ArrivedPercept(position.X, position.Y, position.Z) : new StoppedPercept(position.X, position.Y, position.Z, reason));
+
+            if (atTheEnd && _reachesTarget)
+                Perceive(new ArrivedPercept(position.X, position.Y, position.Z));
+            else
+                Perceive(new StoppedPercept(position.X, position.Y, position.Z, atTheEnd ? StopReason.Unreachable : reason));
         }
 
         // Where a run ends. The server keeps only whole units of the position a client sends, and the idle position update repeats what the server kept.

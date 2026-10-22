@@ -45,7 +45,7 @@ namespace DOL.GS.Agents
         public HarnessClient(MindLink mind) : base(null)
         {
             Mind = mind;
-            _movement = new(this);
+            _movement = new(this, PathfindingProvider.Instance);
         }
 
         // The Agent's Mind connection, which is the client's network connection (ADR 0005). Told every call the server makes on the packet library.
@@ -143,7 +143,7 @@ namespace DOL.GS.Agents
             {
                 case MoveToPrimitive moveTo:
                 {
-                    _movement.MoveTo(new(moveTo.X, moveTo.Y, moveTo.Z), GameLoop.GameLoopTime);
+                    _movement.MoveTo(new(moveTo.X, moveTo.Y, moveTo.Z), moveTo.Within, GameLoop.GameLoopTime);
                     return null;
                 }
                 case StopPrimitive:

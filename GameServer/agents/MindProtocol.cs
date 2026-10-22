@@ -121,9 +121,14 @@ namespace DOL.GS.Agents
     // Says `Text` to those nearby, as a Human typing a chat line does.
     public sealed record SayPrimitive(string Text) : Primitive;
 
-    // Runs in a straight line to the point, in global coordinates, at the maximum speed the server last told the client. A new one replaces the run in progress.
-    // Arriving, and stopping short, come as Percepts (ADR 0004).
-    public sealed record MoveToPrimitive([property: JsonRequired] float X, [property: JsonRequired] float Y, [property: JsonRequired] float Z) : Primitive;
+    // Runs to the point, in global coordinates, at the maximum speed the server last told the client. A new one replaces the run in progress.
+    // On a zone's navmesh the run follows a route around what's in the way, on the ground, to the nearest walkable point; elsewhere it goes in a straight line (ADR 0007).
+    // `Within` ends the run that many units short of the end of the route. The route, arriving, and stopping short come as Percepts (ADR 0004).
+    public sealed record MoveToPrimitive(
+        [property: JsonRequired] float X,
+        [property: JsonRequired] float Y,
+        [property: JsonRequired] float Z,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] float? Within = null) : Primitive;
 
     // Ends the run in progress where the Character is. Without one it does nothing.
     public sealed record StopPrimitive : Primitive;
@@ -148,6 +153,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(OwnPositionPercept), "ownPosition")]
     [JsonDerivedType(typeof(JumpPercept), "jump")]
     [JsonDerivedType(typeof(MaxSpeedPercept), "maxSpeed")]
+    [JsonDerivedType(typeof(RoutedPercept), "routed")]
     [JsonDerivedType(typeof(MovedPercept), "moved")]
     [JsonDerivedType(typeof(ArrivedPercept), "arrived")]
     [JsonDerivedType(typeof(StoppedPercept), "stopped")]
@@ -304,6 +310,13 @@ namespace DOL.GS.Agents
     // Worked out by the Harness, as the Agent's client works it out: where the Character is while it runs to the target of a `moveTo`, sent with each position update. Positions are global.
     public sealed record MovedPercept(float X, float Y, float Z, int Heading, float Speed, float TargetX, float TargetY, float TargetZ) : Percept;
 
+    // Worked out by the Harness: the route a `moveTo` runs along, from where the Character is to where it will stop, `within` already taken off. Positions are global.
+    // `ReachesTarget` is false when the route can't get to the target, and the run then ends `stopped` with `Unreachable` at the last corner.
+    public sealed record RoutedPercept(RouteCorner[] Corners, bool ReachesTarget) : Percept;
+
+    // One corner of a route, global.
+    public sealed record RouteCorner(float X, float Y, float Z);
+
     // Worked out by the Harness: a `moveTo` reached its target, and the Character stands there.
     public sealed record ArrivedPercept(float X, float Y, float Z) : Percept;
 
@@ -320,7 +333,9 @@ namespace DOL.GS.Agents
         // The server set the Character's position itself, with a jump.
         MovedByServer,
         // The server set the maximum speed to 0, for example while the Character is rooted.
-        UnableToMove
+        UnableToMove,
+        // The route can't get to the target, and the Character got as close as it could.
+        Unreachable
     }
 
     // A realm as the packets carry it, in two bits.

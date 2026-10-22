@@ -61,6 +61,7 @@ export interface MoveToPrimitive {
   x: number;
   y: number;
   z: number;
+  within?: number;
 }
 
 export interface StopPrimitive {
@@ -72,7 +73,7 @@ export interface FacePrimitive {
   heading: number;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -236,6 +237,12 @@ export interface MaxSpeedPercept {
   waterSpeed: number;
 }
 
+export interface RoutedPercept {
+  kind: "routed";
+  corners: RouteCorner[];
+  reachesTarget: boolean;
+}
+
 export interface MovedPercept {
   kind: "moved";
   x: number;
@@ -286,4 +293,10 @@ export interface ObjectUpdateDestination {
   zoneId: number;
 }
 
-export type StopReason = "Stop" | "Replaced" | "MovedByServer" | "UnableToMove";
+export interface RouteCorner {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export type StopReason = "Stop" | "Replaced" | "MovedByServer" | "UnableToMove" | "Unreachable";
