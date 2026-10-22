@@ -45,7 +45,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -73,7 +73,30 @@ export interface FacePrimitive {
   heading: number;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export interface TargetPrimitive {
+  name: "target";
+  objectId: number;
+}
+
+export interface AttackPrimitive {
+  name: "attack";
+  on: boolean;
+}
+
+export interface SitPrimitive {
+  name: "sit";
+}
+
+export interface StandPrimitive {
+  name: "stand";
+}
+
+export interface CommandPrimitive {
+  name: "command";
+  text: string;
+}
+
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | DiedPercept | RevivedPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -237,6 +260,60 @@ export interface MaxSpeedPercept {
   waterSpeed: number;
 }
 
+export interface StatusPercept {
+  kind: "status";
+  healthPercent: number;
+  manaPercent: number;
+  sitting: boolean;
+  endurancePercent: number;
+  concentrationPercent: number;
+  maxMana: number;
+  maxEndurance: number;
+  maxConcentration: number;
+  maxHealth: number;
+  health: number;
+  endurance: number;
+  mana: number;
+  concentration: number;
+}
+
+export interface PointsPercept {
+  kind: "points";
+  realmPoints: number;
+  levelPermill: number;
+  specPoints: number;
+  bountyPoints: number;
+  realmSpecPoints: number;
+  championLevelPermill: number;
+  experience: number;
+  experienceForNextLevel: number;
+}
+
+export interface PlayerPercept {
+  kind: "player";
+  level: number;
+  name: string;
+  className: string;
+  baseClassName: string;
+  maxHealth: number;
+}
+
+export interface SkillsPercept {
+  kind: "skills";
+  skills: SkillEntry[];
+}
+
+export interface DiedPercept {
+  kind: "died";
+  objectId: number;
+  killerId: number;
+}
+
+export interface RevivedPercept {
+  kind: "revived";
+  objectId: number;
+}
+
 export interface RoutedPercept {
   kind: "routed";
   corners: RouteCorner[];
@@ -293,6 +370,12 @@ export interface ObjectUpdateDestination {
   zoneId: number;
 }
 
+export interface SkillEntry {
+  name: string;
+  level: number;
+  page: SkillPage;
+}
+
 export interface RouteCorner {
   x: number;
   y: number;
@@ -300,3 +383,5 @@ export interface RouteCorner {
 }
 
 export type StopReason = "Stop" | "Replaced" | "MovedByServer" | "UnableToMove" | "Unreachable";
+
+export type SkillPage = "Specialization" | "Abilities" | "Styles" | "Spells" | "Songs" | "AbilitiesSpell" | "RealmAbilities";

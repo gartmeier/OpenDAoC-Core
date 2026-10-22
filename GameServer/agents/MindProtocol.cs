@@ -113,6 +113,11 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(MoveToPrimitive), "moveTo")]
     [JsonDerivedType(typeof(StopPrimitive), "stop")]
     [JsonDerivedType(typeof(FacePrimitive), "face")]
+    [JsonDerivedType(typeof(TargetPrimitive), "target")]
+    [JsonDerivedType(typeof(AttackPrimitive), "attack")]
+    [JsonDerivedType(typeof(SitPrimitive), "sit")]
+    [JsonDerivedType(typeof(StandPrimitive), "stand")]
+    [JsonDerivedType(typeof(CommandPrimitive), "command")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -137,6 +142,22 @@ namespace DOL.GS.Agents
     // During a run it does nothing: the run's own heading overtakes it, and the run goes on.
     public sealed record FacePrimitive([property: JsonRequired] int Heading) : Primitive;
 
+    // Selects the object, as a click on it does, and the server describes it in `message` Percepts. 0 selects nothing.
+    // From then on the client's position updates carry it, claiming it's in view: the server's own checks are the only line-of-sight checks.
+    public sealed record TargetPrimitive([property: JsonRequired] int ObjectId) : Primitive;
+
+    // Turns auto-attack on or off, as the attack key does. Attacking needs a target, a melee weapon and the server's own checks.
+    public sealed record AttackPrimitive([property: JsonRequired] bool On) : Primitive;
+
+    // Sits down, as the sit key does.
+    public sealed record SitPrimitive : Primitive;
+
+    // Stands up, as the sit key does while sitting.
+    public sealed record StandPrimitive : Primitive;
+
+    // Types a slash command, as a Human types it, such as `/train Blades 3` or `/release`. The server handles it as a Human's.
+    public sealed record CommandPrimitive([property: JsonRequired] string Text) : Primitive;
+
     /// <summary>
     /// One thing the Harness tells the Mind: only what the 1.127 packet would tell a real client (ADR 0001).
     /// </summary>
@@ -153,6 +174,12 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(OwnPositionPercept), "ownPosition")]
     [JsonDerivedType(typeof(JumpPercept), "jump")]
     [JsonDerivedType(typeof(MaxSpeedPercept), "maxSpeed")]
+    [JsonDerivedType(typeof(StatusPercept), "status")]
+    [JsonDerivedType(typeof(PointsPercept), "points")]
+    [JsonDerivedType(typeof(PlayerPercept), "player")]
+    [JsonDerivedType(typeof(SkillsPercept), "skills")]
+    [JsonDerivedType(typeof(DiedPercept), "died")]
+    [JsonDerivedType(typeof(RevivedPercept), "revived")]
     [JsonDerivedType(typeof(RoutedPercept), "routed")]
     [JsonDerivedType(typeof(MovedPercept), "moved")]
     [JsonDerivedType(typeof(ArrivedPercept), "arrived")]
@@ -306,6 +333,63 @@ namespace DOL.GS.Agents
 
     // The server set how fast the Agent's Character may run, as a percentage of the base speed of 191 units per second. `WaterSpeed` is the same for swimming.
     public sealed record MaxSpeedPercept(int MaxSpeedPercent, bool TurningDisabled, int WaterSpeed) : Percept;
+
+    // The Agent's Character's health, power, endurance and concentration, as percentages and as values, and whether it sits.
+    // The 1.127 packet carries no dead flag: dying shows as health 0 and a `died` Percept.
+    public sealed record StatusPercept(
+        int HealthPercent,
+        int ManaPercent,
+        bool Sitting,
+        int EndurancePercent,
+        int ConcentrationPercent,
+        int MaxMana,
+        int MaxEndurance,
+        int MaxConcentration,
+        int MaxHealth,
+        int Health,
+        int Endurance,
+        int Mana,
+        int Concentration) : Percept;
+
+    // The Agent's Character's progress. `LevelPermill` is the experience towards the next level in thousandths, and `Experience` and `ExperienceForNextLevel` the totals it's worked out from.
+    // `SpecPoints` are the specialization points it has to train with, and `RealmSpecPoints` the realm ability points.
+    public sealed record PointsPercept(
+        long RealmPoints,
+        int LevelPermill,
+        int SpecPoints,
+        long BountyPoints,
+        int RealmSpecPoints,
+        int ChampionLevelPermill,
+        long Experience,
+        long ExperienceForNextLevel) : Percept;
+
+    // Who the Agent's Character is: its level, name, class and base class (the same until it chooses a class at 5), and its maximum health.
+    // The packet also carries titles, guild, house and crafting, which have no fields yet.
+    public sealed record PlayerPercept(int Level, string Name, string ClassName, string BaseClassName, int MaxHealth) : Percept;
+
+    // Everything on the Agent's Character's skill pages, in the order the client lists them: specializations with their trained levels, then abilities, styles and spells.
+    public sealed record SkillsPercept(SkillEntry[] Skills) : Percept;
+
+    // One skill. `Level` is a specialization's trained level, an ability's or a spell's level, or the specialization level a style needs. `Page` is the skill page it's on.
+    public sealed record SkillEntry(string Name, int Level, SkillPage Page);
+
+    // The pages of the client's skill window, as the packet numbers them.
+    public enum SkillPage
+    {
+        Specialization,
+        Abilities,
+        Styles,
+        Spells,
+        Songs,
+        AbilitiesSpell,
+        RealmAbilities
+    }
+
+    // A player died, the Agent's Character included: its object ID, and the object ID of what killed it, or 0.
+    public sealed record DiedPercept(int ObjectId, int KillerId) : Percept;
+
+    // A player came back to life, the Agent's Character included, for example after releasing.
+    public sealed record RevivedPercept(int ObjectId) : Percept;
 
     // Worked out by the Harness, as the Agent's client works it out: where the Character is while it runs to the target of a `moveTo`, sent with each position update. Positions are global.
     public sealed record MovedPercept(float X, float Y, float Z, int Heading, float Speed, float TargetX, float TargetY, float TargetZ) : Percept;

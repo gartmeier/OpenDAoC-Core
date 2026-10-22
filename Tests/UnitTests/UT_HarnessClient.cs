@@ -133,6 +133,123 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public async Task Target_ShouldQueueTheTargetPacketTheCaptureShows()
+        {
+            CapturedPacket captured = ClientCaptures.WhilePlaying(ClientCaptures.MOVEMENT, eClientPackets.PlayerTarget).Single();
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, captured.SessionId);
+
+            string reason = client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+
+            Assert.That(reason, Is.Null);
+            ClientPacket[] queued = Inbound(client);
+            Assert.That(queued, Has.Length.EqualTo(1));
+            UT_ClientPackets1127.AssertMatches(queued[0], captured);
+            await Close(mind);
+        }
+
+        [TestCase(-1)]
+        [TestCase(65536)]
+        public async Task Target_ShouldBeRefusedWithAReason_ForAnObjectIdThePacketCantCarry(int objectId)
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            string reason = client.Dispatch(new TargetPrimitive(objectId), mind.Link);
+
+            Assert.That(reason, Does.StartWith("An object ID is 0 to 65535"));
+            Assert.That(Inbound(client), Is.Empty);
+            await Close(mind);
+        }
+
+        // As the captured client's do: the server reads whether the target is in view from every position update, so leaving it out would take the target out of view.
+        [Test]
+        public async Task PositionUpdate_ShouldCarryTheTargetAndClaimItsInView_OnceSomethingIsTargeted()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+
+            ClientPacket update = client.PositionUpdate();
+            Assert.That(BinaryPrimitives.ReadUInt16BigEndian(update.Data.AsSpan(22)), Is.EqualTo(0x1F0B));
+            Assert.That((PlayerPositionUpdateHandler.ActionFlags) update.Data[32], Is.EqualTo(PlayerPositionUpdateHandler.ActionFlags.TORCH | PlayerPositionUpdateHandler.ActionFlags.TARGET_IN_VIEW));
+            Assert.That(BinaryPrimitives.ReadUInt16BigEndian(client.HeadingUpdate(100).Data.AsSpan(2)), Is.EqualTo(0x1F0B));
+            await Close(mind);
+        }
+
+        // A client forgets what it can't see any more, and its selection with it.
+        [Test]
+        public async Task PositionUpdate_ShouldCarryNoTarget_OnceTheTargetHasGoneOutOfView()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            ((TestPlayer) client.Player).ActionFlags |= PlayerPositionUpdateHandler.ActionFlags.TARGET_IN_VIEW;
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+
+            client.OnPerceived(new ObjectDeletePercept(0x1F0B));
+
+            ClientPacket update = client.PositionUpdate();
+            Assert.That(BinaryPrimitives.ReadUInt16BigEndian(update.Data.AsSpan(22)), Is.Zero);
+            Assert.That((PlayerPositionUpdateHandler.ActionFlags) update.Data[32], Is.EqualTo(PlayerPositionUpdateHandler.ActionFlags.TORCH));
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task Attack_ShouldQueueTheAttackRequest_AsTheHumanPressingTheButton()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            client.Dispatch(new AttackPrimitive(true), mind.Link);
+            client.Dispatch(new AttackPrimitive(false), mind.Link);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.AttackRequest(true), ClientPackets1127.AttackRequest(false)])));
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task SitAndStand_ShouldQueueTheSitRequest()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            client.Dispatch(new SitPrimitive(), mind.Link);
+            client.Dispatch(new StandPrimitive(), mind.Link);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.SitRequest(true), ClientPackets1127.SitRequest(false)])));
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task Command_ShouldQueueTheCommandAsTheClientSendsIt()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            string reason = client.Dispatch(new CommandPrimitive("/train Blades 3"), mind.Link);
+
+            Assert.That(reason, Is.Null);
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.Command("&train Blades 3")])));
+            await Close(mind);
+        }
+
+        [TestCase("train Blades 3")]
+        [TestCase("")]
+        [TestCase(null)]
+        public async Task Command_ShouldBeRefusedWithAReason_WithoutASlash(string text)
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            string reason = client.Dispatch(new CommandPrimitive(text), mind.Link);
+
+            Assert.That(reason, Does.StartWith("A command starts with /"));
+            Assert.That(Inbound(client), Is.Empty);
+            await Close(mind);
+        }
+
+        [Test]
         public async Task TakeOver_ShouldConnectTheClientToTheNewMind_AndTellTheOldOneItWasReplaced()
         {
             FakeMind oldMind = new();
@@ -216,6 +333,12 @@ namespace DOL.GS.Tests
         private static ClientPacket[] Inbound(HarnessClient client)
         {
             return [.. (ConcurrentQueue<ClientPacket>) typeof(HarnessClient).GetField("_inbound", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(client)];
+        }
+
+        // Packets as bytes, which compare by value.
+        private static byte[][] Wire(ClientPacket[] packets)
+        {
+            return [.. packets.Select(static packet => packet.ToWire(1, 0x0101))];
         }
 
         // Once closed, the link has sent everything it was given.

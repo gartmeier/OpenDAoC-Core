@@ -1,14 +1,19 @@
-// The Come Mind: logs an Agent's Character in, prints every Percept it gets, and runs to whoever says `come` next to it and turns to face them, until the Agent leaves the world. `stop` stops it. Ctrl+C stops it and quits.
+// The Mind: logs an Agent's Character in and prints every Percept it gets, until the Agent leaves the world.
+// Said next to the Agent, `come` runs it to the speaker, `grind` levels it to 5 around where it stands, and `stop` stops either. Ctrl+C stops it and quits.
 // Every Percept also goes to the Agent's Self and Surroundings, which the printed lines name players and NPCs from.
 // Usage: bun mind/agent.ts <character>
 // The server address and token come from mind/.env (see mind/.env.example).
 
-import { Come } from "./src/come.ts";
+import { heardCommand } from "./src/commands.ts";
 import { Connection } from "./src/connection.ts";
+import { onCtrlC } from "./src/ctrl-c.ts";
 import { loadEnvFile } from "./src/env.ts";
 import type { Percept, PerceptMessage, Primitive } from "./src/protocol.ts";
-import { Self } from "./src/self.ts";
-import { type Position, Surroundings } from "./src/surroundings.ts";
+import { Runner } from "./src/runner.ts";
+import type { Position } from "./src/surroundings.ts";
+import { Agent } from "./src/tactic.ts";
+import { come } from "./src/tactics/come.ts";
+import { grind } from "./src/tactics/grind.ts";
 
 const character = Bun.argv[2];
 
@@ -26,31 +31,49 @@ if (!token) {
   process.exit(2);
 }
 
-// Not `self`, which is a JavaScript global.
-const agentSelf = new Self();
-const surroundings = new Surroundings();
-const come = new Come(character);
-
 // Status lines go to stderr, so stdout holds only Percepts.
-const connection = new Connection({ url, token, character, log: (line) => console.error(line) }, {
-  onPercept: (message, connection) => {
-    agentSelf.perceive(message);
-    surroundings.perceive(message);
+const log = (line: string) => console.error(line);
+const agent = new Agent({
+  send: (primitive) => {
+    log(`Sending ${describePrimitive(primitive)}.`);
+    return connection.send(primitive);
+  },
+  log,
+});
+const { self: agentSelf, surroundings } = agent;
+const runner = new Runner(agent);
+
+const connection = new Connection({ url, token, character, log }, {
+  onPercept: (message) => {
+    agent.perceive(message);
     console.log(formatPercept(message));
-    const primitive = come.decide(message.percept, agentSelf, surroundings);
+    const command = heardCommand(message.percept, character);
 
-    if (!primitive)
-      return;
-
-    console.error(`Sending ${describePrimitive(primitive)}.`);
-    void connection.send(primitive).then((result) => {
-      if (!result.queued)
-        console.error(`The ${primitive.name} wasn't sent: ${result.reason}`);
-    });
+    switch (command?.word) {
+      case "come":
+        void runner.start(`come to ${command.speaker}`, come, command.speaker);
+        break;
+      case "grind":
+        void runner.start("grind", grind);
+        break;
+      case "stop":
+        void runner.stop();
+        break;
+    }
   },
 });
 
-const ending = await connection.run();
+// The Tactic stops first, leaving the Character standing with attack off, and then the connection quits it. The second Ctrl+C reaches the connection at once.
+let interrupted = false;
+const stopHandlingCtrlC = onCtrlC(() => {
+  if (interrupted)
+    return connection.interrupt();
+
+  interrupted = true;
+  void runner.stop().then(() => connection.interrupt());
+});
+const ending = await connection.run({ handleCtrlC: false });
+stopHandlingCtrlC();
 // Leaving the world and being taken over by another Mind are both the Agent's normal ways out.
 process.exit(ending.kind === "left" || ending.kind === "replaced" ? 0 : 1);
 
@@ -95,7 +118,24 @@ function describe(percept: Percept): string {
       return `arrived	${at(percept)}`;
     case "stopped":
       return `stopped (${percept.reason})	${at(percept)}`;
+    case "status":
+      return `status\thealth ${percept.healthPercent}% (${percept.health}/${percept.maxHealth}) endurance ${percept.endurancePercent}%${percept.sitting ? " sitting" : ""}`;
+    case "points":
+      return `points\texperience ${percept.levelPermill}‰ spec points ${percept.specPoints}`;
+    case "player":
+      return `player\tlevel ${percept.level} ${percept.name} the ${percept.className}`;
+    case "skills":
+      return `skills\t${percept.skills.map((skill) => `${skill.name} ${skill.level}`).join(", ")}`;
+    case "died":
+      return `died #${percept.objectId} ${nameOf(percept.objectId)}, killed by #${percept.killerId} ${nameOf(percept.killerId)}`;
+    case "revived":
+      return `revived #${percept.objectId} ${nameOf(percept.objectId)}`;
   }
+}
+
+// The Agent's own Character isn't in its Surroundings.
+function nameOf(objectId: number): string {
+  return objectId === agentSelf.objectId ? character! : (surroundings.object(objectId)?.name ?? "(unknown)");
 }
 
 function describePrimitive(primitive: Primitive): string {
@@ -106,6 +146,12 @@ function describePrimitive(primitive: Primitive): string {
       return `say "${primitive.text}"`;
     case "face":
       return `face heading ${primitive.heading}`;
+    case "target":
+      return `target #${primitive.objectId} ${nameOf(primitive.objectId)}`;
+    case "attack":
+      return `attack ${primitive.on ? "on" : "off"}`;
+    case "command":
+      return `command ${primitive.text}`;
     default:
       return primitive.name;
   }

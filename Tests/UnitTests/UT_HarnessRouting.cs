@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Reflection;
 using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
+using DOL.GS.PacketHandler.Client.v168;
 using DOL.GS.ServerRules;
 using NUnit.Framework;
 using OpenDAoC.Pathing;
@@ -503,6 +504,8 @@ namespace DOL.GS.Tests
 
             public GamePlayer Player { get; }
             public ushort SessionID => 0x0101;
+            public ushort TargetId { get; set; }
+            public PlayerPositionUpdateHandler.ActionFlags ActionFlags { get; set; }
             public List<ClientPacket> Queued { get; } = [];
             public List<Percept> Perceived { get; } = [];
 

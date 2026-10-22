@@ -1,4 +1,4 @@
-import type { PerceptMessage } from "./protocol.ts";
+import type { PacketRealm, PerceptMessage } from "./protocol.ts";
 import { ownPositionIn } from "./self.ts";
 
 /** How far, in game units, the Agent's Character sees objects (`WorldMgr.VISIBILITY_DISTANCE` in the server). Static knowledge, as the client has it. */
@@ -28,9 +28,21 @@ export interface KnownPlayer extends KnownObjectFields {
   readonly kind: "player";
 }
 
-/** An NPC the Agent knows of. */
+/** An NPC the Agent knows of. Its health is 100% and it attacks nobody until an object update says otherwise: the create packet carries neither. */
 export interface KnownNpc extends KnownObjectFields {
   readonly kind: "npc";
+  /** The level the Agent's Character sees. */
+  readonly level: number;
+  /** The realm the Agent's Character sees: `None` for a Mob. */
+  readonly realm: PacketRealm;
+  readonly peaceful: boolean;
+  /** Someone controls it. */
+  readonly pet: boolean;
+  readonly untargetable: boolean;
+  /** 0 to 100. */
+  readonly healthPercent: number;
+  /** The object it attacks, 0 for nothing, or 65535 while it attacks something it isn't standing within reach of. */
+  readonly targetId: number;
 }
 
 /** Everything the Agent knows of around it. `kind` tells players and NPCs apart. */
@@ -59,15 +71,32 @@ export class Surroundings {
 
     switch (percept.kind) {
       case "playerCreate":
-      case "npcCreate":
         this.#objects.set(percept.objectId, {
-          kind: percept.kind === "playerCreate" ? "player" : "npc",
+          kind: "player",
           objectId: percept.objectId,
           name: percept.name,
           position: { x: percept.x, y: percept.y, z: percept.z },
           heading: percept.heading,
-          speed: percept.kind === "npcCreate" ? percept.speed : 0,
+          speed: 0,
           lastHeardMs: elapsedMs,
+        });
+        break;
+      case "npcCreate":
+        this.#objects.set(percept.objectId, {
+          kind: "npc",
+          objectId: percept.objectId,
+          name: percept.name,
+          position: { x: percept.x, y: percept.y, z: percept.z },
+          heading: percept.heading,
+          speed: percept.speed,
+          lastHeardMs: elapsedMs,
+          level: percept.level,
+          realm: percept.realm,
+          peaceful: percept.peaceful,
+          pet: percept.pet,
+          untargetable: percept.untargetable,
+          healthPercent: 100,
+          targetId: 0,
         });
         break;
       case "playerPosition":
@@ -77,13 +106,18 @@ export class Surroundings {
         if (!known)
           break;
 
-        this.#objects.set(percept.objectId, {
-          ...known,
+        const moved = {
           position: { x: percept.x, y: percept.y, z: percept.z },
           heading: percept.heading,
           speed: percept.speed,
           lastHeardMs: elapsedMs,
-        });
+        };
+
+        if (known.kind === "npc" && percept.kind === "objectUpdate")
+          this.#objects.set(percept.objectId, { ...known, ...moved, realm: percept.realm, untargetable: percept.untargetable, healthPercent: percept.healthPercent, targetId: percept.targetId });
+        else
+          this.#objects.set(percept.objectId, { ...known, ...moved });
+
         break;
       }
       case "objectDelete":
@@ -118,6 +152,11 @@ export class Surroundings {
   npc(objectId: number): KnownNpc | undefined {
     const known = this.#objects.get(objectId);
     return known?.kind === "npc" ? known : undefined;
+  }
+
+  /** The NPCs attacking the object `objectId` from within reach of it, as their last object updates said. */
+  attacking(objectId: number): readonly KnownNpc[] {
+    return this.npcs.filter((npc) => npc.targetId === objectId);
   }
 
   /** The object called `name`, player or NPC, in any case. */

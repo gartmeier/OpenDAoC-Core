@@ -125,8 +125,8 @@ namespace DOL.GS.Tests
         public Region Region { get; set; }
         public int ClassId { get; set; }
         public short Speed { get; set; }
-        public byte Mana { get; set; }
-        public byte Endurance { get; set; }
+        public byte TestManaPercent { get; set; }
+        public byte TestEndurancePercent { get; set; }
         public bool TurningDisabled { get; set; }
         // What `GetModified` gives for each property. Every other property is 0.
         public Dictionary<eProperty, int> Modified { get; private set; }
@@ -142,9 +142,48 @@ namespace DOL.GS.Tests
         public override ICharacterClass CharacterClass => new TestCharacterClass(ClassId);
         public override bool IsOnHorse { get => false; set { } }
         public override short CurrentSpeed { get => Speed; set => Speed = value; }
-        public override byte ManaPercent => Mana;
-        public override byte EndurancePercent => Endurance;
+        public override byte ManaPercent => TestManaPercent;
+        public override byte EndurancePercent => TestEndurancePercent;
         public override bool IsTurningDisabled => TurningDisabled;
+
+        // What the status, points and player packets read, all 0 unless a test sets them.
+        public int TestHealth { get; set; }
+        public int TestMaxHealth { get; set; }
+        public int TestMana { get; set; }
+        public int TestMaxMana { get; set; }
+        public int TestEndurance { get; set; }
+        public int TestMaxEndurance { get; set; }
+        public int TestConcentration { get; set; }
+        public int TestMaxConcentration { get; set; }
+        public byte TestConcentrationPercent { get; set; }
+        public bool Sitting { get; set; }
+        public long TestRealmPoints { get; set; }
+        public ushort TestLevelPermill { get; set; }
+        public int TestSpecPoints { get; set; }
+        public long TestBountyPoints { get; set; }
+        public int TestRealmSpecPoints { get; set; }
+        public ushort TestChampionLevelPermill { get; set; }
+        public long TestExperience { get; set; }
+        public long TestExperienceForNextLevel { get; set; }
+
+        public override int Health { get => TestHealth; set => TestHealth = value; }
+        public override int MaxHealth => TestMaxHealth;
+        public override int Mana { get => TestMana; set => TestMana = value; }
+        public override int MaxMana => TestMaxMana;
+        public override int Endurance { get => TestEndurance; set => TestEndurance = value; }
+        public override int MaxEndurance => TestMaxEndurance;
+        public override int Concentration => TestConcentration;
+        public override int MaxConcentration => TestMaxConcentration;
+        public override byte ConcentrationPercent => TestConcentrationPercent;
+        public override bool IsSitting { get => Sitting; set => Sitting = value; }
+        public override long RealmPoints { get => TestRealmPoints; set => TestRealmPoints = value; }
+        public override ushort LevelPermill => TestLevelPermill;
+        public override int SkillSpecialtyPoints => TestSpecPoints;
+        public override long BountyPoints { get => TestBountyPoints; set => TestBountyPoints = value; }
+        public override int RealmSpecialtyPoints => TestRealmSpecPoints;
+        public override ushort ChampionLevelPermill => TestChampionLevelPermill;
+        public override long Experience { get => TestExperience; set => TestExperience = value; }
+        public override long ExperienceForNextLevel => TestExperienceForNextLevel;
 
         public override int GetModified(eProperty property)
         {

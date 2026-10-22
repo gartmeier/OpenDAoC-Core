@@ -75,6 +75,33 @@ namespace DOL.GS.Tests
             Assert.That(message, Is.EqualTo(new PrimitiveMessage(11, new FacePrimitive(1523))));
         }
 
+        [Test]
+        public void Read_ShouldReadTheFightingAndRestingPrimitives()
+        {
+            Assert.That(Read("""{"type":"primitive","id":12,"primitive":{"name":"target","objectId":7947}}"""), Is.EqualTo(new PrimitiveMessage(12, new TargetPrimitive(7947))));
+            Assert.That(Read("""{"type":"primitive","id":13,"primitive":{"name":"attack","on":true}}"""), Is.EqualTo(new PrimitiveMessage(13, new AttackPrimitive(true))));
+            Assert.That(Read("""{"type":"primitive","id":14,"primitive":{"name":"sit"}}"""), Is.EqualTo(new PrimitiveMessage(14, new SitPrimitive())));
+            Assert.That(Read("""{"type":"primitive","id":15,"primitive":{"name":"stand"}}"""), Is.EqualTo(new PrimitiveMessage(15, new StandPrimitive())));
+        }
+
+        [Test]
+        public void Read_ShouldReadACommandPrimitive()
+        {
+            MindMessage message = Read("""{"type":"primitive","id":16,"primitive":{"name":"command","text":"/train Blades 3"}}""");
+
+            Assert.That(message, Is.EqualTo(new PrimitiveMessage(16, new CommandPrimitive("/train Blades 3"))));
+        }
+
+        // Neither a missing object ID nor a missing switch means 0 or off.
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"target"}}""", "objectId")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"attack"}}""", "on")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"command"}}""", "text")]
+        public void Read_ShouldSayWhy_ForAPrimitiveWithoutItsField(string json, string field)
+        {
+            Assert.That(MindProtocol.Read(Encoding.UTF8.GetBytes(json), out string error), Is.Null);
+            Assert.That(error, Does.Contain(field));
+        }
+
         // A missing heading isn't heading 0.
         [Test]
         public void Read_ShouldSayWhy_ForAFaceWithoutAHeading()

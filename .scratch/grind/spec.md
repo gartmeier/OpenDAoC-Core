@@ -185,3 +185,16 @@ The Human stands the Agent somewhere in Hibernia's starting area and says `grind
 - Risk: if the Agent's bind point is in another region, releasing changes region, which the Harness hasn't handled before. Bind the test Character in region 200.
 - Risk: melee needs the Mob in front. A Mob that circles may need `kill` to face it again during the fight. Watch for it in the acceptance test.
 - Milestone ladder: 1 login and logout (done) → 2 Mind connection (done) → 3 movement (done) → 3b terrain and pathing (done) → 4 hand-written grind (this spec) → 5 LLM Planning → 6 Reflection and Tactic Library → 7 Agent character creation → 8 multiple Agents and grouping.
+
+## Comments
+
+**2026-10-22 (agent):** Implemented, not yet tested in game. Where it differs from the spec above:
+
+- **Attack and sit aren't captured yet.** The Human still has to record a real 1.127 capture of attack on and off, sitting and standing, and a short fight. Until then the attack and sit builders follow their handlers' read logic and are checked by round-trip tests. The target packet already matches `run-turn-stop.tsv`. Then add golden-byte tests and correct the builders if the bytes differ.
+- **Attack mode isn't in the action flags.** The server has no attack-mode action flag. Position and heading updates carry the target's object ID and `TARGET_IN_VIEW` while something is targeted. The server reads `TARGET_IN_VIEW` from every update, so leaving it out would put the target out of view.
+- **`status` has no dead flag.** The 1.127 packet carries none. Self counts the Agent as dead from its own `died`, or a status with no health, until its own `revived`.
+- **`noDamage` counts only health falling on either side.** The server sends misses and refused attacks as `CT_YouHit` too, so combat text would keep a stalled fight going.
+- **Tactic failure reasons are camel case.** `runTo` passes on a run's stop reason that way (`unreachable`, `movedByServer`).
+- **Left as they are:**
+  - A Mob chasing the Agent shows target 65535 until it's within reach, so it only counts as attacking once it gets there.
+  - Wandering picks a spot at home's Z and lets the Harness move it to the nearest walkable point (ADR 0007).

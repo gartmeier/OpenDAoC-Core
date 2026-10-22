@@ -129,6 +129,15 @@ While running past the NPC, the client sends a create object request (0xBE) for 
 
 The server sends a player's create to those around only when that player enters the world (`GamePlayer.AddToWorld`). A client that enters after it learns of the player from the player's position updates, and asks for its create: create player request (0xD5), parameter 0x0000, data `0400 0000` for Greeen, whose session ID was 4. That's the session ID low byte first, as in the create object request (0xBE), then two bytes of 0. `PlayerCreationRequestHandler` reads the session ID and answers with the player's create. In `login-next-to-agent.tsv` the client sent it right after game open, with the rest of world entry's burst, having had Greeen's position updates during world entry.
 
+## Fighting and resting
+
+Only targeting is captured so far, in `run-turn-stop.tsv` (see Running past an NPC): target (0xB0), data the object ID and `E000`, examine plus both line-of-sight bits. From then on the position updates carry the target's object ID and `TARGET_IN_VIEW`. The server reads that flag from every position and heading update, so a client that left it out would take its target out of view.
+
+Not captured yet, so the Harness builds them as their handlers read them:
+- Attack request (`PlayerAttackRequestHandler`): whether to start, then 0 for the Human pressing the attack key (1 when the client stops attacking by itself).
+- Sit request (`PlayerSitRequest`): 1 to sit, 0 to stand.
+- A heading update while something is targeted: the Harness puts the target's object ID at data offsets 2–3, where the server skips a target, as the position update has it at 22–23.
+
 ## Fields that vary between captures
 
 These hold for every packet:

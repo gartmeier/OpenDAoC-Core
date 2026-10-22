@@ -14,7 +14,7 @@ namespace DOL.GS.Tests
     [TestFixture]
     public class UT_MindLink
     {
-        private static readonly MethodInfo SendUpdatePoints = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePoints));
+        private static readonly MethodInfo SendUpdateMoney = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateMoney));
         private static readonly MethodInfo SendPlayerQuit = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerQuit));
         private static readonly MethodInfo GetBowPrepare = typeof(IPacketLib).GetProperty(nameof(IPacketLib.BowPrepare)).GetMethod;
         private static readonly GameClient Client = new(null) { ClientState = GameClient.eClientState.Playing };
@@ -25,13 +25,13 @@ namespace DOL.GS.Tests
             FakeMind mind = new();
             MindLink link = mind.Link;
 
-            link.Perceive(Client,SendUpdatePoints, []);
+            link.Perceive(Client,SendUpdateMoney, []);
             link.Perceive(Client,SendPlayerQuit, [false]);
             link.Close();
             await link.Completion;
 
             PerceptMessage[] percepts = mind.Sent.Cast<PerceptMessage>().ToArray();
-            Assert.That(percepts.Select(static message => message.Percept), Is.EqualTo(new Percept[] { new BarePercept("SendUpdatePoints"), new BarePercept("SendPlayerQuit") }));
+            Assert.That(percepts.Select(static message => message.Percept), Is.EqualTo(new Percept[] { new BarePercept("SendUpdateMoney"), new BarePercept("SendPlayerQuit") }));
             Assert.That(percepts.Select(static message => message.Sequence), Is.EqualTo(new long[] { 1, 2 }));
             Assert.That(percepts[0].ElapsedMs, Is.GreaterThanOrEqualTo(0));
             Assert.That(percepts[1].ElapsedMs, Is.GreaterThanOrEqualTo(percepts[0].ElapsedMs));
@@ -57,7 +57,7 @@ namespace DOL.GS.Tests
             FakeMind mind = new(gate);
 
             for (int i = 0; i < 100; i++)
-                mind.Link.Perceive(Client,SendUpdatePoints, []);
+                mind.Link.Perceive(Client,SendUpdateMoney, []);
 
             Assert.That(mind.Sent, Is.Empty);
 

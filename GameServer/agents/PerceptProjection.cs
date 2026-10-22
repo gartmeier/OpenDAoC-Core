@@ -1,10 +1,13 @@
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerRules;
+using DOL.GS.Styles;
 using DOL.Language;
 using DOL.Network;
 
@@ -42,6 +45,12 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendPlayerPositionAndObjectID) => OwnPosition(client),
                 nameof(IPacketLib.SendPlayerJump) => Jump(client, (bool) args[0]),
                 nameof(IPacketLib.SendUpdateMaxSpeed) => MaxSpeed(client),
+                nameof(IPacketLib.SendStatusUpdate) => Status(client, args.Length > 0 ? (byte) args[0] : null),
+                nameof(IPacketLib.SendUpdatePoints) => Points(client),
+                nameof(IPacketLib.SendUpdatePlayer) => Player(client),
+                nameof(IPacketLib.SendUpdatePlayerSkills) => Skills(client, (bool) args[0]),
+                nameof(IPacketLib.SendPlayerDied) => Died((GamePlayer) args[0], (GameObject) args[1]),
+                nameof(IPacketLib.SendPlayerRevive) => Revived((GamePlayer) args[0]),
                 nameof(IPacketLib.SendUDP) => RawPacket(method.Name, (PacketOut) args[0], UDP_HEADER_LENGTH),
                 nameof(IPacketLib.SendTCP) => RawPacket(method.Name, (PacketOut) args[0], TCP_HEADER_LENGTH),
                 _ => new BarePercept(method.Name)
@@ -401,6 +410,93 @@ namespace DOL.GS.Agents
                 return null;
 
             return new MaxSpeedPercept((ushort) player.movementComponent.MaxSpeedPercent, player.IsTurningDisabled, (byte) player.GetModified(eProperty.WaterSpeed));
+        }
+
+        // Mirrors `PacketLib190.SendStatusUpdate`, which no later library overrides. `sittingFlag` is the one the server passed, or null for `PacketLib168.SendStatusUpdate()`, which passes whether the Character sits.
+        private static StatusPercept Status(GameClient client, byte? sittingFlag)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new StatusPercept(
+                HealthPercent: player.HealthPercent,
+                ManaPercent: player.ManaPercent,
+                Sitting: sittingFlag is byte flag ? flag != 0 : player.IsSitting,
+                EndurancePercent: player.EndurancePercent,
+                ConcentrationPercent: player.ConcentrationPercent,
+                MaxMana: (ushort) player.MaxMana,
+                MaxEndurance: (ushort) player.MaxEndurance,
+                MaxConcentration: (ushort) player.MaxConcentration,
+                MaxHealth: (ushort) player.MaxHealth,
+                Health: (ushort) player.Health,
+                Endurance: (ushort) player.Endurance,
+                Mana: (ushort) player.Mana,
+                Concentration: (ushort) player.Concentration);
+        }
+
+        // Mirrors `PacketLib190.SendUpdatePoints`, which no later library overrides.
+        private static PointsPercept Points(GameClient client)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new PointsPercept(
+                RealmPoints: (uint) player.RealmPoints,
+                LevelPermill: player.LevelPermill,
+                SpecPoints: (ushort) player.SkillSpecialtyPoints,
+                BountyPoints: (uint) player.BountyPoints,
+                RealmSpecPoints: (ushort) player.RealmSpecialtyPoints,
+                ChampionLevelPermill: player.ChampionLevelPermill,
+                Experience: player.Experience,
+                ExperienceForNextLevel: player.ExperienceForNextLevel);
+        }
+
+        // Mirrors `PacketLib179.SendUpdatePlayer`, which no later library overrides. The packet splits the maximum health over two bytes.
+        private static PlayerPercept Player(GameClient client)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new PlayerPercept(player.GetDisplayLevel(player), Encoded(player.Name), Encoded(player.CharacterClass.Name), Encoded(player.CharacterClass.BaseName), player.MaxHealth & 0xFFFF);
+        }
+
+        // Mirrors `PacketLib1112.SendUpdatePlayerSkills`, which no later library overrides. Like it, it asks the Character for its skills, with `updateInternalCache` as passed:
+        // the server keeps the list it last sent, to read the client's skill numbers against, and the real library never runs for the Agent.
+        private static SkillsPercept Skills(GameClient client, bool updateInternalCache)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new SkillsPercept(SkillEntries(player.GetAllUsableSkills(updateInternalCache)));
+        }
+
+        // Each skill as the packet lists it: a style with the specialization level it needs, anything else with its own level.
+        public static SkillEntry[] SkillEntries(IEnumerable<(Skill Skill, Skill Related)> skills)
+        {
+            return skills.Select(static entry => new SkillEntry(
+                Encoded(entry.Skill.Name),
+                entry.Skill is Style style ? style.SpecLevelRequirement : entry.Skill.Level,
+                (SkillPage) entry.Skill.SkillType)).ToArray();
+        }
+
+        // Mirrors `PacketLib168.SendPlayerDied`, which no later library overrides.
+        private static DiedPercept Died(GamePlayer killed, GameObject killer)
+        {
+            return killed == null ? null : new DiedPercept(killed.ObjectID, killer?.ObjectID ?? 0);
+        }
+
+        // Mirrors `PacketLib168.SendPlayerRevive`, which no later library overrides.
+        private static RevivedPercept Revived(GamePlayer revived)
+        {
+            return revived == null ? null : new RevivedPercept(revived.ObjectID);
         }
 
         // A packet the server built itself (ADR 0001). Only the 1.127 player position is decoded, mirroring `PlayerPositionUpdateHandler.CreateOutPak1127`.

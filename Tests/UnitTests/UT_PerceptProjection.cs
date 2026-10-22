@@ -9,6 +9,7 @@ using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
 using DOL.GS.ServerRules;
+using DOL.GS.Styles;
 using NUnit.Framework;
 
 namespace DOL.GS.Tests
@@ -16,6 +17,7 @@ namespace DOL.GS.Tests
     [TestFixture]
     public class UT_PerceptProjection
     {
+        private static readonly MethodInfo SendUpdateMoney = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateMoney));
         private static readonly MethodInfo SendUpdatePoints = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePoints));
         private static readonly MethodInfo SendMessage = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendMessage));
         private static readonly MethodInfo GetBowPrepare = typeof(IPacketLib).GetProperty(nameof(IPacketLib.BowPrepare)).GetMethod;
@@ -28,6 +30,11 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendPlayerPositionAndObjectID = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerPositionAndObjectID));
         private static readonly MethodInfo SendUpdateMaxSpeed = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateMaxSpeed));
         private static readonly MethodInfo SendPlayerJump = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerJump));
+        private static readonly MethodInfo SendStatusUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), []);
+        private static readonly MethodInfo SendStatusUpdateWithFlag = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), [typeof(byte)]);
+        private static readonly MethodInfo SendUpdatePlayer = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePlayer));
+        private static readonly MethodInfo SendPlayerDied = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerDied));
+        private static readonly MethodInfo SendPlayerRevive = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerRevive));
         private static readonly MethodInfo SendUDP =typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUDP));
         private static readonly MethodInfo SendTCP = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendTCP));
 
@@ -51,9 +58,9 @@ namespace DOL.GS.Tests
         [Test]
         public void Project_ShouldGiveABarePerceptWithOnlyTheCallsName_ForACallWithoutAProjection()
         {
-            Percept percept = PerceptProjection.Project(Playing(), SendUpdatePoints, []);
+            Percept percept = PerceptProjection.Project(Playing(), SendUpdateMoney, []);
 
-            Assert.That(percept, Is.EqualTo(new BarePercept("SendUpdatePoints")));
+            Assert.That(percept, Is.EqualTo(new BarePercept("SendUpdateMoney")));
         }
 
         [Test]
@@ -542,8 +549,8 @@ namespace DOL.GS.Tests
             vue.ObjectID = 0x0123;
             vue.Speed = 191;
             vue.FallSpeed = -12;
-            vue.Mana = 80;
-            vue.Endurance = 95;
+            vue.TestManaPercent = 80;
+            vue.TestEndurancePercent = 95;
             vue.Roleplay = false;
             PlayerPositionUpdateHandler.StateFlags stateFlags = PlayerPositionUpdateHandler.StateFlags.SWIMMING;
             PlayerPositionUpdateHandler.ActionFlags actionFlags = PlayerPositionUpdateHandler.ActionFlags.TORCH;
@@ -705,6 +712,95 @@ namespace DOL.GS.Tests
         public void Project_ShouldGiveNothing_ForTheJumpCallBeforeTheAgentHasACharacter()
         {
             Assert.That(PerceptProjection.Project(Playing(), SendPlayerJump, [false]), Is.Null);
+        }
+
+        [Test]
+        public void Project_ShouldGiveWhatThePacketCarries_ForTheStatusCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestPlayer greeen = (TestPlayer) client.Player;
+            (greeen.TestHealthPercent, greeen.TestManaPercent, greeen.TestEndurancePercent, greeen.TestConcentrationPercent) = (45, 10, 90, 20);
+            (greeen.TestMaxMana, greeen.TestMaxEndurance, greeen.TestMaxConcentration, greeen.TestMaxHealth) = (30, 100, 15, 120);
+            (greeen.TestHealth, greeen.TestEndurance, greeen.TestMana, greeen.TestConcentration) = (54, 90, 3, 3);
+            greeen.Sitting = true;
+
+            Percept percept = PerceptProjection.Project(client, SendStatusUpdate, []);
+
+            Assert.That(percept, Is.EqualTo(new StatusPercept(45, 10, true, 90, 20, 30, 100, 15, 120, 54, 90, 3, 3)));
+        }
+
+        // The server passes the sitting flag itself while the Character sits down or stands up, before it has changed.
+        [TestCase((byte) 0x02, true)]
+        [TestCase((byte) 0x00, false)]
+        public void Project_ShouldTakeTheSittingFlagTheServerPasses_ForTheStatusCall(byte sittingFlag, bool sitting)
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            ((TestPlayer) client.Player).Sitting = !sitting;
+
+            StatusPercept percept = (StatusPercept) PerceptProjection.Project(client, SendStatusUpdateWithFlag, [sittingFlag]);
+
+            Assert.That(percept.Sitting, Is.EqualTo(sitting));
+        }
+
+        [Test]
+        public void Project_ShouldGiveWhatThePacketCarries_ForThePointsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestPlayer greeen = (TestPlayer) client.Player;
+            (greeen.TestRealmPoints, greeen.TestLevelPermill, greeen.TestSpecPoints, greeen.TestBountyPoints) = (1200, 512, 3, 40);
+            (greeen.TestRealmSpecPoints, greeen.TestChampionLevelPermill, greeen.TestExperience, greeen.TestExperienceForNextLevel) = (1, 0, 3456, 6000);
+
+            Percept percept = PerceptProjection.Project(client, SendUpdatePoints, []);
+
+            Assert.That(percept, Is.EqualTo(new PointsPercept(1200, 512, 3, 40, 1, 0, 3456, 6000)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveWhatThePacketCarries_ForThePlayerCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestPlayer greeen = (TestPlayer) client.Player;
+            greeen.DisplayLevel = 4;
+            greeen.TestMaxHealth = 120;
+            ICharacterClass characterClass = greeen.CharacterClass;
+
+            Percept percept = PerceptProjection.Project(client, SendUpdatePlayer, []);
+
+            Assert.That(percept, Is.EqualTo(new PlayerPercept(4, "Greeen", characterClass.Name, characterClass.BaseName, 120)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheStatusPointsAndPlayerCallsBeforeTheAgentHasACharacter()
+        {
+            Assert.That(PerceptProjection.Project(Playing(), SendStatusUpdate, []), Is.Null);
+            Assert.That(PerceptProjection.Project(Playing(), SendUpdatePoints, []), Is.Null);
+            Assert.That(PerceptProjection.Project(Playing(), SendUpdatePlayer, []), Is.Null);
+        }
+
+        [Test]
+        public void SkillEntries_ShouldListEachSkillWithItsLevelAndPage()
+        {
+            Specialization blades = new("Blades", "Blades", 0) { Level = 3 };
+            Ability sprint = new("Sprint", "Sprint", "", 0, 0, 1, 0);
+            Style shiningBlade = new(new DbStyle { Name = "Shining Blade", SpecLevelRequirement = 2 }, null);
+
+            SkillEntry[] entries = PerceptProjection.SkillEntries([(blades, blades), (sprint, sprint), (shiningBlade, blades)]);
+
+            Assert.That(entries, Is.EqualTo(new SkillEntry[] { new("Blades", 3, SkillPage.Specialization), new("Sprint", 1, SkillPage.Abilities), new("Shining Blade", 2, SkillPage.Styles) }));
+        }
+
+        [Test]
+        public void Project_ShouldGiveWhoDiedAndWhoKilledThem_ForTheDeathCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestPlayer greeen = (TestPlayer) client.Player;
+            greeen.ObjectID = 0x0123;
+            TestNpc wolf = WorldDoubles.Npc("wolf pup");
+            wolf.ObjectID = 0x1F0B;
+
+            Assert.That(PerceptProjection.Project(client, SendPlayerDied, [greeen, wolf]), Is.EqualTo(new DiedPercept(0x0123, 0x1F0B)));
+            Assert.That(PerceptProjection.Project(client, SendPlayerDied, [greeen, null]), Is.EqualTo(new DiedPercept(0x0123, 0)));
+            Assert.That(PerceptProjection.Project(client, SendPlayerRevive, [greeen]), Is.EqualTo(new RevivedPercept(0x0123)));
         }
 
         private static GameClient AgentInWorld(Zone zone)

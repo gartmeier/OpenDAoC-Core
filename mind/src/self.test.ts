@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import type { JumpPercept, MovedPercept, OwnPositionPercept, Percept, PerceptMessage } from "./protocol.ts";
 import { ownPositionIn, Self } from "./self.ts";
+import { died, player, points, revived, skills, spec, status } from "./test-percepts.ts";
 
 function message(percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs: 1000, percept };
@@ -171,4 +172,66 @@ test("other Percepts change nothing", () => {
 
   expect(agentSelf.position).toEqual({ x: 296600, y: 642629, z: 4848 });
   expect(agentSelf.movement).toEqual({ kind: "standing" });
+});
+
+test("knows its object ID from the server at world entry", () => {
+  expect(selfAt(296600, 642629, 4848).objectId).toBe(17);
+  expect(new Self().objectId).toBeUndefined();
+});
+
+test("takes its health, endurance and whether it sits from the status Percept", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+
+  agentSelf.perceive(message(status(45, { endurancePercent: 80, health: 54, maxHealth: 120, sitting: true })));
+
+  expect(agentSelf.healthPercent).toBe(45);
+  expect(agentSelf.health).toBe(54);
+  expect(agentSelf.maxHealth).toBe(120);
+  expect(agentSelf.endurancePercent).toBe(80);
+  expect(agentSelf.sitting).toBe(true);
+});
+
+test("takes its level and class from the player Percept, and its experience and spec points from the points Percept", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+
+  agentSelf.perceive(message(player(3)));
+  agentSelf.perceive(message(points(2, 512)));
+
+  expect(agentSelf.level).toBe(3);
+  expect(agentSelf.className).toBe("Guardian");
+  expect(agentSelf.levelPermill).toBe(512);
+  expect(agentSelf.specPoints).toBe(2);
+});
+
+test("knows its specializations and their levels from the skills Percept, and nothing else from it as a spec", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+
+  agentSelf.perceive(message(skills(spec("Blades", 2), spec("Parry", 1), { name: "Sprint", level: 1, page: "Abilities" })));
+
+  expect(agentSelf.specs).toEqual(new Map([["Blades", 2], ["Parry", 1]]));
+  expect(agentSelf.skills.map((skill) => skill.name)).toEqual(["Blades", "Parry", "Sprint"]);
+});
+
+test("is dead from its own death until it comes back to life, and others' deaths change nothing", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+
+  agentSelf.perceive(message(died(291, 17)));
+  expect(agentSelf.dead).toBe(false);
+
+  agentSelf.perceive(message(died(17, 0x1f0b)));
+  expect(agentSelf.dead).toBe(true);
+
+  agentSelf.perceive(message(revived(291)));
+  expect(agentSelf.dead).toBe(true);
+
+  agentSelf.perceive(message(revived(17)));
+  expect(agentSelf.dead).toBe(false);
+});
+
+test("is dead with no health, as when the Mind starts while its Character lies dead", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+
+  agentSelf.perceive(message(status(0, { health: 0 })));
+
+  expect(agentSelf.dead).toBe(true);
 });

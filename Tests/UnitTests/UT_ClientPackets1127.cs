@@ -129,6 +129,63 @@ namespace DOL.GS.Tests
             }
         }
 
+        // Once the Human targeted the NPC, every position update carries its object ID and the target-in-view flags.
+        [Test]
+        public void PositionUpdateWithATarget_ShouldMatchCapture()
+        {
+            CapturedPacket[] targeting = ClientCaptures.WhilePlaying(ClientCaptures.MOVEMENT, eClientPackets.PositionUpdate).Where(static p => BinaryPrimitives.ReadUInt16BigEndian(p.Data.AsSpan(22)) != 0).ToArray();
+            Assert.That(targeting, Is.Not.Empty);
+
+            foreach (CapturedPacket captured in targeting)
+            {
+                byte[] data = captured.Data;
+                Vector3 position = new(BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(0)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(4)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(8)));
+                ushort heading = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(30));
+                PlayerPositionUpdateHandler.ActionFlags flags = PlayerPositionUpdateHandler.ActionFlags.TORCH | PlayerPositionUpdateHandler.ActionFlags.TARGET_IN_VIEW;
+
+                AssertMatches(ClientPackets1127.PositionUpdate(position, 202, heading, ClientCaptures.Speed(captured), 100, captured.SessionId, 0, flags, 0x1F0B), captured);
+            }
+        }
+
+        [Test]
+        public void Target_ShouldMatchCapture()
+        {
+            // The Human clicked the NPC, whose object ID was 0x1F0B. The full packet is in the README.
+            CapturedPacket captured = ClientCaptures.WhilePlaying(ClientCaptures.MOVEMENT, eClientPackets.PlayerTarget).Single();
+
+            AssertMatches(ClientPackets1127.Target(0x1F0B), captured);
+        }
+
+        [TestCase(true, 1)]
+        [TestCase(false, 0)]
+        public void AttackRequest_ShouldBeReadByTheHandler_AsTheHumanPressingTheButton(bool start, int startByte)
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.AttackRequest(start));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.PlayerAttackRequest));
+            Assert.That(packet.ReadByte(), Is.EqualTo(startByte), "start");
+            Assert.That(packet.ReadByte(), Is.EqualTo(0), "a user action");
+        }
+
+        [TestCase(true, 1)]
+        [TestCase(false, 0)]
+        public void SitRequest_ShouldBeReadByTheHandler(bool sit, int status)
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.SitRequest(sit));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.PlayerSitRequest));
+            Assert.That(packet.ReadByte(), Is.EqualTo(status));
+        }
+
+        [Test]
+        public void HeadingUpdate_ShouldCarryTheTarget_WhereTheHandlerSkipsIt()
+        {
+            ClientPacket built = ClientPackets1127.HeadingUpdate(0x06D6, 100, 0x0101, PlayerPositionUpdateHandler.ActionFlags.TORCH, 0x1F0B);
+
+            Assert.That(BinaryPrimitives.ReadUInt16BigEndian(built.Data.AsSpan(2)), Is.EqualTo(0x1F0B));
+            Assert.That(BinaryPrimitives.ReadUInt16BigEndian(built.Data.AsSpan(4)), Is.EqualTo(0x06D6));
+        }
+
         [Test]
         public void HeadingUpdate_ShouldMatchCapture()
         {
@@ -206,9 +263,7 @@ namespace DOL.GS.Tests
         [Test]
         public void CreatePlayerRequest_ShouldCarryTheSessionIdAsTheHandlerReadsIt()
         {
-            byte[] wire = ClientPackets1127.CreatePlayerRequest(0x1234).ToWire(7, 0x0101);
-            GSPacketIn packet = new();
-            packet.Load(wire, 0, wire.Length);
+            GSPacketIn packet = Loaded(ClientPackets1127.CreatePlayerRequest(0x1234));
 
             Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.CreatePlayerRequest));
             Assert.That(packet.ReadShortLowEndian(), Is.EqualTo(0x1234));
@@ -232,6 +287,15 @@ namespace DOL.GS.Tests
             Assert.That(wire.Bytes[..8], Is.EqualTo(captured.Bytes[..8]), "header");
             Assert.That(wire.Code, Is.EqualTo(captured.Code), "code");
             Assert.That(Masked(wire.Data, maskedDataOffsets), Is.EqualTo(Masked(captured.Data, maskedDataOffsets)), "data");
+        }
+
+        // The packet as a handler gets it, ready to read its data.
+        private static GSPacketIn Loaded(ClientPacket built)
+        {
+            byte[] wire = built.ToWire(7, 0x0101);
+            GSPacketIn packet = new();
+            packet.Load(wire, 0, wire.Length);
+            return packet;
         }
 
         private static byte[] Masked(byte[] data, int[] offsets)

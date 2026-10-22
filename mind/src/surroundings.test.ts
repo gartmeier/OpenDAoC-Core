@@ -329,7 +329,7 @@ test("the distance to a player follows the player as it moves", () => {
   expect(distance(here, surroundings.named("Vue")!.position)).toBe(100);
 });
 
-test("an NPC create makes the NPC known, with its name, position, heading and speed", () => {
+test("an NPC create makes the NPC known, with its name, position, heading, speed, level and what it is, at full health and attacking nobody", () => {
   const surroundings = new Surroundings();
   surroundings.perceive(message(1500, npcCreate(0x456, "rat", 531234, 478901, 2345, 3072, 120)));
 
@@ -341,13 +341,20 @@ test("an NPC create makes the NPC known, with its name, position, heading and sp
     heading: 3072,
     speed: 120,
     lastHeardMs: 1500,
+    level: 3,
+    realm: "None",
+    peaceful: false,
+    pet: false,
+    untargetable: false,
+    healthPercent: 100,
+    targetId: 0,
   });
 });
 
-test("an object update moves a known NPC, and says when it was last heard from", () => {
+test("an object update moves a known NPC, says when it was last heard from, and gives its health and whom it attacks", () => {
   const surroundings = new Surroundings();
   surroundings.perceive(message(1500, npcCreate(0x456, "rat", 531234, 478901, 2345)));
-  surroundings.perceive(message(6500, objectUpdate(0x456, 531400, 478950, 2350, 1024, 150)));
+  surroundings.perceive(message(6500, { ...objectUpdate(0x456, 531400, 478950, 2350, 1024, 150), healthPercent: 40, targetId: 17, realm: "Midgard", untargetable: true }));
 
   expect(surroundings.npc(0x456)).toEqual({
     kind: "npc",
@@ -357,7 +364,23 @@ test("an object update moves a known NPC, and says when it was last heard from",
     heading: 1024,
     speed: 150,
     lastHeardMs: 6500,
+    level: 3,
+    realm: "Midgard",
+    peaceful: false,
+    pet: false,
+    untargetable: true,
+    healthPercent: 40,
+    targetId: 17,
   });
+});
+
+test("an NPC that attacks the Agent is found by the Agent's object ID", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, npcCreate(0x456, "rat", 531234, 478901, 2345)));
+  surroundings.perceive(message(1600, npcCreate(0x457, "wolf", 531234, 478901, 2345)));
+  surroundings.perceive(message(6500, { ...objectUpdate(0x457, 531234, 478901, 2345, 0, 0), targetId: 17 }));
+
+  expect(surroundings.attacking(17).map((npc) => npc.name)).toEqual(["wolf"]);
 });
 
 test("an object update for an object it doesn't know is ignored", () => {

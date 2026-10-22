@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Reflection;
 using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
+using DOL.GS.PacketHandler.Client.v168;
 using DOL.GS.ServerRules;
 using NUnit.Framework;
 
@@ -56,6 +57,22 @@ namespace DOL.GS.Tests
             Assert.That(_client.Perceived.Last(), Is.EqualTo(new StoppedPercept(there.X, there.Y, there.Z, StopReason.Stop)));
             Assert.That(_client.Queued.Select(Read).Last(), Is.EqualTo((there, 0f)));
             Assert.That(_movement.IsRunning, Is.False);
+        }
+
+        // As the captured client's do once it has targeted something.
+        [Test]
+        public void Tick_ShouldSendPositionUpdatesWithTheClientsTargetAndActionFlags()
+        {
+            _client.TargetId = 0x1F0B;
+            _client.ActionFlags = PlayerPositionUpdateHandler.ActionFlags.TORCH | PlayerPositionUpdateHandler.ActionFlags.TARGET_IN_VIEW;
+            _movement.OnMaxSpeed(FullSpeed, 0);
+            _movement.MoveTo(Target, null, 0);
+
+            _movement.Tick(0);
+
+            byte[] data = _client.Queued.Single().Data;
+            Assert.That(BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(22)), Is.EqualTo(0x1F0B));
+            Assert.That((PlayerPositionUpdateHandler.ActionFlags) data[32], Is.EqualTo(_client.ActionFlags));
         }
 
         // As the server sets it for a GM's `/jump` or a pull back by the speed check.
@@ -237,6 +254,8 @@ namespace DOL.GS.Tests
 
             public GamePlayer Player { get; }
             public ushort SessionID => 0x0101;
+            public ushort TargetId { get; set; }
+            public PlayerPositionUpdateHandler.ActionFlags ActionFlags { get; set; }
             public List<ClientPacket> Queued { get; } = [];
             public List<Percept> Perceived { get; } = [];
 

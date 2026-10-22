@@ -166,7 +166,7 @@ namespace DOL.GS.Agents
         {
             GamePlayer player = _client.Player;
             Vector3 position = step.Ended ? WholeUnits(step.Position) : step.Position;
-            _client.Enqueue(ClientPackets1127.PositionUpdate(position, step.ZoneId, (ushort) (step.Heading | HEADING_FLAG), step.Speed, player.HealthPercent, _client.SessionID, 0, player.ActionFlags));
+            _client.Enqueue(ClientPackets1127.PositionUpdate(position, step.ZoneId, (ushort) (step.Heading | HEADING_FLAG), step.Speed, player.HealthPercent, _client.SessionID, 0, _client.ActionFlags, _client.TargetId));
             NextPositionUpdate(now);
 
             if (!step.Ended)
@@ -219,6 +219,11 @@ namespace DOL.GS.Agents
         GamePlayer Player { get; }
 
         ushort SessionID { get; }
+
+        // What the client has selected, 0 for nothing, and the action flags its position updates carry.
+        ushort TargetId { get; }
+
+        PlayerPositionUpdateHandler.ActionFlags ActionFlags { get; }
 
         // Queues a packet for the next client tick, after those already queued.
         void Enqueue(ClientPacket packet);

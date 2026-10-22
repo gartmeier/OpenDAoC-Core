@@ -17,6 +17,9 @@ namespace DOL.GS.Agents
         private const ushort OVERVIEW_PARAMETER = 0xFFFE;
         private const ushort DEFAULT_PARAMETER = 0xFFFF; // Every other packet type.
 
+        // The target packet's flags when the captured Human clicked an NPC in plain view.
+        private const ushort TARGET_FLAGS = 0xE000;
+
         // What the client sent after the character index in both captures. Data offset 19 (0x71 here) is unknown and varies between captures.
         private static readonly byte[] REGION_LIST_TAIL = Convert.FromHexString("01664C415F401E1E00FFFFFFFF0F036D233471DE100000162200000D");
 
@@ -73,6 +76,7 @@ namespace DOL.GS.Agents
         // Where the client's Character is and what it's doing, as read by `PlayerPositionUpdateHandler`.
         // `speed` is 0 standing and the current speed running: the client ramps it up to its maximum over about 0.9 s and down to 0 when it stops.
         // `heading` is the full 16 bits on the wire: the low 12 bits are the heading, the client sets flags in the high nibble.
+        // `targetId` is the object ID of what the client has targeted, 0 for nothing. The server skips it.
         public static ClientPacket PositionUpdate(
             Vector3 position,
             ushort zoneId,
@@ -81,7 +85,8 @@ namespace DOL.GS.Agents
             byte healthPercent,
             ushort sessionId,
             PlayerPositionUpdateHandler.StateFlags stateFlags,
-            PlayerPositionUpdateHandler.ActionFlags actionFlags)
+            PlayerPositionUpdateHandler.ActionFlags actionFlags,
+            ushort targetId = 0)
         {
             byte[] data = new byte[40];
             Span<byte> span = data;
@@ -91,7 +96,7 @@ namespace DOL.GS.Agents
             BinaryPrimitives.WriteSingleLittleEndian(span[12..], speed);
             // 16-19: Z speed, 0 in every capture, all on flat ground.
             BinaryPrimitives.WriteUInt16BigEndian(span[20..], sessionId);
-            // 22-23: the target's object ID, 0 while nothing is targeted.
+            BinaryPrimitives.WriteUInt16BigEndian(span[22..], targetId);
             BinaryPrimitives.WriteUInt16BigEndian(span[24..], zoneId);
             data[26] = (byte) stateFlags;
             // 27: unknown. 28-29: falling damage.
@@ -105,12 +110,13 @@ namespace DOL.GS.Agents
 
         // What the client sends while its Character turns on the spot: the heading reached so far. Read by `PlayerHeadingUpdateHandler`.
         // `heading` is the low 12 bits only: the client never sets the position update's flags here.
-        public static ClientPacket HeadingUpdate(ushort heading, byte healthPercent, ushort sessionId, PlayerPositionUpdateHandler.ActionFlags actionFlags)
+        // `targetId` is the object ID of what the client has targeted, 0 for nothing. No capture has a heading update while something was targeted, so it goes where the server skips a target, as in the position update.
+        public static ClientPacket HeadingUpdate(ushort heading, byte healthPercent, ushort sessionId, PlayerPositionUpdateHandler.ActionFlags actionFlags, ushort targetId = 0)
         {
             byte[] data = new byte[14];
             Span<byte> span = data;
             BinaryPrimitives.WriteUInt16BigEndian(span[0..], sessionId);
-            // 2-3: 0 in every capture. The server reads a target there.
+            BinaryPrimitives.WriteUInt16BigEndian(span[2..], targetId);
             BinaryPrimitives.WriteUInt16BigEndian(span[4..], heading);
             // 6: unknown. 8: 0, the server reads a steed seat. 9: 0, the server reads the state flags shifted right by 2.
             data[7] = (byte) actionFlags;
@@ -156,6 +162,29 @@ namespace DOL.GS.Agents
         public static ClientPacket Say(string text)
         {
             return Command($"&s {text}");
+        }
+
+        // Selects the object, as a click on it does. The flags are as captured: examine (0x8000), which makes the server describe the object, and both line-of-sight bits (0x6000).
+        // A real client works out line of sight itself. The Harness always claims it, so the server's own checks are the only ones.
+        public static ClientPacket Target(ushort objectId)
+        {
+            byte[] data = new byte[4];
+            BinaryPrimitives.WriteUInt16BigEndian(data, objectId);
+            BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(2), TARGET_FLAGS);
+            return new((byte) eClientPackets.PlayerTarget, DEFAULT_PARAMETER, data);
+        }
+
+        // Turns auto-attack on or off as the Human pressing the attack key does. Read by `PlayerAttackRequestHandler`: whether to start, then 0 for a user action (1 when the client stops attacking by itself).
+        // Not captured yet: the layout follows the handler.
+        public static ClientPacket AttackRequest(bool start)
+        {
+            return new((byte) eClientPackets.PlayerAttackRequest, DEFAULT_PARAMETER, [start ? (byte) 1 : (byte) 0, 0x00]);
+        }
+
+        // Sits down or stands up. Read by `PlayerSitRequest`: anything but 0 sits. Not captured yet: the layout follows the handler.
+        public static ClientPacket SitRequest(bool sit)
+        {
+            return new((byte) eClientPackets.PlayerSitRequest, DEFAULT_PARAMETER, [sit ? (byte) 1 : (byte) 0]);
         }
 
         // Sent by the client at the end of world entry. Its first byte isn't a code the server acts on.
