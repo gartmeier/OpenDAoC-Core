@@ -1,6 +1,6 @@
 # Milestone 3b: Terrain and pathing
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -135,3 +135,19 @@ The Come Mind sends `moveTo` to the speaker with `within: 100` and turns to face
 - Risk: BuildNav's default agent settings (radius, step height, slope) may make routes hug walls or refuse slopes a Human can run up. If the acceptance test shows it, tune them and rebuild before touching Harness code.
 - Risk: the speed check measures straight-line X and Y between updates. Sharp corners shorten that distance, so they can't trigger it, but it's worth watching the log in check 5.
 - Milestone ladder for context: 1 login and logout (done) → 2 Mind connection (done) → 3 movement (done) → 3b terrain and pathing (this spec) → 4 hand-written grind Tactic → 5 LLM Planning → 6 Reflection and Tactic Library → 7 Agent character creation → 8 multiple Agents and grouping.
+
+## Comments
+
+**2026-10-22 (Human, recorded by agent):** Milestone 3b is done. `Pathing/build-navmeshes.ps1` built Detour.dll and region 200's 14 navmeshes (OpenDAoC-BuildNav 2911491, about 30 MB a zone), and the server loads all 14. The manual acceptance test passed in Shannon Estuary with the say range raised to 6000, which is now back to 512:
+
+1. `come` from a hilltop: Greeen ran up it on the ground and arrived.
+2. `come` from behind a building: he ran around it and stopped about 100 units short.
+3. `come` across a river: he used the crossing.
+4. `come` from deep water (Z 3980): the route said it couldn't reach the target, and he ran 137 units to the shore and stopped with `Unreachable`.
+5. Milestone 3's checks: `stop` gave `stopped (Stop)`, a GM `/jump` mid-run gave `stopped (MovedByServer)`, Ctrl+C stopped him and quit, an unseen speaker's `come` did nothing, and the server log has no speed hack entries.
+
+Notes from the test:
+
+- Greeen first looked slow and without a running animation. He was running at his normal 191 units a second while the Human's GM ran at 498; at 191 the Human saw the normal running animation.
+- The navmesh floor sits 3 to 6 units above the terrain on flat ground (Z 4851 to 4854 where the ground is 4848). It caused no visible problem. If one shows up, take Z from the client's terrain heightmap and keep the navmesh for routing.
+- BuildNav couldn't read four old-format models (`rndfort`, `lurikhutshroom`, `NDwfTemple`, `H_Elfdale`), so they're missing from the navmeshes and routes may pass through them.
