@@ -9,4 +9,5 @@ ADR 0001 limits an Agent to what a real game client knows. A real client ships w
 ## Consequences
 
 - The Harness and the Mind may use the server's navmeshes and zone data, but only their static parts: a navmesh query must not tell an Agent about a door's current state.
+- The server writes each door's live state into its navmesh, and the flags on a path's nodes can show it. So the Harness queries the navmesh only with filters that don't depend on door state: for now, routes never go through doors at all. Routing through doors the Agent has seen open, from door Percepts, is a later option.
 - Converting the zone-relative coordinates some packets carry into global ones, using the zone's static offsets, tells the Agent nothing a client doesn't know.

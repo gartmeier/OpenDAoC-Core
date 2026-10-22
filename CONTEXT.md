@@ -13,6 +13,10 @@ A login identity on the server that owns one or more Characters.
 An in-world avatar belonging to an Account, with a realm, race and class.
 _Avoid_: toon, avatar
 
+**Navmesh**:
+A zone's static map of where a Character can walk, built from the game client's zone data; it says nothing about what changes, such as whether a door is open or where NPCs are.
+_Avoid_: pathing grid, nav data
+
 ### Agents
 
 **Agent**:
