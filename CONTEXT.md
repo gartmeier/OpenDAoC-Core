@@ -13,6 +13,10 @@ A login identity on the server that owns one or more Characters.
 An in-world avatar belonging to an Account, with a realm, race and class.
 _Avoid_: toon, avatar
 
+**Mob**:
+An NPC a Character can fight.
+_Avoid_: monster, creature, enemy
+
 **Navmesh**:
 A zone's static map of where a Character can walk, built from the game client's zone data; it says nothing about what changes, such as whether a door is open or where NPCs are.
 _Avoid_: pathing grid, nav data
@@ -55,7 +59,7 @@ What an Agent currently believes is around it, such as who and what is near and 
 _Avoid_: world model, world state
 
 **Tactic**:
-A unit of Mind-side code that pursues a short-term aim by issuing Primitives, written by a Human or by the Agent itself.
+A unit of Mind-side code that pursues an aim by issuing Primitives and running other Tactics, and ends having succeeded or failed with a reason, written by a Human or by the Agent itself.
 _Avoid_: skill, script, procedure, routine
 
 **Tactic Library**:
