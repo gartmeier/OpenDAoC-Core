@@ -60,13 +60,23 @@ $base = Join-Path $buildNavExe.DirectoryName "base"
 New-Item -ItemType Directory -Force (Join-Path $base "lib") | Out-Null
 Copy-Item $detour (Join-Path $base "lib\Detour.dll")
 
-Push-Location $base
-try {
-    Run $buildNavExe.FullName @("--daoc=$Client", "--regions=$($Regions -join ',')")
+# The exe finds its .NET runtime through DOTNET_ROOT, which may not be where the system's dotnet is.
+# It starts RecastDemo.exe from base/ by name, which Windows finds only on PATH.
+$env:DOTNET_ROOT = Split-Path $Dotnet
+$env:Path = "$base;$env:Path"
+
+# BuildNav waits for a key once it's done, and without a console it fails there behind an error dialog instead.
+# So it runs with its output in a log, and is closed once the log says it's done.
+$log = Join-Path $base "buildnav.log"
+$buildNavProcess = Start-Process $buildNavExe.FullName -ArgumentList "--daoc=`"$Client`"", "--regions=$($Regions -join ',')" -WorkingDirectory $base -NoNewWindow -PassThru -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+
+while (-not $buildNavProcess.HasExited -and -not (Select-String -Path $log -Pattern "All done." -SimpleMatch -Quiet)) {
+    Start-Sleep -Seconds 5
 }
-finally {
-    Pop-Location
-}
+
+if (-not $buildNavProcess.HasExited) { Stop-Process -Id $buildNavProcess.Id -Force }
+
+Get-Content $log | Where-Object { $_ -match "\[Error\]|finished in|was empty" } | Write-Host
 
 $navmeshes = Get-ChildItem (Join-Path $base "zones") -Filter "zone*.nav"
 Require ($navmeshes.Count -gt 0) "BuildNav made no navmeshes in $base\zones."
