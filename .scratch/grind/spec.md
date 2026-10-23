@@ -1,6 +1,6 @@
 # Milestone 4: Hand-written grind
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -211,3 +211,15 @@ The Human stands the Agent somewhere in Hibernia's starting area and says `grind
 **2026-10-23 (Human and agent):** A second capture, of the sit key, is checked in as `sit-key.tsv`. The key sends the sit request as a toggle: the client picks sitting or standing from what it believes its state is. `sit` and `stand` stay on `/sit` and `/stand`, which say what they mean.
 
 **2026-10-23 (Human, recorded by agent):** In the second run, level 1 Greeen killed a level 0 sand crab and came out at 84% health. That's above 80%, so he didn't rest, and a level 1 sand crab killed him in about 12 s. The stand-in rules now take only Mobs one level below the Agent's own (blue), because "yellows are too strong", and he rests until 100%.
+
+**2026-10-23 (Human, recorded by agent):** Milestone 4 is done. The goal is changed from "level 1 to 5 unattended" to what the runs proved: the Agent grinds unattended, levels up and trains, rests, and dies and recovers, using only Primitives and Percepts. It can't reach 5 without armour. It has only its training sword and shield, and blue Mobs wear it down to about 30% health. Gear is out of scope here and goes to a later milestone.
+
+What the acceptance runs showed (Agent traces and the Mind's Percept log):
+
+- **Fights:** 15 kills in one run, every one by targeting, attacking and closing in, with no speed-check entries in the server log.
+- **Rests:** sits below the threshold and stands up healed.
+- **Levels up and trains:** at level 2 it typed `/train Blades 2`, spent its 2 spec points, and the skills Percept showed Blades 2.
+- **Dies and recovers:** it sends `/release` right after dying. Within 10 s of a death the server makes that an automatic release ("You will now release automatically in 9 more seconds!"), as for a Human. It came back to life at its bind point and went back to hunting.
+- **Commands:** `stop` mid-fight stopped its attacks, `come` routed and arrived, and Ctrl+C stopped it and quit.
+
+Baseline for milestone 5, in place of the level 5 summary: with the blue-only stand-in rules, level 1 to 2 took 3 min 23 s from `grind`, 4 kills and no deaths. It started part of the way through level 1. Earlier runs with yellow Mobs allowed died within a minute or two.
