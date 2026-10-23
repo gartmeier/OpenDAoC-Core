@@ -4,7 +4,7 @@ The Harness stays in-process C#, but the Mind runs as a separate TypeScript proc
 
 ## Runtime
 
-The Mind runs on Bun, following rs-sdk, which already drives an MMO emulator from TypeScript for LLM agents. Bun has no permission model, so nothing sandboxes LLM-written Tactics for now. That is decided separately before milestone 5, when an LLM first writes code that runs.
+The Mind runs on Bun, following rs-sdk, which already drives an MMO emulator from TypeScript for LLM agents. Bun has no permission model, and nothing sandboxes LLM-written Tactics: they run in the Mind's process with full access, as rs-sdk's agent code does (decided 2026-10-23, before milestone 5). The Mind being out of process keeps them away from the server, and that's the only containment.
 
 ## Considered Options
 

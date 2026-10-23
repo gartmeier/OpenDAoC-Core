@@ -222,4 +222,4 @@ What the acceptance runs showed (Agent traces and the Mind's Percept log):
 - **Dies and recovers:** it sends `/release` right after dying. Within 10 s of a death the server makes that an automatic release ("You will now release automatically in 9 more seconds!"), as for a Human. It came back to life at its bind point and went back to hunting.
 - **Commands:** `stop` mid-fight stopped its attacks, `come` routed and arrived, and Ctrl+C stopped it and quit.
 
-Baseline for milestone 5, in place of the level 5 summary: with the blue-only stand-in rules, level 1 to 2 took 3 min 23 s from `grind`, 4 kills and no deaths. It started part of the way through level 1. Earlier runs with yellow Mobs allowed died within a minute or two.
+No baseline: the Human doesn't want to compare the LLM's play with this hand-written Grind, which an LLM wrote too.
