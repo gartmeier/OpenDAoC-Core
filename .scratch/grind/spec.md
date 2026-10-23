@@ -207,3 +207,5 @@ The Human stands the Agent somewhere in Hibernia's starting area and says `grind
 - Golden-byte tests cover all of these.
 
 **2026-10-23 (Human, recorded by agent):** In the first acceptance run, Greeen fought a blue Mob down to about 50% health, then took on a yellow one and died. The stand-in rest threshold is now below 80% (it was 50%), still resting until 90%. It may change again.
+
+**2026-10-23 (Human and agent):** A second capture, of the sit key, is checked in as `sit-key.tsv`. The key sends the sit request as a toggle: the client picks sitting or standing from what it believes its state is. `sit` and `stand` stay on `/sit` and `/stand`, which say what they mean.

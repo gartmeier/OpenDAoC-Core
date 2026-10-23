@@ -28,7 +28,10 @@ namespace DOL.GS.Tests
         // A Character targeting a Mob, attacking it until it dies, sitting and standing.
         public const string FIGHT = "target-attack-sit";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT];
+        // A Character sitting and standing with the sit key.
+        public const string SIT_KEY = "sit-key";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY];
 
         public static CapturedPacket[] Load(string capture)
         {

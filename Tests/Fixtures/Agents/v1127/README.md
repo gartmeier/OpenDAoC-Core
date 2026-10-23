@@ -6,6 +6,8 @@ What a real 1.127 game client sends the server, from character select through wo
 - Recorded with `/agent capture agent1` on 2026-10-03 and split per session, otherwise unmodified.
 - `say-hello.tsv` is 17 s of account `admin`'s Hibernia Character standing in the world while the Human types `hello` (plain, no slash), then `/send greeen hello` and `/agent capture off`. Recorded with `/agent capture admin` on 2026-10-20, unmodified. See Say.
 - `run-turn-stop.tsv` is 62 s of the same Character on flat open ground in zone 202. It stands, runs in a straight line and stops, strafes right, turns on the spot with the keyboard, runs past an NPC and stops, then targets the NPC. Before each part the Human said `run`, `turn` and `npc`, which mark the parts in the capture as say commands. Recorded with `/agent capture admin` on 2026-10-20, unmodified. See Movement.
+- `target-attack-sit.tsv` is 91 s of account `joshua`'s Hibernia Character next to a low-level Mob. It attacks with something targeted, targets the Mob, clears the target, then fights the Mob until it dies, and types `/sit`, `/sit` and `/stand`. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Fighting and resting.
+- `sit-key.tsv` is 26 s of the same Character sitting and standing twice with the sit key. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Fighting and resting.
 - `login-next-to-agent.tsv` is 189 s of the same Character next to the Agent Greeen, who is already in the world. The Human says `come` and types `/speed 0` with Greeen targeted, quits to the character screen with `/q`, logs back in next to Greeen, says `come`, types `/speed 191`, says `come` three more times and types `/jump greeen to vue`. The first 189 s of a recording with `/agent capture admin` on 2026-10-21, taken while it was still running, otherwise unmodified. See Players already in the world.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
@@ -139,7 +141,7 @@ From `target-attack-sit.tsv`, and the targeting at the end of `run-turn-stop.tsv
   - When the Mob it was attacking died, the client cleared its target by itself: object ID 0 with flags `0001`, the attack mode bit.
 - **Attack request (0x74).** 4 bytes of data: whether to start, then 0 when the Human pressed the attack key or 1 when the client stopped attacking by itself, then 2 bytes. Those were 0 every time the Human pressed the key, and leftover memory when the client stopped by itself, at the same moment as it cleared its target after the Mob died. The server reads only the first two.
 - **Position and heading updates while targeting and attacking.** They carry the target's object ID (position update offsets 22–23, heading update offsets 2–3) and `TARGET_IN_VIEW` in the action flags. While attacking, the health byte (position update offset 35, heading update offset 10) has its top bit set: `E4` is 100% while attacking. The server reads the action flags from every update, so a client that left `TARGET_IN_VIEW` out would take its target out of view. It skips the target and the health byte.
-- **Sitting.** `/sit` and `/stand` go out as commands (`&sit`, `&stand`), not as the sit request (0xC7), which the client never sent. While sitting, position updates carry state flag 0x10 (`SITTING`). Sitting with the sit key wasn't captured.
+- **Sitting.** `/sit` and `/stand` go out as commands (`&sit`, `&stand`), and the server's handlers sit or stand whatever the Character was doing. The sit key is a toggle: the client sends the sit request (0xC7, parameter 0x0000) with data `01 5E 88 04` to sit or `00 5E 88 04` to stand, deciding which from what it believes its state is. The server reads only the first byte. The Harness uses the commands because they say what they mean. While sitting, position updates carry state flag 0x10 (`SITTING`).
 - The Human moved on sloped ground while fighting, so some updates carry a Z speed (offsets 16–19). The Harness leaves it at 0.
 
 ## Fields that vary between captures
@@ -151,7 +153,7 @@ These hold for every packet:
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
 
-Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xD5, 0x1D, 0xAC and 0xB8; 0xFFFE for 0xFC; 0xFFFF for the rest.
+Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC and 0xB8; 0xFFFE for 0xFC; 0xFFFF for the rest.
 
 Packet data, by data offset:
 
