@@ -3,7 +3,7 @@ import { type Agent, failed, type Outcome, succeeded } from "../tactic.ts";
 import { kill } from "./kill.ts";
 import { rest } from "./rest.ts";
 import { RUN_TIMEOUT_MS, runEnd, runTo } from "./run-to.ts";
-import { shop } from "./shop.ts";
+import { CONNLA_MARKET, merchants, shop } from "./shop.ts";
 import { affordableLevel, train } from "./train.ts";
 
 // The stand-in rules: deliberately simple, for the coding agent to replace in milestone 5.
@@ -33,7 +33,7 @@ const HOPELESS = new Set(["unreachable", "noDamage"]);
 /**
  * Levels the Agent to `GOAL_LEVEL` around home, where it stands when the grind starts. Each step, in order:
  * if dead, it releases and runs home; it kills whatever attacks it; it trains the spec points it has;
- * it shops after a level-up, or when it carries `HEAVY` of its capacity or its backpack is full, and runs home; it rests when its health is low;
+ * it shops after a level-up, or when it carries `HEAVY` of its capacity or its backpack is full, running to Connla's market first unless both merchants are in view, and runs home; it rests when its health is low;
  * it kills the nearest Mob it can take on; and with none in view, it runs to a random spot near home.
  * At the goal it says so, logs a summary and succeeds. It fails with `homeUnreachable` when it can't get home after dying, `notReleased` when releasing doesn't bring it back to life, and `noPosition` when it doesn't know where it is to start with.
  */
@@ -88,6 +88,11 @@ export async function grind(agent: Agent): Promise<Outcome> {
 
     if (shopDue()) {
       tally.shops++;
+      const { bladesmith, leatherworker } = merchants(agent);
+
+      if (!bladesmith || !leatherworker)
+        tally.note(await runTo(agent, { ...CONNLA_MARKET, z: home.z }));
+
       tally.note(await shop(agent));
       shoppedAt = self.level;
       carried = { weight: inventory.weight, itemCount: inventory.backpack.length };

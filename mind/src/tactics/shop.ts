@@ -1,5 +1,6 @@
 import { merchantIndex, SLOT, type SlotName } from "../inventory.ts";
 import type { InventoryItem, MerchantItem } from "../protocol.ts";
+import type { KnownNpc } from "../surroundings.ts";
 import { type Agent, failed, type Outcome, succeeded } from "../tactic.ts";
 import { equip } from "./equip.ts";
 import { buy, sell, talkTo } from "./trade.ts";
@@ -9,6 +10,9 @@ import { buy, sell, talkTo } from "./trade.ts";
 /** Connla's merchants, by name, as a Human remembers them: Eira sells blades and Erskine leather armour. */
 export const BLADESMITH = "Eira";
 export const LEATHERWORKER = "Erskine";
+
+/** Between Eira (294899, 641231) and Erskine (295981, 641115), where both are in view. Its height is left to the navmesh (ADR 0007). */
+export const CONNLA_MARKET = { x: 295440, y: 641173 };
 
 /** Object types, as the server's `eObjectType` numbers them. Static knowledge, as the client has it. */
 export const BLADES = 19;
@@ -36,10 +40,9 @@ export const ARMOUR_PIECES: Readonly<Record<string, SlotName>> = {
  */
 export async function shop(agent: Agent): Promise<Outcome> {
   const { self, surroundings, inventory } = agent;
-  const bladesmith = surroundings.named(BLADESMITH);
-  const leatherworker = surroundings.named(LEATHERWORKER);
+  const { bladesmith, leatherworker } = merchants(agent);
 
-  if (bladesmith?.kind !== "npc" || leatherworker?.kind !== "npc")
+  if (!bladesmith || !leatherworker)
     return failed("outOfView");
 
   const attacked = () => self.objectId !== undefined && surroundings.attacking(self.objectId).length > 0;
@@ -99,6 +102,15 @@ export async function shop(agent: Agent): Promise<Outcome> {
   }
 
   return succeeded;
+}
+
+/** Connla's two merchants, each if it's in view. */
+export function merchants({ surroundings }: Agent): { bladesmith?: KnownNpc; leatherworker?: KnownNpc } {
+  const npc = (name: string) => {
+    const known = surroundings.named(name);
+    return known?.kind === "npc" ? known : undefined;
+  };
+  return { bladesmith: npc(BLADESMITH), leatherworker: npc(LEATHERWORKER) };
 }
 
 /** Whether the piece in a slot wants replacing: there's none, it's below `level`, or it isn't of `objectType`. */

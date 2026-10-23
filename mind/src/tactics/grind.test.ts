@@ -4,7 +4,7 @@ import { settle, TestAgent } from "../test-agent.ts";
 import { BACKPACK_SLOTS, SLOT } from "../inventory.ts";
 import { arrived, died, encumbrance, inventory, item, merchantWindow, money, npcCreate, objectRemove, objectUpdate, ownPosition, player, points, revived, skills, spec, status, stopped } from "../test-percepts.ts";
 import { grind, LEASH } from "./grind.ts";
-import { BLADES } from "./shop.ts";
+import { BLADES, CONNLA_MARKET } from "./shop.ts";
 import { TRADE_TIMEOUT_MS } from "./trade.ts";
 
 const HOME = { x: 296000, y: 642000, z: 4848 };
@@ -158,6 +158,9 @@ test("ends as stopped when the Agent is stopped", async () => {
   expect(await outcome).toEqual({ ok: false, reason: "stopped" });
 });
 
+// Where Erskine stands near Connla's market, in the test.
+const ERSKINE_AT = { x: CONNLA_MARKET.x + 500, y: CONNLA_MARKET.y };
+
 // Connla's merchants, a step from home.
 const MERCHANTS = [
   npcCreate(0x201, "Eira", HOME.x + 50, HOME.y, HOME.z, { peaceful: true, realm: "Hibernia" }),
@@ -216,4 +219,20 @@ test("doesn't shop again for its load until it has picked up more", async () => 
   await t.perceive(inventory([41, item("wolf pelt")]), encumbrance(100, 92));
 
   expect(t.take()).toEqual([{ name: "stop" }, { name: "sell", slot: 40 }]);
+});
+
+test("runs to Connla's merchants first when they aren't in view, then shops there", async () => {
+  const { t } = await grinding([money(0), inventory([SLOT.rightHand, item("falcata", { level: 2, objectType: BLADES })], [40, item("bear claw")])], [0, 0]);
+  t.take();
+
+  await t.perceive(player(3));
+  expect(t.take()).toEqual([{ name: "stop" }, { name: "moveTo", ...CONNLA_MARKET, z: HOME.z }]);
+
+  await t.perceive(
+    npcCreate(0x201, "Eira", ERSKINE_AT.x - 1000, ERSKINE_AT.y, HOME.z, { peaceful: true, realm: "Hibernia" }),
+    npcCreate(0x202, "Erskine", ERSKINE_AT.x, ERSKINE_AT.y, HOME.z, { peaceful: true, realm: "Hibernia" }),
+    arrived(ERSKINE_AT.x + 50, ERSKINE_AT.y, HOME.z),
+  );
+
+  expect(t.take()).toEqual([{ name: "talkTo", objectId: 0x202 }]);
 });

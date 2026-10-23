@@ -202,6 +202,7 @@ Acceptance: `shop` gears Greeen up in Connla, and from `/player level 1` the Gri
 - **`talkTo` is a porcelain Tactic too**, which `buy` and `sell` share: it gets within reach and opens the merchant's window, failing with `outOfView`, `tooFar` or `timeout`.
 - **`shop` buys only one-handed blades,** since it puts the blade in the right hand. A sale, purchase or equip that fails is logged and skipped, and `shop` still succeeds.
 - **The Grind shops for its load only once it has picked up more** since it last shopped, so a backpack the merchant won't buy from doesn't send it shopping on every step. It shops after a level-up whatever happened at the last shop.
-- **The Grind doesn't run to Connla.** As the spec says, `shop` fails with `outOfView` when a merchant isn't in view, so the hunting spot must be within view of Eira and Erskine. The summary now counts shops too.
+- **The Grind runs to Connla's market before it shops** when either merchant isn't in view, to a spot between Eira and Erskine from their known positions, at home's height, which the navmesh corrects (ADR 0007). Then it runs home. `shop` itself still fails with `outOfView` when a merchant isn't in view, as the spec says. The summary now counts shops too.
+- **The glossary's Inventory** now says that which merchant it's talking to comes from the Primitives sent, the one thing it doesn't learn from Percepts.
 - **`moveItem` goes between the Character's own slots only,** 1 (the ground) to 99 (the horse's bags). The Harness refuses the paper doll (100) and anything above 1000, which would give the item to another object.
 - **`shop` fails with `attacked`** before its next trade once something attacks the Agent, so that in the Grind fights still come first.

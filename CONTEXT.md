@@ -59,7 +59,7 @@ What an Agent currently believes is around it, such as who and what is near and 
 _Avoid_: world model, world state
 
 **Inventory**:
-What an Agent currently believes it carries, such as what it has equipped, what's in its backpack, its money and how much weight it carries against how much it can, built only from Percepts.
+What an Agent currently believes it carries, such as what it has equipped, what's in its backpack, its money and how much weight it carries against how much it can, built from Percepts. Only which merchant it's talking to comes from the Primitives it sent, as a client knows what it clicked.
 _Avoid_: bag, items
 
 **Tactic**:
