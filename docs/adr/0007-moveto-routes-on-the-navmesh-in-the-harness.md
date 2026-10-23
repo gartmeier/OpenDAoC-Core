@@ -12,4 +12,4 @@ This is the one place where a Primitive does more than a client would. The route
 ## Consequences
 
 - A target the route can't reach ends the run with `stopped` and the reason `unreachable`, after running as far as the route gets.
-- The route never goes through doors (ADR 0006).
+- The route goes through doors that open by clicking, open or closed, and never through blocking doors (ADR 0006).

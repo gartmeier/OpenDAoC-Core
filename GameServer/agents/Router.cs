@@ -7,14 +7,16 @@ namespace DOL.GS.Agents
 {
     /// <summary>
     /// Works out the route a `moveTo` runs along, on the zones' navmeshes, as the Agent's client would if it had a map (ADR 0007).
-    /// It uses only static knowledge (ADR 0006): routes go over walkable ground only, never through doors, whose live state the server writes into the navmesh, nor water or jump links.
+    /// It uses only static knowledge (ADR 0006): routes go over walkable ground and through doors that open by clicking, which the navmesh marks the same open or closed, but never through blocking doors, water or jump links.
+    /// The Agent walks through such a door even while it's closed: the server doesn't stop it, though a Human's client would until they clicked the door open.
     /// Navmeshes are per zone, so a target in another zone is routed to a crossing on the zone border, as the server's NPC pathing does, and on from there in the next zone.
     /// In a zone without a navmesh the route goes on in a straight line.
     /// </summary>
     public sealed class Router
     {
-        // [include, exclude]. Excluding both door flags keeps a route the same whether a door is open or closed.
-        private static readonly EDtPolyFlags[] _filters = [EDtPolyFlags.Walk, EDtPolyFlags.AnyDoor | EDtPolyFlags.Swim | EDtPolyFlags.Jump | EDtPolyFlags.Disabled];
+        // [include, exclude]. The server marks a door that opens by clicking as a door whether it's open or closed, and only a closed door that doesn't as blocking (`LocalPathfindingMgr`).
+        // So routes through doors don't depend on the state of any door that opens by clicking. One that doesn't, such as a keep door, is routed through only while it's open.
+        private static readonly EDtPolyFlags[] _filters = [EDtPolyFlags.Walk | EDtPolyFlags.Door, EDtPolyFlags.BlockingDoor | EDtPolyFlags.Swim | EDtPolyFlags.Jump | EDtPolyFlags.Disabled];
 
         // How far, in each direction, the nearest walkable point to the Character or the target may be.
         private const float WALKABLE_RANGE = 1024;

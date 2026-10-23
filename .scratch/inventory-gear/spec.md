@@ -207,3 +207,4 @@ Acceptance: `shop` gears Greeen up in Connla, and from `/player level 1` the Gri
 - **The glossary's Inventory** now says that which merchant it's talking to comes from the Primitives sent, the one thing it doesn't learn from Percepts.
 - **`moveItem` goes between the Character's own slots only,** 1 (the ground) to 99 (the horse's bags). The Harness refuses the paper doll (100) and anything above 1000, which would give the item to another object.
 - **`shop` fails with `attacked`** before its next trade once something attacks the Agent, so that in the Grind fights still come first.
+- **Routes now go through doors that open by clicking,** because Erskine stands inside a building. The navmesh marks those doors the same whether they're open or closed, so ADR 0006 still holds, and its consequences now say so. The Agent walks through such a door even while it's closed: the server doesn't stop it, though a Human's client would until they clicked it open.

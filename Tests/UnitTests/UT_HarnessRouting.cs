@@ -292,9 +292,10 @@ namespace DOL.GS.Tests
             Assert.That(_client.Perceived.Last(), Is.EqualTo(new StoppedPercept(Start.X, Start.Y, Start.Z, StopReason.Unreachable)));
         }
 
-        // The server writes each door's live state into the navmesh, so a route that never uses doors depends on none (ADR 0006).
+        // A door that opens by clicking is marked a door whether it's open or closed, so a route through it depends on no door's state (ADR 0006).
+        // The server marks a closed door that doesn't open by clicking as blocking, and the route avoids it, open or not, as far as the flags allow.
         [Test]
-        public void MoveTo_ShouldRouteOnlyOverWalkableGround_NeverThroughDoorsWaterOrJumps()
+        public void MoveTo_ShouldRouteOverWalkableGroundAndDoors_NeverThroughBlockingDoorsWaterOrJumps()
         {
             _navmesh.Route = [Start, Target];
 
@@ -303,7 +304,7 @@ namespace DOL.GS.Tests
 
             // Every query: the route, the nearest walkable points and the floors.
             Assert.That(_navmesh.Filters, Has.Count.GreaterThan(3));
-            Assert.That(_navmesh.Filters, Has.All.EqualTo((EDtPolyFlags.Walk, EDtPolyFlags.Door | EDtPolyFlags.BlockingDoor | EDtPolyFlags.Swim | EDtPolyFlags.Jump | EDtPolyFlags.Disabled)));
+            Assert.That(_navmesh.Filters, Has.All.EqualTo((EDtPolyFlags.Walk | EDtPolyFlags.Door, EDtPolyFlags.BlockingDoor | EDtPolyFlags.Swim | EDtPolyFlags.Jump | EDtPolyFlags.Disabled)));
         }
 
         // Navmeshes are per zone: the route goes to the border, then on in the next zone, as the server's NPC pathing does.

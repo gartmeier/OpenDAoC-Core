@@ -9,5 +9,7 @@ ADR 0001 limits an Agent to what a real game client knows. A real client ships w
 ## Consequences
 
 - The Harness and the Mind may use the server's navmeshes and zone data, but only their static parts: a navmesh query must not tell an Agent about a door's current state.
-- The server writes each door's live state into its navmesh, and the flags on a path's nodes can show it. So the Harness queries the navmesh only with filters that don't depend on door state: for now, routes never go through doors at all. Routing through doors the Agent has seen open, from door Percepts, is a later option.
+- The server writes each door's live state into its navmesh, and the flags on a path's nodes can show it. So the Harness queries the navmesh only with filters that don't depend on door state.
+- Routes go through doors that open by clicking, such as a town building's. The server marks those as doors whether they're open or closed, so routing through them says nothing about their state. It marks only a closed door that doesn't open by clicking, such as a keep door, as blocking, and routes avoid that one. Such a door is routed through while it's open, which tells an Agent its state. There are none where Agents play so far.
+- The Agent walks through a door that opens by clicking even while it's closed. The server doesn't stop it, though a Human's client would until they clicked it open. Opening closed doors on the way with the client's door request, from door Percepts, is a later option.
 - Converting the zone-relative coordinates some packets carry into global ones, using the zone's static offsets, tells the Agent nothing a client doesn't know.
