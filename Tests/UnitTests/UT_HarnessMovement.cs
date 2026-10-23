@@ -256,6 +256,7 @@ namespace DOL.GS.Tests
             public ushort SessionID => 0x0101;
             public ushort TargetId { get; set; }
             public PlayerPositionUpdateHandler.ActionFlags ActionFlags { get; set; }
+            public byte HealthByte => Player.HealthPercent;
             public List<ClientPacket> Queued { get; } = [];
             public List<Percept> Perceived { get; } = [];
 

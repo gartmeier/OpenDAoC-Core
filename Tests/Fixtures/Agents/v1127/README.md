@@ -131,12 +131,16 @@ The server sends a player's create to those around only when that player enters 
 
 ## Fighting and resting
 
-Only targeting is captured so far, in `run-turn-stop.tsv` (see Running past an NPC): target (0xB0), data the object ID and `E000`, examine plus both line-of-sight bits. From then on the position updates carry the target's object ID and `TARGET_IN_VIEW`. The server reads that flag from every position and heading update, so a client that left it out would take its target out of view.
+From `target-attack-sit.tsv`, and the targeting at the end of `run-turn-stop.tsv`.
 
-Not captured yet, so the Harness builds them as their handlers read them:
-- Attack request (`PlayerAttackRequestHandler`): whether to start, then 0 for the Human pressing the attack key (1 when the client stops attacking by itself).
-- Sit request (`PlayerSitRequest`): 1 to sit, 0 to stand.
-- A heading update while something is targeted: the Harness puts the target's object ID at data offsets 2–3, where the server skips a target, as the position update has it at 22–23.
+- **Target (0xB0).** Data: the object ID, then 2 bytes of flags.
+  - A click on a Mob sends `E000`: examine (0x8000), which makes the server describe it, and both line-of-sight bits (0x6000).
+  - Esc sends object ID 0 with flags `0000`.
+  - When the Mob it was attacking died, the client cleared its target by itself: object ID 0 with flags `0001`, the attack mode bit.
+- **Attack request (0x74).** 4 bytes of data: whether to start, then 0 when the Human pressed the attack key or 1 when the client stopped attacking by itself, then 2 bytes. Those were 0 every time the Human pressed the key, and leftover memory when the client stopped by itself, at the same moment as it cleared its target after the Mob died. The server reads only the first two.
+- **Position and heading updates while targeting and attacking.** They carry the target's object ID (position update offsets 22–23, heading update offsets 2–3) and `TARGET_IN_VIEW` in the action flags. While attacking, the health byte (position update offset 35, heading update offset 10) has its top bit set: `E4` is 100% while attacking. The server reads the action flags from every update, so a client that left `TARGET_IN_VIEW` out would take its target out of view. It skips the target and the health byte.
+- **Sitting.** `/sit` and `/stand` go out as commands (`&sit`, `&stand`), not as the sit request (0xC7), which the client never sent. While sitting, position updates carry state flag 0x10 (`SITTING`). Sitting with the sit key wasn't captured.
+- The Human moved on sloped ground while fighting, so some updates carry a Z speed (offsets 16–19). The Harness leaves it at 0.
 
 ## Fields that vary between captures
 

@@ -198,3 +198,12 @@ The Human stands the Agent somewhere in Hibernia's starting area and says `grind
 - **Left as they are:**
   - A Mob chasing the Agent shows target 65535 until it's within reach, so it only counts as attacking once it gets there.
   - Wandering picks a spot at home's Z and lets the Harness move it to the nearest walkable point (ADR 0007).
+
+**2026-10-23 (agent):** The Human recorded the fight capture with account `joshua`. It's checked in as `Tests/Fixtures/Agents/v1127/target-attack-sit.tsv`. What it changed:
+
+- The attack request has 4 bytes of data. When the Mob it was attacking dies, the client stops attacking and clears its target by itself (flags `0001`), and the Harness now does the same.
+- `/sit` and `/stand` go out as commands, so `sit` and `stand` send those. Nothing uses the sit request any more.
+- While attacking, the client sets the top bit of the health byte in its position and heading updates, and the Harness now does the same. That's the attack mode the spec meant. It isn't an action flag.
+- Golden-byte tests cover all of these.
+
+**2026-10-23 (Human, recorded by agent):** In the first acceptance run, Greeen fought a blue Mob down to about 50% health, then took on a yellow one and died. The stand-in rest threshold is now below 80% (it was 50%), still resting until 90%. It may change again.

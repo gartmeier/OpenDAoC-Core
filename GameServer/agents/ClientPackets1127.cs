@@ -77,6 +77,7 @@ namespace DOL.GS.Agents
         // `speed` is 0 standing and the current speed running: the client ramps it up to its maximum over about 0.9 s and down to 0 when it stops.
         // `heading` is the full 16 bits on the wire: the low 12 bits are the heading, the client sets flags in the high nibble.
         // `targetId` is the object ID of what the client has targeted, 0 for nothing. The server skips it.
+        // `healthPercent` has its top bit set while the client is attacking, as captured. The server skips it.
         public static ClientPacket PositionUpdate(
             Vector3 position,
             ushort zoneId,
@@ -110,7 +111,7 @@ namespace DOL.GS.Agents
 
         // What the client sends while its Character turns on the spot: the heading reached so far. Read by `PlayerHeadingUpdateHandler`.
         // `heading` is the low 12 bits only: the client never sets the position update's flags here.
-        // `targetId` is the object ID of what the client has targeted, 0 for nothing. No capture has a heading update while something was targeted, so it goes where the server skips a target, as in the position update.
+        // `targetId` is the object ID of what the client has targeted, 0 for nothing, and `healthPercent` has its top bit set while attacking, as in the position update. The server skips both.
         public static ClientPacket HeadingUpdate(ushort heading, byte healthPercent, ushort sessionId, PlayerPositionUpdateHandler.ActionFlags actionFlags, ushort targetId = 0)
         {
             byte[] data = new byte[14];
@@ -168,23 +169,40 @@ namespace DOL.GS.Agents
         // A real client works out line of sight itself. The Harness always claims it, so the server's own checks are the only ones.
         public static ClientPacket Target(ushort objectId)
         {
+            return Target(objectId, TARGET_FLAGS);
+        }
+
+        // Selects nothing, as Esc does, or as the client does by itself when what it attacked dies. The flags are then only the attack mode bit (0x0001), set while attacking.
+        public static ClientPacket ClearTarget(bool attacking)
+        {
+            return Target(0, attacking ? (ushort) 0x0001 : (ushort) 0x0000);
+        }
+
+        // Turns auto-attack on or off, as the Human pressing the attack key does, or off as the client does by itself when what it attacked dies (`byClient`).
+        // Read by `PlayerAttackRequestHandler`: whether to start, then 0 for the Human or 1 for the client. The captured client stopping by itself left memory in the last two bytes, which the server doesn't read.
+        public static ClientPacket AttackRequest(bool start, bool byClient = false)
+        {
+            return new((byte) eClientPackets.PlayerAttackRequest, DEFAULT_PARAMETER, [start ? (byte) 1 : (byte) 0, byClient ? (byte) 1 : (byte) 0, 0x00, 0x00]);
+        }
+
+        // Sits down. A 1.127 client sends `/sit` as the command, not as the sit request.
+        public static ClientPacket Sit()
+        {
+            return Command("&sit");
+        }
+
+        // Stands up, as `/stand` does.
+        public static ClientPacket Stand()
+        {
+            return Command("&stand");
+        }
+
+        private static ClientPacket Target(ushort objectId, ushort flags)
+        {
             byte[] data = new byte[4];
             BinaryPrimitives.WriteUInt16BigEndian(data, objectId);
-            BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(2), TARGET_FLAGS);
+            BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(2), flags);
             return new((byte) eClientPackets.PlayerTarget, DEFAULT_PARAMETER, data);
-        }
-
-        // Turns auto-attack on or off as the Human pressing the attack key does. Read by `PlayerAttackRequestHandler`: whether to start, then 0 for a user action (1 when the client stops attacking by itself).
-        // Not captured yet: the layout follows the handler.
-        public static ClientPacket AttackRequest(bool start)
-        {
-            return new((byte) eClientPackets.PlayerAttackRequest, DEFAULT_PARAMETER, [start ? (byte) 1 : (byte) 0, 0x00]);
-        }
-
-        // Sits down or stands up. Read by `PlayerSitRequest`: anything but 0 sits. Not captured yet: the layout follows the handler.
-        public static ClientPacket SitRequest(bool sit)
-        {
-            return new((byte) eClientPackets.PlayerSitRequest, DEFAULT_PARAMETER, [sit ? (byte) 1 : (byte) 0]);
         }
 
         // Sent by the client at the end of world entry. Its first byte isn't a code the server acts on.

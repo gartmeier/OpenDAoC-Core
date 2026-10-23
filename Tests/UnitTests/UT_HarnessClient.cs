@@ -209,7 +209,7 @@ namespace DOL.GS.Tests
         }
 
         [Test]
-        public async Task SitAndStand_ShouldQueueTheSitRequest()
+        public async Task SitAndStand_ShouldQueueTheCommandsTheCaptureShows()
         {
             FakeMind mind = new();
             HarnessClient client = InWorld(mind.Link, 0x0101);
@@ -217,7 +217,54 @@ namespace DOL.GS.Tests
             client.Dispatch(new SitPrimitive(), mind.Link);
             client.Dispatch(new StandPrimitive(), mind.Link);
 
-            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.SitRequest(true), ClientPackets1127.SitRequest(false)])));
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.Sit(), ClientPackets1127.Stand()])));
+            await Close(mind);
+        }
+
+        // As captured: the top bit of the health byte, in position and heading updates.
+        [Test]
+        public async Task PositionUpdate_ShouldSayItsAttacking_WhileInAttackMode()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            client.Dispatch(new AttackPrimitive(true), mind.Link);
+            Assert.That(client.PositionUpdate().Data[35], Is.EqualTo(0x80 | 100));
+            Assert.That(client.HeadingUpdate(100).Data[10], Is.EqualTo(0x80 | 100));
+
+            client.Dispatch(new AttackPrimitive(false), mind.Link);
+            Assert.That(client.PositionUpdate().Data[35], Is.EqualTo(100));
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task Target_ShouldClearTheTarget_ForObjectId0()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+
+            client.Dispatch(new TargetPrimitive(0), mind.Link);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.Target(0x1F0B), ClientPackets1127.ClearTarget(attacking: false)])));
+            Assert.That(client.TargetId, Is.Zero);
+            await Close(mind);
+        }
+
+        // As the captured client does when the Mob it attacks dies and leaves the world.
+        [Test]
+        public async Task OnPerceived_ShouldStopAttackingAndClearTheTarget_WhenTheTargetItAttacksLeavesTheWorld()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+            client.Dispatch(new AttackPrimitive(true), mind.Link);
+            int queued = Inbound(client).Length;
+
+            client.OnPerceived(new ObjectRemovePercept(0x1F0B, 0));
+
+            Assert.That(Wire(Inbound(client)[queued..]), Is.EqualTo(Wire([ClientPackets1127.AttackRequest(false, byClient: true), ClientPackets1127.ClearTarget(attacking: true)])));
+            Assert.That(client.PositionUpdate().Data[35], Is.EqualTo(100));
             await Close(mind);
         }
 

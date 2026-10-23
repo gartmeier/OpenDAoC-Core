@@ -156,34 +156,80 @@ namespace DOL.GS.Tests
             AssertMatches(ClientPackets1127.Target(0x1F0B), captured);
         }
 
-        [TestCase(true, 1)]
-        [TestCase(false, 0)]
-        public void AttackRequest_ShouldBeReadByTheHandler_AsTheHumanPressingTheButton(bool start, int startByte)
+        // The Human pressed the attack key twice, then fought the Mob until the client stopped attacking by itself when it died.
+        [Test]
+        public void AttackRequest_ShouldMatchCapture()
         {
-            GSPacketIn packet = Loaded(ClientPackets1127.AttackRequest(start));
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.FIGHT, eClientPackets.PlayerAttackRequest);
+            Assert.That(captured, Has.Length.EqualTo(4));
 
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.PlayerAttackRequest));
-            Assert.That(packet.ReadByte(), Is.EqualTo(startByte), "start");
-            Assert.That(packet.ReadByte(), Is.EqualTo(0), "a user action");
+            AssertMatches(ClientPackets1127.AttackRequest(true), captured[0]);
+            AssertMatches(ClientPackets1127.AttackRequest(false), captured[1]);
+            AssertMatches(ClientPackets1127.AttackRequest(true), captured[2]);
+            // Data offsets 2-3 hold leftover client memory when the client stops by itself. The server reads neither.
+            AssertMatches(ClientPackets1127.AttackRequest(false, byClient: true), captured[3], 2, 3);
         }
 
-        [TestCase(true, 1)]
-        [TestCase(false, 0)]
-        public void SitRequest_ShouldBeReadByTheHandler(bool sit, int status)
+        // Clicked twice on the same Mob, cleared once with Esc, and cleared by the client when the Mob it was attacking died.
+        [Test]
+        public void TargetAndClearTarget_ShouldMatchCapture()
         {
-            GSPacketIn packet = Loaded(ClientPackets1127.SitRequest(sit));
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.FIGHT, eClientPackets.PlayerTarget);
+            Assert.That(captured, Has.Length.EqualTo(4));
 
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.PlayerSitRequest));
-            Assert.That(packet.ReadByte(), Is.EqualTo(status));
+            AssertMatches(ClientPackets1127.Target(0x2C54), captured[0]);
+            AssertMatches(ClientPackets1127.ClearTarget(attacking: false), captured[1]);
+            AssertMatches(ClientPackets1127.Target(0x2C54), captured[2]);
+            AssertMatches(ClientPackets1127.ClearTarget(attacking: true), captured[3]);
+        }
+
+        // The Human typed `/sit` twice, then `/stand`. A 1.127 client sends them as commands, not as the sit request.
+        [Test]
+        public void SitAndStand_ShouldMatchCapture()
+        {
+            CapturedPacket[] commands = ClientCaptures.WhilePlaying(ClientCaptures.FIGHT, eClientPackets.CommandHandler);
+
+            AssertMatches(ClientPackets1127.Sit(), commands.First(static p => p.Data.SequenceEqual("\0&sit\0"u8.ToArray())));
+            AssertMatches(ClientPackets1127.Stand(), commands.Single(static p => p.Data.SequenceEqual("\0&stand\0"u8.ToArray())));
+        }
+
+        // While something is targeted, heading updates carry it at data offsets 2-3. While attacking, the health byte has its top bit set, as in position updates.
+        [Test]
+        public void EveryHeadingUpdateWithATarget_ShouldMatchCapture()
+        {
+            CapturedPacket[] headingUpdates = ClientCaptures.WhilePlaying(ClientCaptures.FIGHT, eClientPackets.PlayerHeadingUpdate);
+            Assert.That(headingUpdates, Is.Not.Empty);
+
+            foreach (CapturedPacket captured in headingUpdates)
+            {
+                byte[] data = captured.Data;
+                ushort targetId = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(2));
+                ushort heading = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(4));
+                Assert.That(targetId, Is.Not.Zero);
+
+                AssertMatches(ClientPackets1127.HeadingUpdate(heading, data[10], captured.SessionId, PlayerPositionUpdateHandler.ActionFlags.TORCH | PlayerPositionUpdateHandler.ActionFlags.TARGET_IN_VIEW, targetId), captured);
+            }
         }
 
         [Test]
-        public void HeadingUpdate_ShouldCarryTheTarget_WhereTheHandlerSkipsIt()
+        public void PositionUpdateWhileAttacking_ShouldMatchCapture()
         {
-            ClientPacket built = ClientPackets1127.HeadingUpdate(0x06D6, 100, 0x0101, PlayerPositionUpdateHandler.ActionFlags.TORCH, 0x1F0B);
+            CapturedPacket[] attacking = ClientCaptures.WhilePlaying(ClientCaptures.FIGHT, eClientPackets.PositionUpdate).Where(static p => (p.Data[35] & 0x80) != 0).ToArray();
+            Assert.That(attacking, Is.Not.Empty);
 
-            Assert.That(BinaryPrimitives.ReadUInt16BigEndian(built.Data.AsSpan(2)), Is.EqualTo(0x1F0B));
-            Assert.That(BinaryPrimitives.ReadUInt16BigEndian(built.Data.AsSpan(4)), Is.EqualTo(0x06D6));
+            foreach (CapturedPacket captured in attacking)
+            {
+                byte[] data = captured.Data;
+                Vector3 position = new(BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(0)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(4)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(8)));
+                ushort heading = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(30));
+                ushort targetId = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(22));
+                ushort zoneId = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(24));
+                PlayerPositionUpdateHandler.ActionFlags flags = PlayerPositionUpdateHandler.ActionFlags.TORCH | PlayerPositionUpdateHandler.ActionFlags.TARGET_IN_VIEW;
+                Assert.That(targetId, Is.Not.Zero);
+
+                // Data offsets 16-19 are the Z speed, which the Human's runs on sloped ground set and the Harness leaves at 0.
+                AssertMatches(ClientPackets1127.PositionUpdate(position, zoneId, heading, ClientCaptures.Speed(captured), data[35], captured.SessionId, 0, flags, targetId), captured, 16, 17, 18, 19);
+            }
         }
 
         [Test]

@@ -14,7 +14,7 @@ export const GOAL_LEVEL = 5;
 export const LEASH = 1500;
 
 /** Below this health percentage the Agent rests, up to `REST_UNTIL`. */
-export const REST_BELOW = 50;
+export const REST_BELOW = 80;
 export const REST_UNTIL = 90;
 
 /** The specialization every spec point goes into. A Guardian's training sword is a blade. */

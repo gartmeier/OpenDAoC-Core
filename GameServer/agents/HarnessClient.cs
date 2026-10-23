@@ -42,8 +42,9 @@ namespace DOL.GS.Agents
         private readonly PlayerCreateRequests _playerCreateRequests = new();
         // The heading of a heading update still in the inbound queue, which the server hasn't set on the Character yet.
         private ushort? _queuedHeading;
-        // What the client has selected, 0 for nothing.
+        // What the client has selected, 0 for nothing, and whether it's in attack mode.
         private ushort _targetId;
+        private bool _attacking;
         private AgentTrace _trace;
         private bool _mindLost;
 
@@ -185,6 +186,11 @@ namespace DOL.GS.Agents
                     _targetId = (ushort) target.ObjectId;
                     break;
                 }
+                case AttackPrimitive attack:
+                {
+                    _attacking = attack.On;
+                    break;
+                }
                 case CommandPrimitive command:
                 {
                     if (command.Text is not ['/', ..])
@@ -198,10 +204,11 @@ namespace DOL.GS.Agents
             {
                 QuitPrimitive => ClientPackets1127.Quit(),
                 SayPrimitive say => ClientPackets1127.Say(say.Text),
+                TargetPrimitive { ObjectId: 0 } => ClientPackets1127.ClearTarget(_attacking),
                 TargetPrimitive target => ClientPackets1127.Target((ushort) target.ObjectId),
                 AttackPrimitive attack => ClientPackets1127.AttackRequest(attack.On),
-                SitPrimitive => ClientPackets1127.SitRequest(true),
-                StandPrimitive => ClientPackets1127.SitRequest(false),
+                SitPrimitive => ClientPackets1127.Sit(),
+                StandPrimitive => ClientPackets1127.Stand(),
                 // The client sends `&` in place of the `/` the Human typed.
                 CommandPrimitive command => ClientPackets1127.Command($"&{command.Text[1..]}"),
                 _ => null
@@ -243,11 +250,19 @@ namespace DOL.GS.Agents
                     _movement.OnJump(jump);
                     break;
                 }
-                // The client forgets what it can't see any more, and its selection with it.
+                // The client forgets what it can't see any more, and its selection with it. When it was attacking it, as when it dies, the captured client also stops attacking and clears its target itself.
                 case ObjectDeletePercept delete when delete.ObjectId == _targetId:
                 case ObjectRemovePercept remove when remove.ObjectId == _targetId:
                 {
                     _targetId = 0;
+
+                    if (_attacking)
+                    {
+                        Enqueue(ClientPackets1127.AttackRequest(false, byClient: true));
+                        Enqueue(ClientPackets1127.ClearTarget(attacking: true));
+                        _attacking = false;
+                    }
+
                     break;
                 }
             }
@@ -255,6 +270,9 @@ namespace DOL.GS.Agents
 
         // What the client has selected, 0 for nothing. Its position and heading updates carry it.
         public ushort TargetId => _targetId;
+
+        // The health percentage the client's position and heading updates carry, with the top bit set while it's in attack mode, as captured.
+        public byte HealthByte => (byte) (Player.HealthPercent | (_attacking ? 0x80 : 0));
 
         // The flags the client's position and heading updates carry: as the server last read them, but with the target in view exactly while something is selected.
         // The server reads whether the target is in view from every update, and the Harness claims it always is (see `ClientPackets1127.Target`).
@@ -298,13 +316,13 @@ namespace DOL.GS.Agents
         {
             GamePlayer player = Player;
             PlayerPositionUpdateHandler.StateFlags stateFlags = player.IsSitting ? PlayerPositionUpdateHandler.StateFlags.SITTING : 0;
-            return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, _queuedHeading ?? player.Heading, 0, player.HealthPercent, SessionID, stateFlags, ActionFlags, _targetId);
+            return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, _queuedHeading ?? player.Heading, 0, HealthByte, SessionID, stateFlags, ActionFlags, _targetId);
         }
 
         // What a client turning on the spot tells the server, once it faces `heading` (0 to 4095).
         public ClientPacket HeadingUpdate(ushort heading)
         {
-            return ClientPackets1127.HeadingUpdate(heading, Player.HealthPercent, SessionID, ActionFlags, _targetId);
+            return ClientPackets1127.HeadingUpdate(heading, HealthByte, SessionID, ActionFlags, _targetId);
         }
 
         // Called by the client service on the game loop, where a real client's received bytes are processed.

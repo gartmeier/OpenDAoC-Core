@@ -164,9 +164,8 @@ namespace DOL.GS.Agents
         // A run that got to the end of a route that can't reach the target ends `Unreachable`.
         private void Send(RouteRun.Step step, long now, StopReason reason = StopReason.Stop)
         {
-            GamePlayer player = _client.Player;
             Vector3 position = step.Ended ? WholeUnits(step.Position) : step.Position;
-            _client.Enqueue(ClientPackets1127.PositionUpdate(position, step.ZoneId, (ushort) (step.Heading | HEADING_FLAG), step.Speed, player.HealthPercent, _client.SessionID, 0, _client.ActionFlags, _client.TargetId));
+            _client.Enqueue(ClientPackets1127.PositionUpdate(position, step.ZoneId, (ushort) (step.Heading | HEADING_FLAG), step.Speed, _client.HealthByte, _client.SessionID, 0, _client.ActionFlags, _client.TargetId));
             NextPositionUpdate(now);
 
             if (!step.Ended)
@@ -220,10 +219,12 @@ namespace DOL.GS.Agents
 
         ushort SessionID { get; }
 
-        // What the client has selected, 0 for nothing, and the action flags its position updates carry.
+        // What the client has selected, 0 for nothing, and the action flags and health byte its position updates carry.
         ushort TargetId { get; }
 
         PlayerPositionUpdateHandler.ActionFlags ActionFlags { get; }
+
+        byte HealthByte { get; }
 
         // Queues a packet for the next client tick, after those already queued.
         void Enqueue(ClientPacket packet);

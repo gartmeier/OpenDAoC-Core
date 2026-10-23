@@ -25,7 +25,10 @@ namespace DOL.GS.Tests
         // A Character logging in next to an Agent already in the world, and asking for its create.
         public const string LOGIN_NEXT_TO_AGENT = "login-next-to-agent";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT];
+        // A Character targeting a Mob, attacking it until it dies, sitting and standing.
+        public const string FIGHT = "target-attack-sit";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT];
 
         public static CapturedPacket[] Load(string capture)
         {
