@@ -176,6 +176,75 @@ namespace DOL.GS.Tests
             Assert.That(_client.Perceived.Last(), Is.EqualTo(new StoppedPercept(Corner.X, Corner.Y, Corner.Z, StopReason.Unreachable)));
         }
 
+        // A hut whose raised floor the navmesh doesn't join to its door: the floor is an island, a short step from the door's polygon.
+        [Test]
+        public void MoveTo_ShouldStepAcrossAShortGapAtADoor_IntoGroundTheRouteCantReach()
+        {
+            Vector3 door = new(31000, 30000, 2100);
+            Vector3 inside = new(31040, 30000, 2116);
+            Vector3 behind = new(31500, 29500, 2000);
+            _navmesh.Door = position => position == Target ? door : null;
+            _navmesh.Routes = asked => (asked.Start, asked.End) switch
+            {
+                (var from, var to) when from == Start && to == Target => [Start, behind],
+                (var from, var to) when from == Start && to == door => [Start, door],
+                (var from, var to) when from == Target && to == door => [Target, inside],
+                (var from, var to) when from == inside && to == Target => [inside, Target],
+                _ => [asked.Start]
+            };
+
+            _movement.MoveTo(Target, null, 0);
+            RunToTheEnd();
+
+            Assert.That(((RoutedPercept) _client.Perceived[0]).ReachesTarget, Is.True);
+            Assert.That(Corners(_client.Perceived[0]), Is.EqualTo(new[] { Start, door, inside, Target }));
+            Assert.That(_client.Perceived.Last(), Is.EqualTo(new ArrivedPercept(Target.X, Target.Y, Target.Z)));
+            Assert.That(_navmesh.Filters, Has.Some.EqualTo((EDtPolyFlags.Door, EDtPolyFlags.BlockingDoor | EDtPolyFlags.Swim | EDtPolyFlags.Jump | EDtPolyFlags.Disabled)));
+        }
+
+        // The other way round: the door belongs to the island, and the ground outside stops short of it.
+        [Test]
+        public void MoveTo_ShouldStepAcrossAShortGapBeforeADoor()
+        {
+            Vector3 door = new(31000, 30000, 2100);
+            Vector3 outside = new(30950, 30000, 2100);
+            _navmesh.Door = position => position == Target ? door : null;
+            _navmesh.Routes = asked => (asked.Start, asked.End) switch
+            {
+                (var from, var to) when from == Start && to == Target => [Start, outside],
+                (var from, var to) when from == Start && to == door => [Start, outside],
+                (var from, var to) when from == Target && to == door => [Target, door],
+                (var from, var to) when from == door && to == Target => [door, Target],
+                _ => [asked.Start]
+            };
+
+            _movement.MoveTo(Target, null, 0);
+
+            Assert.That(Corners(_client.Perceived[0]), Is.EqualTo(new[] { Start, outside, door, Target }));
+        }
+
+        // Further apart, the two sides aren't a doorway's step: the route ends as close as it could.
+        [Test]
+        public void MoveTo_ShouldNotStepAcrossAGapWiderThanADoorway()
+        {
+            Vector3 door = new(31000, 30000, 2100);
+            Vector3 inside = new(31070, 30000, 2116);
+            Vector3 behind = new(31500, 29500, 2000);
+            _navmesh.Door = position => position == Target ? door : null;
+            _navmesh.Routes = asked => (asked.Start, asked.End) switch
+            {
+                (var from, var to) when from == Start && to == Target => [Start, behind],
+                (var from, var to) when from == Start && to == door => [Start, door],
+                (var from, var to) when from == Target && to == door => [Target, inside],
+                _ => [asked.Start]
+            };
+
+            _movement.MoveTo(Target, null, 0);
+
+            Assert.That(((RoutedPercept) _client.Perceived[0]).ReachesTarget, Is.False);
+            Assert.That(Corners(_client.Perceived[0]), Is.EqualTo(new[] { Start, behind }));
+        }
+
         // Standing in deep water, say: the nearest walkable point is the shore.
         [Test]
         public void MoveTo_ShouldEndUnreachable_WhenTheNearestWalkablePointIsFarFromTheTarget()
@@ -454,6 +523,8 @@ namespace DOL.GS.Tests
             public Func<Asked, Vector3[]> Routes { get; set; } = static asked => [asked.Start, asked.End];
             public PathfindingStatus Status { get; set; } = PathfindingStatus.PathFound;
             public Func<Vector3, Vector3?> Walkable { get; set; } = static position => position;
+            // The door polygon nearest a position. None unless a test says so.
+            public Func<Vector3, Vector3?> Door { get; set; } = static _ => null;
             public Func<Vector3, float?> Floor { get; set; } = static _ => null;
             public List<Asked> Asked { get; } = [];
             // [include, exclude] of every query.
@@ -484,7 +555,7 @@ namespace DOL.GS.Tests
             public override Vector3? GetClosestPoint(Zone zone, Vector3 position, float xRange, float yRange, float zRange, EDtPolyFlags[] filters)
             {
                 Filters.Add((filters[0], filters[1]));
-                return Walkable(position);
+                return filters[0] is EDtPolyFlags.Door ? Door(position) : Walkable(position);
             }
 
             public override Vector3? GetClosestPointInBounds(Zone zone, Vector3 origin, Vector3 minOffset, Vector3 maxOffset, EDtPolyFlags[] filters)

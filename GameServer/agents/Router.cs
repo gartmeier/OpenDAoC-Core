@@ -9,6 +9,7 @@ namespace DOL.GS.Agents
     /// Works out the route a `moveTo` runs along, on the zones' navmeshes, as the Agent's client would if it had a map (ADR 0007).
     /// It uses only static knowledge (ADR 0006): routes go over walkable ground and through doors that open by clicking, which the navmesh marks the same open or closed, but never through blocking doors, water or jump links.
     /// The Agent walks through such a door even while it's closed: the server doesn't stop it, though a Human's client would until they clicked the door open.
+    /// Where the navmesh doesn't join a door to the ground on one side of it, as at the raised floor of a hut, the route steps across the gap in a straight line, if it's no wider than a doorway's step.
     /// Navmeshes are per zone, so a target in another zone is routed to a crossing on the zone border, as the server's NPC pathing does, and on from there in the next zone.
     /// In a zone without a navmesh the route goes on in a straight line.
     /// </summary>
@@ -17,6 +18,16 @@ namespace DOL.GS.Agents
         // [include, exclude]. The server marks a door that opens by clicking as a door whether it's open or closed, and only a closed door that doesn't as blocking (`LocalPathfindingMgr`).
         // So routes through doors don't depend on the state of any door that opens by clicking. One that doesn't, such as a keep door, is routed through only while it's open.
         private static readonly EDtPolyFlags[] _filters = [EDtPolyFlags.Walk | EDtPolyFlags.Door, EDtPolyFlags.BlockingDoor | EDtPolyFlags.Swim | EDtPolyFlags.Jump | EDtPolyFlags.Disabled];
+
+        // Only the doors among them.
+        private static readonly EDtPolyFlags[] _doorFilters = [EDtPolyFlags.Door, _filters[1]];
+
+        // How far from the end of a leg, in X and Y and in Z, to look for a door to step through when the leg can't get there.
+        private const float DOOR_RANGE = 512;
+        private const float DOOR_HEIGHT_RANGE = 256;
+
+        // The widest gap at a door the route steps across, in game units.
+        private const float DOOR_STEP = 64;
 
         // How far, in each direction, the nearest walkable point to the Character or the target may be.
         private const float WALKABLE_RANGE = 1024;
@@ -112,18 +123,59 @@ namespace DOL.GS.Agents
             return _pathfinding.GetClosestPointInBounds(zone, position, new(-3, -3, -FLOOR_RANGE), new(3, 3, FLOOR_RANGE), _filters)?.Z;
         }
 
-        // Adds the route through `zone` from `position` to `legEnd`, both in it. One query gives at most `MAX_POLY` corners, so a long route is worked out on from where each query got to.
-        // Returns whether it got to `legEnd`. Where a query gets no further, the route ends as close as it could.
+        // Adds the route through `zone` from `position` to `legEnd`, both in it, stepping through a door where the navmesh leaves a gap at it (see `TryDoorStep`).
+        // Returns whether it got to `legEnd`. Where it gets no further, the route ends as close as it could.
         private bool TryLeg(Zone zone, Vector3 position, Vector3 legEnd, List<Vector3> corners)
         {
             if (WalkableNear(zone, position, WALKABLE_RANGE, WALKABLE_RANGE) is not Vector3 from)
                 return false;
 
             Add(corners, from);
+            int start = corners.Count;
 
+            if (TryPath(zone, from, legEnd, corners))
+                return true;
+
+            List<Vector3> throughDoor = [from];
+
+            if (!TryDoorStep(zone, from, legEnd, throughDoor))
+                return false;
+
+            corners.RemoveRange(start, corners.Count - start);
+
+            foreach (Vector3 corner in throughDoor)
+                Add(corners, corner);
+
+            return true;
+        }
+
+        // Where the navmesh doesn't join a door to the ground on one side of it, a route can't get through. So the route goes from `from` towards the door nearest `legEnd`, and from `legEnd` back towards it.
+        // Where the two meet within `DOOR_STEP` of each other and of the door, it steps across in a straight line, as a Human's client walks through the doorway. A door is never stepped through anywhere else.
+        private bool TryDoorStep(Zone zone, Vector3 from, Vector3 legEnd, List<Vector3> corners)
+        {
+            if (_pathfinding.GetClosestPoint(zone, legEnd, DOOR_RANGE, DOOR_RANGE, DOOR_HEIGHT_RANGE, _doorFilters) is not Vector3 door)
+                return false;
+
+            List<Vector3> back = [legEnd];
+            TryPath(zone, legEnd, door, back);
+            Vector3 farSide = back[^1];
+            TryPath(zone, from, door, corners);
+            Vector3 nearSide = corners[^1];
+
+            if (Vector3.Distance(nearSide, farSide) > DOOR_STEP || Vector3.Distance(nearSide, door) > DOOR_STEP || Vector3.Distance(farSide, door) > DOOR_STEP)
+                return false;
+
+            Add(corners, farSide);
+            return TryPath(zone, farSide, legEnd, corners);
+        }
+
+        // Adds the navmesh's route from `from` to `to`, in one zone. One query gives at most `MAX_POLY` corners, so a long route is worked out on from where each query got to.
+        // Returns whether it got to `to`. Where a query gets no further, the route ends as close as it could.
+        private bool TryPath(Zone zone, Vector3 from, Vector3 to, List<Vector3> corners)
+        {
             for (int queries = 0; queries < MAX_QUERIES_PER_LEG; queries++)
             {
-                PathfindingResult result = _pathfinding.GetPathStraight(zone, from, legEnd, _filters, _nodes);
+                PathfindingResult result = _pathfinding.GetPathStraight(zone, from, to, _filters, _nodes);
 
                 if (result.Status is not (PathfindingStatus.PathFound or PathfindingStatus.PartialPathFound) || result.NodeCount == 0)
                     return false;
@@ -134,7 +186,7 @@ namespace DOL.GS.Agents
                 // The server's pathfinding reports a query cut short by the corner limit as found, so only where it ended says whether it got there.
                 Vector3 last = _nodes[result.NodeCount - 1].Position;
 
-                if (Vector3.Distance(last, legEnd) <= ARRIVED)
+                if (Vector3.Distance(last, to) <= ARRIVED)
                     return true;
 
                 if (Vector3.Distance(last, from) <= ARRIVED)

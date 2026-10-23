@@ -13,3 +13,4 @@ This is the one place where a Primitive does more than a client would. The route
 
 - A target the route can't reach ends the run with `stopped` and the reason `unreachable`, after running as far as the route gets.
 - The route goes through doors that open by clicking, open or closed, and never through blocking doors (ADR 0006).
+- Where the navmesh doesn't join a door to the ground on one side of it, as at the raised floor of Eira's hut in Connla, the route steps across the gap in a straight line if it's at most 64 units wide. It does so only at a door, where a Human's client walks through too, never through a wall.
