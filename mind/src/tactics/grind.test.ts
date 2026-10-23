@@ -3,7 +3,7 @@ import type { Percept } from "../protocol.ts";
 import { settle, TestAgent } from "../test-agent.ts";
 import { BACKPACK_SLOTS, SLOT } from "../inventory.ts";
 import { arrived, died, encumbrance, inventory, item, merchantWindow, money, npcCreate, objectRemove, objectUpdate, ownPosition, player, points, revived, skills, spec, status, stopped } from "../test-percepts.ts";
-import { grind, LEASH } from "./grind.ts";
+import { grind, WANDER } from "./grind.ts";
 import { BLADES, CONNLA_MARKET } from "./shop.ts";
 import { TRADE_TIMEOUT_MS } from "./trade.ts";
 
@@ -29,22 +29,32 @@ test("goes for the nearest Mob it can take on", async () => {
   expect(targeted(t)).toBe(0x102);
 });
 
-test("leaves alone what it shouldn't fight: peaceful, pets, other realms, the untargetable, Mobs that aren't blue to it, Mobs fighting someone else, and Mobs outside the leash", async () => {
+test("leaves alone what it shouldn't fight: peaceful, pets, other realms, the untargetable, Mobs that are neither blue nor yellow to it, and Mobs fighting someone else", async () => {
   const { t } = await grinding([
     npcCreate(0x101, "merchant", HOME.x + 100, HOME.y, HOME.z, { peaceful: true }),
     npcCreate(0x102, "pet", HOME.x + 110, HOME.y, HOME.z, { pet: true }),
     npcCreate(0x103, "guard", HOME.x + 120, HOME.y, HOME.z, { realm: "Hibernia" }),
     npcCreate(0x104, "statue", HOME.x + 130, HOME.y, HOME.z, { untargetable: true }),
     npcCreate(0x105, "bear", HOME.x + 140, HOME.y, HOME.z, { level: 3 }),
-    npcCreate(0x109, "boar", HOME.x + 141, HOME.y, HOME.z, { level: 2 }),
     npcCreate(0x10a, "rat", HOME.x + 142, HOME.y, HOME.z, { level: 0 }),
     npcCreate(0x106, "busy wolf", HOME.x + 150, HOME.y, HOME.z),
     objectUpdate(0x106, HOME.x + 150, HOME.y, HOME.z, { targetId: 999 }),
-    npcCreate(0x107, "distant wolf", HOME.x + LEASH + 10, HOME.y, HOME.z),
     npcCreate(0x108, "wolf", HOME.x + 1000, HOME.y, HOME.z),
   ]);
 
   expect(targeted(t)).toBe(0x108);
+});
+
+test("goes for a yellow Mob of its own level as well as a blue one", async () => {
+  const { t } = await grinding([npcCreate(0x101, "wolf", HOME.x + 900, HOME.y, HOME.z), npcCreate(0x102, "boar", HOME.x + 300, HOME.y, HOME.z, { level: 2 })]);
+
+  expect(targeted(t)).toBe(0x102);
+});
+
+test("goes for a Mob however far from home it is", async () => {
+  const { t } = await grinding([npcCreate(0x101, "wolf", HOME.x + 5000, HOME.y, HOME.z)]);
+
+  expect(targeted(t)).toBe(0x101);
 });
 
 test("fights back first against a Mob attacking it, however far and whatever it is", async () => {
@@ -118,14 +128,23 @@ test("fails with homeUnreachable when it can't get home after dying", async () =
   expect(await outcome).toEqual({ ok: false, reason: "homeUnreachable" });
 });
 
-test("with nothing to fight, runs to a random spot near home, and stops there as soon as a Mob shows up", async () => {
-  // Angle 0, and a quarter of the leash's area: half its radius.
+test("with nothing to fight, runs to a random spot near where it is, and stops there as soon as a Mob shows up", async () => {
+  // Angle 0, and a quarter of the wandering circle's area: half its radius.
   const { t } = await grinding([], [0, 0.25]);
-  expect(t.take()).toEqual([{ name: "moveTo", x: HOME.x + LEASH / 2, y: HOME.y, z: HOME.z }]);
+  expect(t.take()).toEqual([{ name: "moveTo", x: HOME.x + WANDER / 2, y: HOME.y, z: HOME.z }]);
 
   await t.perceive(npcCreate(0x101, "wolf", HOME.x + 700, HOME.y, HOME.z));
 
   expect(t.take().slice(0, 2)).toEqual([{ name: "stop" }, { name: "target", objectId: 0x101 }]);
+});
+
+test("wanders on from where it got to, not from home", async () => {
+  const { t } = await grinding([], [0, 0.25, 0, 0.25]);
+  t.take();
+
+  await t.perceive(arrived(HOME.x + WANDER / 2, HOME.y, HOME.z));
+
+  expect(t.take()).toEqual([{ name: "moveTo", x: HOME.x + WANDER, y: HOME.y, z: HOME.z }]);
 });
 
 test("doesn't go for a Mob again once it couldn't get to it", async () => {

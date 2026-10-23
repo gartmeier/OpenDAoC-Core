@@ -11,8 +11,8 @@ import { affordableLevel, train } from "./train.ts";
 /** The level the grind ends at. */
 export const GOAL_LEVEL = 5;
 
-/** How far from home, in game units, the Agent looks for Mobs and wanders. */
-export const LEASH = 1500;
+/** How far, in game units, the Agent wanders from where it is when it sees no Mob to fight. */
+export const WANDER = 1500;
 
 /** Below this health percentage the Agent rests, up to `REST_UNTIL`. */
 export const REST_BELOW = 80;
@@ -31,10 +31,10 @@ export const RELEASE_TIMEOUT_MS = 30_000;
 const HOPELESS = new Set(["unreachable", "noDamage"]);
 
 /**
- * Levels the Agent to `GOAL_LEVEL` around home, where it stands when the grind starts. Each step, in order:
+ * Levels the Agent to `GOAL_LEVEL`, wherever it finds Mobs. Home is where it stands when the grind starts, which it runs back to after dying and after shopping. Each step, in order:
  * if dead, it releases and runs home; it kills whatever attacks it; it trains the spec points it has;
  * it shops after a level-up, or when it carries `HEAVY` of its capacity or its backpack is full, running to Connla's market first unless both merchants are in view, and runs home; it rests when its health is low;
- * it kills the nearest Mob it can take on; and with none in view, it runs to a random spot near home.
+ * it kills the nearest Mob it can take on, however far from home; and with none in view, it runs to a random spot near where it is.
  * At the goal it says so, logs a summary and succeeds. It fails with `homeUnreachable` when it can't get home after dying, `notReleased` when releasing doesn't bring it back to life, and `noPosition` when it doesn't know where it is to start with.
  */
 export async function grind(agent: Agent): Promise<Outcome> {
@@ -51,7 +51,7 @@ export async function grind(agent: Agent): Promise<Outcome> {
   // The level it last shopped at, and what it carried right after: a shop that couldn't lighten the load isn't tried again for it until it picks up more.
   let shoppedAt = self.level;
   let carried: Load | undefined;
-  const target = () => nextMob(agent, home, hopeless);
+  const target = () => nextMob(agent, hopeless);
   const attacker = () => (self.objectId === undefined ? undefined : nearest(agent, surroundings.attacking(self.objectId)));
   const shopDue = () => self.level > shoppedAt || (loaded(agent) && (!carried || inventory.weight > carried.weight || inventory.backpack.length > carried.itemCount));
 
@@ -122,7 +122,7 @@ export async function grind(agent: Agent): Promise<Outcome> {
       continue;
     }
 
-    await wander(agent, home, () => self.dead || attacker() !== undefined || target() !== undefined || shopDue());
+    await wander(agent, () => self.dead || attacker() !== undefined || target() !== undefined || shopDue());
   }
 
   await agent.send({ name: "say", text: `I'm level ${GOAL_LEVEL} now.` });
@@ -131,10 +131,10 @@ export async function grind(agent: Agent): Promise<Outcome> {
 }
 
 /**
- * The nearest NPC within the leash that the Agent can take on: hostile, alive, fighting nobody else, and blue to it, one level below its own.
- * A yellow Mob, of its own level, killed a level 1 Agent from 84% health in the first acceptance run.
+ * The nearest NPC in view that the Agent can take on: hostile, alive, fighting nobody else, and blue or yellow to it, one level below its own or of its own level.
+ * A yellow Mob killed a level 1 Agent without gear from 84% health in milestone 4's first acceptance run. With gear, and blue Mobs alone too few to level on, yellow ones are back.
  */
-export function nextMob(agent: Agent, home: Position, hopeless: ReadonlySet<number>): KnownNpc | undefined {
+export function nextMob(agent: Agent, hopeless: ReadonlySet<number>): KnownNpc | undefined {
   const { self, surroundings } = agent;
   const mobs = surroundings.npcs.filter(
     (npc) =>
@@ -142,10 +142,9 @@ export function nextMob(agent: Agent, home: Position, hopeless: ReadonlySet<numb
       !npc.peaceful &&
       !npc.pet &&
       !npc.untargetable &&
-      npc.level === self.level - 1 &&
+      (npc.level === self.level - 1 || npc.level === self.level) &&
       npc.healthPercent > 0 &&
       (npc.targetId === 0 || npc.targetId === self.objectId) &&
-      distance(home, npc.position) <= LEASH &&
       !hopeless.has(npc.objectId),
   );
   return nearest(agent, mobs);
@@ -183,12 +182,17 @@ async function recover(agent: Agent, home: Position): Promise<Outcome> {
   return !back.ok && back.reason === "unreachable" ? failed("homeUnreachable") : succeeded;
 }
 
-/** Runs to a random spot within the leash of home, and stops as soon as there's something else to do. */
-async function wander(agent: Agent, home: Position, somethingElse: () => boolean): Promise<void> {
+/** Runs to a random spot within `WANDER` of where the Agent is, and stops as soon as there's something else to do. */
+async function wander(agent: Agent, somethingElse: () => boolean): Promise<void> {
+  const here = agent.self.position;
+
+  if (!here)
+    return;
+
   const angle = agent.random() * 2 * Math.PI;
   // Spread evenly over the circle, not bunched at its middle.
-  const radius = LEASH * Math.sqrt(agent.random());
-  const spot = { x: Math.round(home.x + radius * Math.cos(angle)), y: Math.round(home.y + radius * Math.sin(angle)), z: home.z };
+  const radius = WANDER * Math.sqrt(agent.random());
+  const spot = { x: Math.round(here.x + radius * Math.cos(angle)), y: Math.round(here.y + radius * Math.sin(angle)), z: here.z };
   const ended = await agent.sendAndWait({ name: "moveTo", ...spot }, (percept) => runEnd(percept) ?? (somethingElse() ? "interrupted" : undefined), RUN_TIMEOUT_MS);
 
   if (ended === "interrupted")
