@@ -11,7 +11,7 @@ The part of an Agent that lives outside the server and makes its decisions (see 
 The Mind prints every Percept to stdout, and status lines, every Primitive it sends and how each Tactic ended to stderr. Say these next to the Agent:
 
 - `come`: the Agent runs to where the speaker is, along a route on the navmesh, stops 100 units short of them and turns to face them. The Agent must be able to see the speaker.
-- `grind`: the Agent levels to 5 around where it stands, unattended. It fights hostile Mobs within a level of its own and within 1500 units, fights back first when attacked, rests below 80% health, puts every spec point into Blades with `/train`, and releases and runs back when it dies. At level 5 it says so, and the Mind prints a summary: time taken, kills, deaths, rests and Tactic failures.
+- `grind`: the Agent levels to 5 around where it stands, unattended. It fights hostile Mobs one level below its own (blue) within 1500 units, fights back first when attacked, rests below 80% health until full, puts every spec point into Blades with `/train`, and releases and runs back when it dies. At level 5 it says so, and the Mind prints a summary: time taken, kills, deaths, rests and Tactic failures.
 - `stop`: whatever the Agent is doing stops, and it stands still with attack off.
 
 A new `come` or `grind` replaces whatever the Agent was doing. Ctrl+C does what `stop` does, then makes the Agent quit through the normal quit path (the server refuses `/quit` while the Character moves), and the Mind exits once the server has disconnected it. A second Ctrl+C drops the connection instead, and the Character goes linkdead.

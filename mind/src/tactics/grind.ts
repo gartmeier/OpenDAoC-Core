@@ -15,7 +15,7 @@ export const LEASH = 1500;
 
 /** Below this health percentage the Agent rests, up to `REST_UNTIL`. */
 export const REST_BELOW = 80;
-export const REST_UNTIL = 90;
+export const REST_UNTIL = 100;
 
 /** The specialization every spec point goes into. A Guardian's training sword is a blade. */
 export const TRAIN_LINE = "Blades";
@@ -103,7 +103,10 @@ export async function grind(agent: Agent): Promise<Outcome> {
   return succeeded;
 }
 
-/** The nearest NPC within the leash that the Agent can take on: hostile, near its level, alive, and fighting nobody else. */
+/**
+ * The nearest NPC within the leash that the Agent can take on: hostile, alive, fighting nobody else, and blue to it, one level below its own.
+ * A yellow Mob, of its own level, killed a level 1 Agent from 84% health in the first acceptance run.
+ */
 export function nextMob(agent: Agent, home: Position, hopeless: ReadonlySet<number>): KnownNpc | undefined {
   const { self, surroundings } = agent;
   const mobs = surroundings.npcs.filter(
@@ -112,7 +115,7 @@ export function nextMob(agent: Agent, home: Position, hopeless: ReadonlySet<numb
       !npc.peaceful &&
       !npc.pet &&
       !npc.untargetable &&
-      Math.abs(npc.level - self.level) <= 1 &&
+      npc.level === self.level - 1 &&
       npc.healthPercent > 0 &&
       (npc.targetId === 0 || npc.targetId === self.objectId) &&
       distance(home, npc.position) <= LEASH &&

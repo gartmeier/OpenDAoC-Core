@@ -6,10 +6,10 @@ import { grind, LEASH } from "./grind.ts";
 
 const HOME = { x: 296000, y: 642000, z: 4848 };
 
-// A level 1 Greeen (object ID 17) at home with full health, Blades 1 and no spec points, and whatever else is around.
+// A level 2 Greeen (object ID 17) at home with full health, Blades 1 and no spec points, and whatever else is around. Level 1 Mobs, the default, are blue to him.
 async function grinding(around: Percept[] = [], random: number[] = []) {
   const t = new TestAgent(random);
-  await t.perceive(ownPosition(HOME.x, HOME.y, HOME.z), player(1), status(100), points(0), skills(spec("Blades", 1)), ...around);
+  await t.perceive(ownPosition(HOME.x, HOME.y, HOME.z), player(2), status(100), points(0), skills(spec("Blades", 1)), ...around);
   const outcome = t.agent.run(grind);
   await settle();
   return { t, outcome };
@@ -26,17 +26,19 @@ test("goes for the nearest Mob it can take on", async () => {
   expect(targeted(t)).toBe(0x102);
 });
 
-test("leaves alone what it shouldn't fight: peaceful, pets, other realms, the untargetable, Mobs far from its level, Mobs fighting someone else, and Mobs outside the leash", async () => {
+test("leaves alone what it shouldn't fight: peaceful, pets, other realms, the untargetable, Mobs that aren't blue to it, Mobs fighting someone else, and Mobs outside the leash", async () => {
   const { t } = await grinding([
     npcCreate(0x101, "merchant", HOME.x + 100, HOME.y, HOME.z, { peaceful: true }),
     npcCreate(0x102, "pet", HOME.x + 110, HOME.y, HOME.z, { pet: true }),
     npcCreate(0x103, "guard", HOME.x + 120, HOME.y, HOME.z, { realm: "Hibernia" }),
     npcCreate(0x104, "statue", HOME.x + 130, HOME.y, HOME.z, { untargetable: true }),
     npcCreate(0x105, "bear", HOME.x + 140, HOME.y, HOME.z, { level: 3 }),
+    npcCreate(0x109, "boar", HOME.x + 141, HOME.y, HOME.z, { level: 2 }),
+    npcCreate(0x10a, "rat", HOME.x + 142, HOME.y, HOME.z, { level: 0 }),
     npcCreate(0x106, "busy wolf", HOME.x + 150, HOME.y, HOME.z),
     objectUpdate(0x106, HOME.x + 150, HOME.y, HOME.z, { targetId: 999 }),
     npcCreate(0x107, "distant wolf", HOME.x + LEASH + 10, HOME.y, HOME.z),
-    npcCreate(0x108, "wolf", HOME.x + 1000, HOME.y, HOME.z, { level: 2 }),
+    npcCreate(0x108, "wolf", HOME.x + 1000, HOME.y, HOME.z),
   ]);
 
   expect(targeted(t)).toBe(0x108);
@@ -56,6 +58,23 @@ test("rests when its health is low and nothing attacks it", async () => {
   const { t } = await grinding([status(40)]);
 
   expect(t.take()).toEqual([{ name: "sit" }]);
+});
+
+test("rests below 80% health, and only stands at full health", async () => {
+  const { t } = await grinding([status(79)]);
+  expect(t.take()).toEqual([{ name: "sit" }]);
+
+  await t.perceive(status(99, { sitting: true }));
+  expect(t.take()).toEqual([]);
+
+  await t.perceive(status(100, { sitting: true }));
+  expect(t.take()[0]).toEqual({ name: "stand" });
+});
+
+test("doesn't rest at 80% health", async () => {
+  const { t } = await grinding([status(80)], [0, 0]);
+
+  expect(t.take().map((primitive) => primitive.name)).toEqual(["moveTo"]);
 });
 
 test("trains its spec points into Blades as far as they go", async () => {
