@@ -2,6 +2,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -345,6 +346,25 @@ namespace DOL.GS.Tests
             Assert.That(reason, Does.Contain("Another Mind has taken over"));
             newMind.Link.Close();
             await newMind.Link.Completion;
+        }
+
+        [Test]
+        public async Task Out_ShouldReleaseThePooledPacketsItIsHanded()
+        {
+            FakeMind mind = new();
+            using AgentTrace trace = new("Greeen", () => TextWriter.Null);
+            IPacketLib packetLib = HarnessPacketLib.Create(new HarnessClient(mind.Link), trace);
+            GSUDPPacketOut udp = new GSUDPPacketOut().Init((byte) eServerPackets.PlayerPosition);
+            GSTCPPacketOut tcp = new GSTCPPacketOut().Init((byte) eServerPackets.Message);
+            udp.IssuedTimestamp = 1;
+            tcp.IssuedTimestamp = 1;
+
+            packetLib.SendUDP(udp);
+            packetLib.SendTCP(tcp);
+
+            Assert.That(udp.IssuedTimestamp, Is.Zero);
+            Assert.That(tcp.IssuedTimestamp, Is.Zero);
+            await Close(mind);
         }
 
         // Every Harness client has a Mind. This one's link sends nowhere and is closed afterwards.

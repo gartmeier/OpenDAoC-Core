@@ -37,6 +37,13 @@ namespace DOL.GS.Agents
             if (targetMethod.Name is nameof(IPacketLib.SendPlayerQuit))
                 _client.OnPlayerQuit((bool) args[0]);
 
+            // A real client's `PacketProcessor` releases every pooled packet it's handed once sent. Nothing else does, and the pool warns about it next tick.
+            // Safe even when the packet was also handed to other clients: the pool only reuses it from the next tick on.
+            if (targetMethod.Name is nameof(IPacketLib.SendUDP) && args[0] is GSUDPPacketOut udpPacket)
+                udpPacket.ReleasePooledObject();
+            else if (targetMethod.Name is nameof(IPacketLib.SendTCP) && args[0] is GSTCPPacketOut tcpPacket)
+                tcpPacket.ReleasePooledObject();
+
             return targetMethod.Name switch
             {
                 // Animation IDs the server reads back, as every real packet library defines them (`PacketLib168`).
