@@ -149,13 +149,26 @@ namespace DOL.GS.Agents
             return true;
         }
 
-        // Where the navmesh doesn't join a door to the ground on one side of it, a route can't get through. So the route goes from `from` towards the door nearest `legEnd`, and from `legEnd` back towards it.
-        // Where the two meet within `DOOR_STEP` of each other and of the door, it steps across in a straight line, as a Human's client walks through the doorway. A door is never stepped through anywhere else.
+        // Where the navmesh doesn't join a door to the ground on one side of it, a route can't get through: into such ground at the door nearest `legEnd`, or out of it at the door nearest `from`.
+        // So the route goes from `from` towards that door, and from `legEnd` back towards it. Where the two meet within `DOOR_STEP` of each other and of the door, it steps across in a straight line, as a Human's client walks through the doorway.
+        // A door is never stepped through anywhere else.
         private bool TryDoorStep(Zone zone, Vector3 from, Vector3 legEnd, List<Vector3> corners)
         {
-            if (_pathfinding.GetClosestPoint(zone, legEnd, DOOR_RANGE, DOOR_RANGE, DOOR_HEIGHT_RANGE, _doorFilters) is not Vector3 door)
-                return false;
+            int start = corners.Count;
 
+            foreach (Vector3 near in new[] { legEnd, from })
+            {
+                if (_pathfinding.GetClosestPoint(zone, near, DOOR_RANGE, DOOR_RANGE, DOOR_HEIGHT_RANGE, _doorFilters) is Vector3 door && TryDoorStep(zone, from, legEnd, door, corners))
+                    return true;
+
+                corners.RemoveRange(start, corners.Count - start);
+            }
+
+            return false;
+        }
+
+        private bool TryDoorStep(Zone zone, Vector3 from, Vector3 legEnd, Vector3 door, List<Vector3> corners)
+        {
             List<Vector3> back = [legEnd];
             TryPath(zone, legEnd, door, back);
             Vector3 farSide = back[^1];

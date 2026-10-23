@@ -223,6 +223,29 @@ namespace DOL.GS.Tests
             Assert.That(Corners(_client.Perceived[0]), Is.EqualTo(new[] { Start, outside, door, Target }));
         }
 
+        // Leaving the hut: the gap is at the door nearest where the route starts, not where it goes.
+        [Test]
+        public void MoveTo_ShouldStepAcrossAShortGapAtADoor_OutOfGroundTheRouteCantLeave()
+        {
+            Vector3 door = new(30300, 30000, 2100);
+            Vector3 inside = new(30260, 30000, 2116);
+            Vector3 edge = new(30100, 29900, 2116);
+            _navmesh.Door = position => position == Start ? door : null;
+            _navmesh.Routes = asked => (asked.Start, asked.End) switch
+            {
+                (var from, var to) when from == Start && to == Target => [Start, edge],
+                (var from, var to) when from == Start && to == door => [Start, inside],
+                (var from, var to) when from == Target && to == door => [Target, door],
+                (var from, var to) when from == door && to == Target => [door, Target],
+                _ => [asked.Start]
+            };
+
+            _movement.MoveTo(Target, null, 0);
+
+            Assert.That(((RoutedPercept) _client.Perceived[0]).ReachesTarget, Is.True);
+            Assert.That(Corners(_client.Perceived[0]), Is.EqualTo(new[] { Start, inside, door, Target }));
+        }
+
         // Further apart, the two sides aren't a doorway's step: the route ends as close as it could.
         [Test]
         public void MoveTo_ShouldNotStepAcrossAGapWiderThanADoorway()
