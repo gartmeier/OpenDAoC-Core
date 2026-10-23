@@ -27,6 +27,13 @@ namespace DOL.GS.Agents
         // The fields `PlayerPositionUpdateHandler.CreateOutPak1127` writes.
         private const int PLAYER_POSITION_1127_LENGTH = 40;
 
+        // `PacketLib168.MAX_PACKET_LENGTH`, and the most lines `PacketLib168.WriteCustomTextWindowData` writes.
+        private const int MAX_PACKET_LENGTH = 2048;
+        private const int MAX_TEXT_LINES = 200;
+
+        // `PacketLib189.MAX_NAME_LENGTH`, where an item's name is cut off.
+        private const int MAX_ITEM_NAME_LENGTH = 55;
+
         // Returns null for a call that tells the client nothing. `client` is the Agent's client, whose state decides what the packet library sends.
         public static Percept Project(GameClient client, MethodInfo method, object[] args)
         {
@@ -51,6 +58,12 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendUpdatePlayerSkills) => Skills(client, (bool) args[0]),
                 nameof(IPacketLib.SendPlayerDied) => Died((GamePlayer) args[0], (GameObject) args[1]),
                 nameof(IPacketLib.SendPlayerRevive) => Revived((GamePlayer) args[0]),
+                nameof(IPacketLib.SendInventorySlotsUpdate) => InventorySlots(client, eInventoryWindowType.Update, (List<eInventorySlot>) args[0]),
+                nameof(IPacketLib.SendInventoryItemsUpdate) => InventoryItems(client, method, args),
+                nameof(IPacketLib.SendEncumbrance) => Encumbrance(client),
+                nameof(IPacketLib.SendUpdateMoney) => Money(client),
+                nameof(IPacketLib.SendCustomTextWindow) => Examined((string) args[0], (IList<string>) args[1]),
+                nameof(IPacketLib.SendMerchantWindow) => MerchantWindow(client, (MerchantTradeItems) args[0], (eMerchantWindowType) args[1]),
                 nameof(IPacketLib.SendUDP) => RawPacket(method.Name, (PacketOut) args[0], UDP_HEADER_LENGTH),
                 nameof(IPacketLib.SendTCP) => RawPacket(method.Name, (PacketOut) args[0], TCP_HEADER_LENGTH),
                 _ => new BarePercept(method.Name)
@@ -497,6 +510,273 @@ namespace DOL.GS.Agents
         private static RevivedPercept Revived(GamePlayer revived)
         {
             return revived == null ? null : new RevivedPercept(revived.ObjectID);
+        }
+
+        // Mirrors the three `SendInventoryItemsUpdate` overloads: `PacketLib168`'s two with a list of items, which send the slots the items are in, and `PacketLib189`'s with the slots the client numbers them by.
+        // The library splits a long update over several packets. The Mind gets it as one.
+        private static InventoryPercept InventoryItems(GameClient client, MethodInfo method, object[] args)
+        {
+            ParameterInfo[] parameters = method.GetParameters();
+
+            if (parameters[0].ParameterType == typeof(IDictionary<int, DbInventoryItem>))
+                return client.Player == null ? null : InventoryPercept((eInventoryWindowType) args[1], ((IDictionary<int, DbInventoryItem>) args[0] ?? new Dictionary<int, DbInventoryItem>()).Select(static entry => (entry.Key, entry.Value)));
+
+            (eInventoryWindowType window, List<DbInventoryItem> items) = parameters.Length == 1 ? (eInventoryWindowType.Update, (List<DbInventoryItem>) args[0]) : ((eInventoryWindowType) args[0], (List<DbInventoryItem>) args[1]);
+            return InventorySlots(client, window, items?.Where(static item => item != null).Select(static item => (eInventorySlot) item.SlotPosition).ToList() ?? []);
+        }
+
+        // Mirrors `PacketLib189.SendInventorySlotsUpdateRange`, which every inventory update by slot ends in: each slot with whatever the Character has in it now.
+        private static InventoryPercept InventorySlots(GameClient client, eInventoryWindowType window, List<eInventorySlot> slots)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return InventoryPercept(window, (slots ?? []).Select(slot =>
+            {
+                // A consignment merchant's slots go as the housing ones they stand for.
+                int clientSlot = slot is >= eInventorySlot.Consignment_First and <= eInventorySlot.Consignment_Last ? slot - eInventorySlot.Consignment_First + (int) eInventorySlot.HousingInventory_First : (int) slot;
+                return (clientSlot, player.Inventory.GetItem(slot));
+            }));
+        }
+
+        // The packet carries each slot in a byte.
+        private static InventoryPercept InventoryPercept(eInventoryWindowType window, IEnumerable<(int Slot, DbInventoryItem Item)> slots)
+        {
+            return new(window, slots.Select(static slot => new InventorySlot((byte) slot.Slot, slot.Item == null ? null : InventoryItem(slot.Item))).ToArray());
+        }
+
+        // Mirrors `PacketLib1124.WriteItemData`, which 1.125 to 1.127 don't override. An empty slot is 24 bytes of 0.
+        public static InventoryItem InventoryItem(DbInventoryItem item)
+        {
+            // Two value fields whose meaning depends on the object type.
+            (int value1, int value2) = (eObjectType) item.Object_Type switch
+            {
+                eObjectType.GenericItem => (item.Count & 0xFF, item.Count >> 8 & 0xFF),
+                eObjectType.Arrow or eObjectType.Bolt or eObjectType.Poison => (item.Count, item.SPD_ABS),
+                eObjectType.Thrown => (item.DPS_AF, item.Count),
+                eObjectType.Instrument => (item.DPS_AF == 2 ? 0 : item.DPS_AF, 0),
+                eObjectType.Shield => (item.Type_Damage, item.DPS_AF),
+                eObjectType.AlchemyTincture or eObjectType.SpellcraftGem => (0, 0),
+                eObjectType.HouseWallObject or eObjectType.HouseFloorObject or eObjectType.GardenObject => (0, item.SPD_ABS),
+                _ => (item.DPS_AF, item.SPD_ABS)
+            };
+            (value1, value2) = ((byte) value1, (byte) value2);
+
+            // As the client reads them back.
+            (int dpsAf, int speedAbs, int count) = (eObjectType) item.Object_Type switch
+            {
+                eObjectType.GenericItem => (0, 0, value1 | value2 << 8),
+                eObjectType.Arrow or eObjectType.Bolt or eObjectType.Poison => (0, value2, value1),
+                eObjectType.Thrown => (value1, 0, value2),
+                // The first is the shield's size, which the damage type carries too.
+                eObjectType.Shield => (value2, 0, 1),
+                _ => (value1, value2, 1)
+            };
+
+            int hand = item.Object_Type == (int) eObjectType.GardenObject ? 0 : (byte) (item.Hand << 6) >> 6;
+            byte damageAndObjectType = (byte) ((item.Type_Damage > 3 ? 0 : item.Type_Damage << 6) | item.Object_Type);
+            List<string> spellNames = [];
+
+            if ((eObjectType) item.Object_Type is not eObjectType.AlchemyTincture)
+            {
+                foreach (int spellId in new[] { item.SpellID, item.SpellID1 })
+                {
+                    if (spellId > 0 && SkillBase.GetSpellByID(spellId) is Spell spell)
+                        spellNames.Add(Encoded(spell.Name));
+                }
+            }
+
+            string name = item.Name;
+
+            if (item.Count > 1)
+                name = item.Count + " " + name;
+
+            if (item.SellPrice > 0)
+                name += ServerProperties.Properties.CONSIGNMENT_USE_BP ? $"[{item.SellPrice} BP]" : $"[{GS.Money.GetString(item.SellPrice)}]";
+
+            name = Encoded(name);
+
+            if (name.Length > MAX_ITEM_NAME_LENGTH)
+                name = name[..MAX_ITEM_NAME_LENGTH];
+
+            return new InventoryItem(
+                Name: name,
+                Level: (byte) item.Level,
+                DpsAf: dpsAf,
+                SpeedAbs: speedAbs,
+                Count: count,
+                Hand: hand,
+                DamageType: damageAndObjectType >> 6,
+                ObjectType: damageAndObjectType & 0x3F,
+                Weight: (ushort) item.Weight,
+                Condition: item.ConditionPercent,
+                Durability: item.DurabilityPercent,
+                Quality: (byte) item.Quality,
+                Bonus: (byte) item.Bonus,
+                BonusLevel: (byte) item.BonusLevel,
+                Model: (ushort) item.Model,
+                Color: item.Emblem != 0 ? (ushort) item.Emblem : (ushort) item.Color,
+                Effect: (ushort) item.Effect,
+                SpellNames: spellNames.ToArray());
+        }
+
+        // Mirrors `PacketLib168.SendEncumbrance`, which no later library overrides. Both are in pounds.
+        private static EncumbrancePercept Encumbrance(GameClient client)
+        {
+            GamePlayer player = client.Player;
+            return player == null ? null : new EncumbrancePercept((ushort) player.MaxCarryingCapacity, (ushort) player.Inventory.InventoryWeight);
+        }
+
+        // Mirrors `PacketLib168.SendUpdateMoney`, which no later library overrides.
+        private static MoneyPercept Money(GameClient client)
+        {
+            GamePlayer player = client.Player;
+            return player == null ? null : new MoneyPercept((byte) player.Copper, (byte) player.Silver, (ushort) player.Gold, (ushort) player.Mithril, (ushort) player.Platinum);
+        }
+
+        // Mirrors `PacketLib181.SendCustomTextWindow`, which no later library overrides, and the `PacketLib168.WriteCustomTextWindowData` it calls.
+        // The packet ends where the library runs out of room in it, so the text does too.
+        private static ExaminedPercept Examined(string caption, IList<string> text)
+        {
+            if (text == null)
+                return null;
+
+            caption = Encoded(caption);
+
+            if (caption.Length > byte.MaxValue)
+                caption = caption[..byte.MaxValue];
+
+            // The header, two flags and the caption's length and characters.
+            int position = TCP_HEADER_LENGTH + 2 + 1 + caption.Length;
+            List<string> lines = [];
+
+            foreach (string line in text)
+            {
+                if (line == null)
+                    continue;
+
+                // A line's number, its length, one character and the packet's trailing 0.
+                if (position + 4 > MAX_PACKET_LENGTH)
+                    break;
+
+                position++;
+                string rest = Encoded(line);
+                bool full = false;
+
+                while (rest.Length > byte.MaxValue)
+                {
+                    string part = rest[..byte.MaxValue];
+
+                    if (position + part.Length + 2 > MAX_PACKET_LENGTH)
+                    {
+                        full = true;
+                        break;
+                    }
+
+                    lines.Add(part);
+                    position += 1 + part.Length;
+                    rest = rest[byte.MaxValue..];
+
+                    if (lines.Count >= MAX_TEXT_LINES || position + Math.Min(byte.MaxValue, rest.Length) + 2 >= MAX_PACKET_LENGTH)
+                        return new ExaminedPercept(caption, lines.ToArray());
+
+                    position++;
+                }
+
+                if (position + rest.Length + 2 > MAX_PACKET_LENGTH)
+                {
+                    rest = rest[..Math.Max(Math.Min(1, rest.Length), MAX_PACKET_LENGTH - position - 2)];
+                    full = true;
+                }
+
+                lines.Add(rest);
+                position += 1 + rest.Length;
+
+                if (full || lines.Count >= MAX_TEXT_LINES)
+                    break;
+            }
+
+            return new ExaminedPercept(caption, lines.ToArray());
+        }
+
+        // Mirrors `PacketLib1125.SendMerchantWindow`, which 1.126 and 1.127 don't override: one packet per page that has items.
+        private static MerchantWindowPercept MerchantWindow(GameClient client, MerchantTradeItems tradeItems, eMerchantWindowType window)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            List<MerchantItem> items = [];
+
+            for (int page = 0; tradeItems != null && page < MerchantTradeItems.MAX_PAGES_IN_TRADEWINDOWS; page++)
+            {
+                System.Collections.IDictionary itemsInPage = tradeItems.GetItemsInPage(page);
+
+                if (itemsInPage == null || itemsInPage.Count == 0)
+                    continue;
+
+                List<MerchantItem> pageItems = [];
+
+                for (int place = 0; place < MerchantTradeItems.MAX_ITEM_IN_TRADEWINDOWS; place++)
+                {
+                    if (!itemsInPage.Contains(place))
+                        continue;
+
+                    // The library gives up on the rest of the window, this page included, at an item it can't find.
+                    if (itemsInPage[place] is not DbItemTemplate item)
+                        return new MerchantWindowPercept(window, items.ToArray());
+
+                    pageItems.Add(MerchantItem(player, page, place, item));
+                }
+
+                items.AddRange(pageItems);
+            }
+
+            return new MerchantWindowPercept(window, items.ToArray());
+        }
+
+        private static MerchantItem MerchantItem(GamePlayer player, int page, int place, DbItemTemplate item)
+        {
+            // The first value field, then the second, which the packet carries later in 16 bits.
+            (int value1, int value2) = (eObjectType) item.Object_Type switch
+            {
+                eObjectType.Arrow or eObjectType.Bolt or eObjectType.Poison or eObjectType.GenericItem => (item.PackSize, item.PackSize * item.Weight),
+                eObjectType.Thrown => (item.DPS_AF, item.PackSize),
+                eObjectType.Shield => (item.Type_Damage, item.Weight),
+                eObjectType.GardenObject => (0, item.Weight),
+                _ => (item.DPS_AF, item.Weight)
+            };
+            (value1, value2) = ((byte) value1, (ushort) value2);
+
+            // As the client reads them back. A shield's first value is its size, which the damage type carries too.
+            (int dpsAf, int count, int weight) = (eObjectType) item.Object_Type switch
+            {
+                eObjectType.Arrow or eObjectType.Bolt or eObjectType.Poison or eObjectType.GenericItem => (0, value1, value2),
+                eObjectType.Thrown => (value1, value2, 0),
+                eObjectType.Shield or eObjectType.GardenObject => (0, 1, value2),
+                _ => (value1, 1, value2)
+            };
+
+            byte damageAndObjectType = (byte) (item.Type_Damage << 6 | item.Object_Type);
+
+            return new MerchantItem(
+                Page: (byte) page,
+                Place: (byte) place,
+                Level: (byte) item.Level,
+                DpsAf: dpsAf,
+                SpeedAbs: (byte) item.SPD_ABS,
+                Count: count,
+                Hand: item.Object_Type == (int) eObjectType.GardenObject ? 0 : (byte) (item.Hand << 6) >> 6,
+                DamageType: damageAndObjectType >> 6,
+                ObjectType: damageAndObjectType & 0x3F,
+                Usable: player.HasAbilityToUseItem(item),
+                Weight: weight,
+                Price: (uint) item.Price,
+                Model: (ushort) item.Model,
+                Name: Encoded(item.Name));
         }
 
         // A packet the server built itself (ADR 0001). Only the 1.127 player position is decoded, mirroring `PlayerPositionUpdateHandler.CreateOutPak1127`.

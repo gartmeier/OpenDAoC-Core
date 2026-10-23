@@ -189,3 +189,19 @@ Acceptance: `shop` gears Greeen up in Connla, and from `/player level 1` the Gri
 - **Milestone ladder:**
   - 1 login and logout (done) → 2 Mind connection (done) → 3 movement (done) → 3b terrain and pathing (done) → 4 hand-written grind (done) → **4b inventory and gear (this spec)** → 5 a coding agent plays (ADR 0009).
   - After 5: styles and spells, character creation and groups, as the coding agent turns out to need them.
+
+## Comments
+
+**2026-10-23 (agent):** Implemented, not yet tested in game. Where it differs from or adds to the spec above:
+
+- **The item and merchant requests aren't captured yet.** The Human still has to record the capture listed under Implementation Decisions. Until then the seven builders follow their handlers' read logic, checked by tests that read them back as the handlers do, and the fixtures README lists what each one writes. Where a handler reads a field it doesn't use, the Harness writes the session ID or the client's X and Y. Then add golden-byte tests and correct the builders if the bytes differ.
+- **The 80% weight risk is gone.** `GamePlayer.UpdateEncumbrance` sends the encumbrance whenever the weight carried or the capacity changes, not only above capacity.
+- **An item's weight is the whole stack's,** in tenths of a pound, as the server's item has it. Encumbrance is in pounds.
+- **`count` comes from the packet only where it carries one** (generic items, arrows, bolts, poisons, thrown weapons), and is 1 otherwise. Any stack of more than one also has its count in front of its name.
+- **Which merchant a window is from** isn't in the packet. The Inventory takes it from the last `talkTo` sent, and stops counting the window as one to trade in once the Agent targets something else or the merchant goes out of view, because buying and selling go to the client's target.
+- **`talkTo` is a porcelain Tactic too**, which `buy` and `sell` share: it gets within reach and opens the merchant's window, failing with `outOfView`, `tooFar` or `timeout`.
+- **`shop` buys only one-handed blades,** since it puts the blade in the right hand. A sale, purchase or equip that fails is logged and skipped, and `shop` still succeeds.
+- **The Grind shops for its load only once it has picked up more** since it last shopped, so a backpack the merchant won't buy from doesn't send it shopping on every step. It shops after a level-up whatever happened at the last shop.
+- **The Grind doesn't run to Connla.** As the spec says, `shop` fails with `outOfView` when a merchant isn't in view, so the hunting spot must be within view of Eira and Erskine. The summary now counts shops too.
+- **`moveItem` goes between the Character's own slots only,** 1 (the ground) to 99 (the horse's bags). The Harness refuses the paper doll (100) and anything above 1000, which would give the item to another object.
+- **`shop` fails with `attacked`** before its next trade once something attacks the Agent, so that in the Grind fights still come first.

@@ -2,6 +2,14 @@
 import type {
   ArrivedPercept,
   DiedPercept,
+  EncumbrancePercept,
+  ExaminedPercept,
+  InventoryItem,
+  InventoryPercept,
+  InventorySlot,
+  MerchantItem,
+  MerchantWindowPercept,
+  MoneyPercept,
   NpcCreatePercept,
   ObjectDeletePercept,
   ObjectRemovePercept,
@@ -204,4 +212,66 @@ export function arrived(x: number, y: number, z: number): ArrivedPercept {
 
 export function stopped(x: number, y: number, z: number, reason: StopReason): StoppedPercept {
   return { kind: "stopped", x, y, z, reason };
+}
+
+/** The server's `eObjectType` for an item that's none of the others. */
+export const GENERIC_ITEM = 0;
+
+/** A level 1 generic item of quality 100 in good condition, unless `fields` say otherwise. */
+export function item(name: string, fields: Partial<InventoryItem> = {}): InventoryItem {
+  return {
+    name,
+    level: 1,
+    dpsAf: 0,
+    speedAbs: 0,
+    count: 1,
+    hand: 0,
+    damageType: 0,
+    objectType: GENERIC_ITEM,
+    weight: 10,
+    condition: 100,
+    durability: 100,
+    quality: 100,
+    bonus: 0,
+    bonusLevel: 0,
+    model: 0,
+    color: 0,
+    effect: 0,
+    spellNames: [],
+    ...fields,
+  };
+}
+
+/** Each slot with the item now in it, or empty without one. */
+export function inventory(...slots: [number, InventoryItem?][]): InventoryPercept {
+  return { kind: "inventory", window: "Update", slots: slots.map(([slot, item]): InventorySlot => (item ? { slot, item } : { slot })) };
+}
+
+/** `copper` split into coins, as the server sends it. */
+export function money(copper: number): MoneyPercept {
+  return {
+    kind: "money",
+    copper: copper % 100,
+    silver: Math.floor(copper / 100) % 100,
+    gold: Math.floor(copper / 10_000) % 1000,
+    mithril: Math.floor(copper / 10_000_000) % 1000,
+    platinum: Math.floor(copper / 10_000_000_000),
+  };
+}
+
+export function encumbrance(capacity: number, weight: number): EncumbrancePercept {
+  return { kind: "encumbrance", capacity, weight };
+}
+
+export function examined(caption: string, ...lines: string[]): ExaminedPercept {
+  return { kind: "examined", caption, lines };
+}
+
+export function merchantWindow(...items: MerchantItem[]): MerchantWindowPercept {
+  return { kind: "merchantWindow", window: "Normal", items };
+}
+
+/** A level 1 item the Agent's class can use, on the first page, unless `fields` say otherwise. */
+export function merchantItem(place: number, name: string, price: number, fields: Partial<MerchantItem> = {}): MerchantItem {
+  return { page: 0, place, level: 1, dpsAf: 0, speedAbs: 0, count: 1, hand: 0, damageType: 0, objectType: GENERIC_ITEM, usable: true, weight: 10, price, model: 0, name, ...fields };
 }

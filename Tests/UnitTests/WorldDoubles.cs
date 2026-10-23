@@ -74,6 +74,17 @@ namespace DOL.GS.Tests
             return player;
         }
 
+        // Gives the player an inventory that holds what a test puts in it.
+        public static TestInventory Inventory(TestPlayer player)
+        {
+            if (player.Inventory is TestInventory inventory)
+                return inventory;
+
+            IGameInventory proxy = DispatchProxy.Create<IGameInventory, TestInventory>();
+            player.Inventory = proxy;
+            return (TestInventory) proxy;
+        }
+
         public static TestNpc Npc(string name)
         {
             TestNpc npc = (TestNpc) RuntimeHelpers.GetUninitializedObject(typeof(TestNpc));
@@ -190,6 +201,25 @@ namespace DOL.GS.Tests
             return Modified.GetValueOrDefault(property);
         }
 
+        // No buffs or debuffs: the base is what's modified.
+        public override int GetModifiedBase(eProperty property)
+        {
+            return Modified.GetValueOrDefault(property);
+        }
+
+        // What the money packet reads, all 0 unless a test sets them.
+        public int TestCopper { get; set; }
+        public int TestSilver { get; set; }
+        public int TestGold { get; set; }
+        public int TestMithril { get; set; }
+        public int TestPlatinum { get; set; }
+
+        public override int Copper { get => TestCopper; protected set => TestCopper = value; }
+        public override int Silver { get => TestSilver; protected set => TestSilver = value; }
+        public override int Gold { get => TestGold; protected set => TestGold = value; }
+        public override int Mithril { get => TestMithril; protected set => TestMithril = value; }
+        public override int Platinum { get => TestPlatinum; protected set => TestPlatinum = value; }
+
         public bool Wireframe
         {
             set => typeof(GamePlayer).GetField("m_isWireframe", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, value);
@@ -224,6 +254,9 @@ namespace DOL.GS.Tests
             m_customFaceAttributes = new byte[(int) eCharFacePart._Last + 1];
             movementComponent = new PlayerMovementComponent(this);
             Modified = [];
+            // No abilities, but the lock the constructor would have made to look them up.
+            typeof(GameLiving).GetField("_abilitiesLock", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new System.Threading.Lock());
+            m_abilities = [];
             Alive = true;
             Visible = true;
         }
@@ -333,6 +366,26 @@ namespace DOL.GS.Tests
         private void SetComponentProperty(string name, object value)
         {
             typeof(NpcMovementComponent).GetProperty(name).SetValue(movementComponent, value);
+        }
+    }
+
+    /// <summary>
+    /// A player's inventory that holds what a test puts in it (see <see cref="WorldDoubles.Inventory"/>). Every other member throws.
+    /// </summary>
+    public class TestInventory : DispatchProxy
+    {
+        public Dictionary<eInventorySlot, DbInventoryItem> Items { get; } = [];
+        // In pounds, as the server works it out.
+        public int Weight { get; set; }
+
+        protected override object Invoke(MethodInfo targetMethod, object[] args)
+        {
+            return targetMethod.Name switch
+            {
+                nameof(IGameInventory.GetItem) => Items.GetValueOrDefault((eInventorySlot) args[0]),
+                "get_" + nameof(IGameInventory.InventoryWeight) => Weight,
+                _ => throw new NotSupportedException(targetMethod.Name)
+            };
         }
     }
 }

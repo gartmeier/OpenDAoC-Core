@@ -315,6 +315,101 @@ namespace DOL.GS.Tests
             Assert.That(packet.ReadShortLowEndian(), Is.EqualTo(0x1234));
         }
 
+        // Not captured yet: the item and merchant requests follow their handlers until they are.
+        [Test]
+        public void MoveItem_ShouldCarryTheSlotsAndCountAsTheHandlerReadsThem()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.MoveItem(0x0101, 41, 10, 0));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.PlayerMoveItem));
+            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
+            Assert.That(packet.ReadShort(), Is.EqualTo(10), "to");
+            Assert.That(packet.ReadShort(), Is.EqualTo(41), "from");
+            Assert.That(packet.ReadShort(), Is.Zero, "count");
+        }
+
+        [Test]
+        public void Examine_ShouldAskForTheInventoryItemsDetailsAsTheHandlerReadsThem()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.Examine(41));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.DetailRequest));
+            Assert.That(packet.ReadShort(), Is.EqualTo(1), "object type: inventory item");
+            Assert.That(packet.ReadInt(), Is.Zero, "extra ID");
+            Assert.That(packet.ReadShort(), Is.EqualTo(41), "slot");
+        }
+
+        [Test]
+        public void ExamineMerchantItem_ShouldAskForTheMerchantItemsDetailsAsTheHandlerReadsThem()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.ExamineMerchantItem(31));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.DetailRequest));
+            Assert.That(packet.ReadShort(), Is.EqualTo(4), "object type: merchant item");
+            Assert.That(packet.ReadInt(), Is.Zero, "extra ID");
+            Assert.That(packet.ReadShort(), Is.EqualTo(31), "index");
+        }
+
+        [Test]
+        public void PickUpRequest_ShouldCarryThePositionAndObjectAsTheHandlerReadsThem()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.PickUpRequest(296516, 641415, 0x0101, 0x1F0B));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.PickUpRequest));
+            Assert.That(packet.ReadInt(), Is.EqualTo(296516));
+            Assert.That(packet.ReadInt(), Is.EqualTo(641415));
+            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
+            Assert.That(packet.ReadShort(), Is.EqualTo(0x1F0B));
+        }
+
+        [Test]
+        public void DestroyItemRequest_ShouldCarryTheSlotAsTheHandlerReadsIt()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.DestroyItemRequest(41));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.DestroyItemRequest));
+            packet.Skip(4);
+            Assert.That(packet.ReadShort(), Is.EqualTo(41));
+        }
+
+        [Test]
+        public void InteractRequest_ShouldCarryThePositionAndObjectAsTheHandlerReadsThem()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.InteractRequest(296516, 641415, 0x0101, 0x1F0B));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.ObjectInteractRequest));
+            Assert.That(packet.ReadInt(), Is.EqualTo(296516));
+            Assert.That(packet.ReadInt(), Is.EqualTo(641415));
+            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
+            Assert.That(packet.ReadShort(), Is.EqualTo(0x1F0B));
+        }
+
+        [Test]
+        public void BuyRequest_ShouldCarryTheIndexCountAndWindowAsTheHandlerReadsThem()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.BuyRequest(296516, 641415, 0x0101, 31, 2));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.BuyRequest));
+            Assert.That(packet.ReadInt(), Is.EqualTo(296516));
+            Assert.That(packet.ReadInt(), Is.EqualTo(641415));
+            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
+            Assert.That(packet.ReadShort(), Is.EqualTo(31), "index");
+            Assert.That(packet.ReadByte(), Is.EqualTo(2), "count");
+            Assert.That(packet.ReadByte(), Is.EqualTo((int) eMerchantWindowType.Normal), "window");
+        }
+
+        [Test]
+        public void SellRequest_ShouldCarryTheSlotAsTheHandlerReadsIt()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.SellRequest(296516, 641415, 0x0101, 41));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.SellRequest));
+            Assert.That(packet.ReadInt(), Is.EqualTo(296516));
+            Assert.That(packet.ReadInt(), Is.EqualTo(641415));
+            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
+            Assert.That(packet.ReadShort(), Is.EqualTo(41));
+        }
+
         [TestCase(100, 0x00)]
         [TestCase(109, 0x09)]
         [TestCase(200, 0x0A)]

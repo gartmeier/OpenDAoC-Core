@@ -6,9 +6,9 @@ import type { Percept } from "./protocol.ts";
 const SAY_LINE = /^(.+?) says, "(.+)"$/;
 
 /** What a Human can tell the Agent by saying it next to it. */
-export type CommandWord = "come" | "grind" | "stop";
+export type CommandWord = "come" | "grind" | "shop" | "stop";
 
-const WORDS: readonly string[] = ["come", "grind", "stop"] satisfies CommandWord[];
+const WORDS: readonly string[] = ["come", "grind", "shop", "stop"] satisfies CommandWord[];
 
 export interface Command {
   readonly speaker: string;

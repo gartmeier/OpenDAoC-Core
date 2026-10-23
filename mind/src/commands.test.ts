@@ -5,6 +5,7 @@ import { sayLine } from "./test-percepts.ts";
 test("reads the speaker and the command from a say line, in any case", () => {
   expect(heardCommand(sayLine('Vue says, "come"'), "Greeen")).toEqual({ speaker: "Vue", word: "come" });
   expect(heardCommand(sayLine('Vue says, "GRIND"'), "Greeen")).toEqual({ speaker: "Vue", word: "grind" });
+  expect(heardCommand(sayLine('Vue says, "shop"'), "Greeen")).toEqual({ speaker: "Vue", word: "shop" });
   expect(heardCommand(sayLine('the town guard says, "stop"'), "Greeen")).toEqual({ speaker: "the town guard", word: "stop" });
 });
 

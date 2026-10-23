@@ -118,6 +118,14 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(SitPrimitive), "sit")]
     [JsonDerivedType(typeof(StandPrimitive), "stand")]
     [JsonDerivedType(typeof(CommandPrimitive), "command")]
+    [JsonDerivedType(typeof(MoveItemPrimitive), "moveItem")]
+    [JsonDerivedType(typeof(ExaminePrimitive), "examine")]
+    [JsonDerivedType(typeof(ExamineMerchantItemPrimitive), "examineMerchantItem")]
+    [JsonDerivedType(typeof(PickUpPrimitive), "pickUp")]
+    [JsonDerivedType(typeof(DestroyPrimitive), "destroy")]
+    [JsonDerivedType(typeof(TalkToPrimitive), "talkTo")]
+    [JsonDerivedType(typeof(BuyPrimitive), "buy")]
+    [JsonDerivedType(typeof(SellPrimitive), "sell")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -158,6 +166,31 @@ namespace DOL.GS.Agents
     // Types a slash command, as a Human types it, such as `/train Blades 3` or `/release`. The server handles it as a Human's.
     public sealed record CommandPrimitive([property: JsonRequired] string Text) : Primitive;
 
+    // Moves the item in slot `From` to slot `To`, as dragging it does, which equips and unequips too. Slots are the client's: equipment 10-37 (right hand 10, left hand 11, two-handed 12, ranged 13, head 21, hands 22, feet 23, torso 25, cloak 26, legs 27, arms 28), backpack 40-79.
+    // A whole stack moves. Onto a taken slot, the two items swap. Slot 1 is the ground, and the horse's bags are 80-99. The Harness refuses anything else.
+    public sealed record MoveItemPrimitive([property: JsonRequired] int From, [property: JsonRequired] int To) : Primitive;
+
+    // Asks for the details of the item in slot `Slot`, as a shift-click does. They come as an `examined` Percept.
+    public sealed record ExaminePrimitive([property: JsonRequired] int Slot) : Primitive;
+
+    // Asks for the details of the item at `Index` in the merchant window the client has open, the page times 30 plus the place on the page. They come as an `examined` Percept. Needs the merchant targeted.
+    public sealed record ExamineMerchantItemPrimitive([property: JsonRequired] int Index) : Primitive;
+
+    // Picks up the object from the ground, targeting it first as a click does. The server checks the Character may take it and stands within 256 units.
+    public sealed record PickUpPrimitive([property: JsonRequired] int ObjectId) : Primitive;
+
+    // Destroys the item in backpack slot `Slot`. The server won't destroy what's equipped.
+    public sealed record DestroyPrimitive([property: JsonRequired] int Slot) : Primitive;
+
+    // Talks to the NPC, as a right-click does, targeting it first. The server needs it within 192 units. A merchant answers with its window, as a `merchantWindow` Percept.
+    public sealed record TalkToPrimitive([property: JsonRequired] int ObjectId) : Primitive;
+
+    // Buys `Count` (1 to 255) of the item at `Index` in the window of the merchant the client targets, numbered as for `examineMerchantItem`. The server needs the merchant within 256 units.
+    public sealed record BuyPrimitive([property: JsonRequired] int Index, [property: JsonRequired] int Count) : Primitive;
+
+    // Sells the item in slot `Slot` to the merchant the client targets. The server needs the merchant within 256 units.
+    public sealed record SellPrimitive([property: JsonRequired] int Slot) : Primitive;
+
     /// <summary>
     /// One thing the Harness tells the Mind: only what the 1.127 packet would tell a real client (ADR 0001).
     /// </summary>
@@ -180,6 +213,11 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(SkillsPercept), "skills")]
     [JsonDerivedType(typeof(DiedPercept), "died")]
     [JsonDerivedType(typeof(RevivedPercept), "revived")]
+    [JsonDerivedType(typeof(InventoryPercept), "inventory")]
+    [JsonDerivedType(typeof(EncumbrancePercept), "encumbrance")]
+    [JsonDerivedType(typeof(MoneyPercept), "money")]
+    [JsonDerivedType(typeof(ExaminedPercept), "examined")]
+    [JsonDerivedType(typeof(MerchantWindowPercept), "merchantWindow")]
     [JsonDerivedType(typeof(RoutedPercept), "routed")]
     [JsonDerivedType(typeof(MovedPercept), "moved")]
     [JsonDerivedType(typeof(ArrivedPercept), "arrived")]
@@ -390,6 +428,69 @@ namespace DOL.GS.Agents
 
     // A player came back to life, the Agent's Character included, for example after releasing.
     public sealed record RevivedPercept(int ObjectId) : Percept;
+
+    // Slots of the Agent's Character's inventory changed: each one the server updated, with the item now in it, or without one when it's empty.
+    // Slots are the client's (see `MoveItemPrimitive`), as the packet carries them, in a byte. `Window` is the inventory window the client opens with it, `Update` for none.
+    // A vault's or a consignment merchant's window numbers its own slots instead. A stat bonus isn't carried: only an examine shows it.
+    public sealed record InventoryPercept(eInventoryWindowType Window, InventorySlot[] Slots) : Percept;
+
+    public sealed record InventorySlot(int Slot, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] InventoryItem Item);
+
+    // An item as the 1.127 inventory packet writes it. The packet's two value fields mean different things for different `ObjectType`s, the server's `eObjectType`:
+    // `DpsAf` is a weapon's DPS times 10 or an armour piece's armour factor, and `SpeedAbs` a weapon's speed in tenths of a second or an armour piece's absorption.
+    // `Count` is how many there are, carried for generic items, arrows, bolts, poisons and thrown weapons, and 1 for anything else. Any stack of more than one also has its count in front of its `Name`.
+    // `Hand` is 0 for the right hand, 1 for two-handed and 2 for either hand. `Weight` is in tenths of a pound, for the whole stack. `Condition`, `Durability` and `Quality` are percentages.
+    // `SpellNames` are the names of the spells it casts or procs.
+    public sealed record InventoryItem(
+        string Name,
+        int Level,
+        int DpsAf,
+        int SpeedAbs,
+        int Count,
+        int Hand,
+        int DamageType,
+        int ObjectType,
+        int Weight,
+        int Condition,
+        int Durability,
+        int Quality,
+        int Bonus,
+        int BonusLevel,
+        int Model,
+        int Color,
+        int Effect,
+        string[] SpellNames);
+
+    // How much the Agent's Character carries and how much it can, in pounds. The server sends it whenever either changes. Above `Capacity` the Character slows down.
+    public sealed record EncumbrancePercept(int Capacity, int Weight) : Percept;
+
+    // How much money the Agent's Character has: 100 copper make a silver, 100 silver a gold, 1000 gold a mithril and 1000 mithril a platinum.
+    public sealed record MoneyPercept(int Copper, int Silver, int Gold, int Mithril, int Platinum) : Percept;
+
+    // A detail window, such as what examining an item shows: its caption and its text, line by line, as the Human reads them. Lines longer than 255 characters come split.
+    public sealed record ExaminedPercept(string Caption, string[] Lines) : Percept;
+
+    // The window of a merchant the Agent's Character talked to, with every item it sells, page by page. It doesn't say which merchant it is.
+    public sealed record MerchantWindowPercept(eMerchantWindowType Window, MerchantItem[] Items) : Percept;
+
+    // One item in a merchant's window. `Page` and `Place` are where it is: `buy` and `examineMerchantItem` take `Page * 30 + Place`.
+    // `DpsAf`, `SpeedAbs`, `Hand`, `DamageType` and `ObjectType` are as in an `InventoryItem`. `Count` is how many come in a pack, 1 unless the packet carries it.
+    // `Weight` is in tenths of a pound, for the whole pack, and 0 for a thrown weapon. `Price` is in copper. `Usable` says whether the Character's class can use it.
+    public sealed record MerchantItem(
+        int Page,
+        int Place,
+        int Level,
+        int DpsAf,
+        int SpeedAbs,
+        int Count,
+        int Hand,
+        int DamageType,
+        int ObjectType,
+        bool Usable,
+        int Weight,
+        long Price,
+        int Model,
+        string Name);
 
     // Worked out by the Harness, as the Agent's client works it out: where the Character is while it runs to the target of a `moveTo`, sent with each position update. Positions are global.
     public sealed record MovedPercept(float X, float Y, float Z, int Heading, float Speed, float TargetX, float TargetY, float TargetZ) : Percept;

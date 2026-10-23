@@ -1,8 +1,11 @@
 import { expect, test } from "bun:test";
 import type { Percept } from "../protocol.ts";
 import { settle, TestAgent } from "../test-agent.ts";
-import { died, npcCreate, objectUpdate, ownPosition, player, points, revived, skills, spec, status, stopped, arrived, objectRemove } from "../test-percepts.ts";
+import { BACKPACK_SLOTS, SLOT } from "../inventory.ts";
+import { arrived, died, encumbrance, inventory, item, merchantWindow, money, npcCreate, objectRemove, objectUpdate, ownPosition, player, points, revived, skills, spec, status, stopped } from "../test-percepts.ts";
 import { grind, LEASH } from "./grind.ts";
+import { BLADES } from "./shop.ts";
+import { TRADE_TIMEOUT_MS } from "./trade.ts";
 
 const HOME = { x: 296000, y: 642000, z: 4848 };
 
@@ -144,7 +147,7 @@ test("at level 5, says so, logs the summary and succeeds", async () => {
 
   expect(await outcome).toEqual({ ok: true });
   expect(t.take().at(-1)).toEqual({ name: "say", text: "I'm level 5 now." });
-  expect(t.lines.at(-1)).toBe("Reached level 5 in 0 min 25 s: 1 kills, 0 deaths, 0 rests. Tactic failures: none.");
+  expect(t.lines.at(-1)).toBe("Reached level 5 in 0 min 25 s: 1 kills, 0 deaths, 0 rests, 0 shops. Tactic failures: none.");
 });
 
 test("ends as stopped when the Agent is stopped", async () => {
@@ -153,4 +156,64 @@ test("ends as stopped when the Agent is stopped", async () => {
   t.agent.stop();
 
   expect(await outcome).toEqual({ ok: false, reason: "stopped" });
+});
+
+// Connla's merchants, a step from home.
+const MERCHANTS = [
+  npcCreate(0x201, "Eira", HOME.x + 50, HOME.y, HOME.z, { peaceful: true, realm: "Hibernia" }),
+  npcCreate(0x202, "Erskine", HOME.x, HOME.y + 50, HOME.z, { peaceful: true, realm: "Hibernia" }),
+];
+
+test("shops after a level-up, then runs home", async () => {
+  const { t } = await grinding([...MERCHANTS, money(0), inventory([SLOT.rightHand, item("training sword", { objectType: BLADES })])], [0, 0]);
+  expect(t.take().map((primitive) => primitive.name)).toEqual(["moveTo"]);
+
+  await t.perceive(player(3));
+  expect(t.take()).toEqual([{ name: "stop" }, { name: "talkTo", objectId: 0x201 }]);
+
+  await t.perceive(merchantWindow());
+  expect(t.take()).toEqual([{ name: "talkTo", objectId: 0x202 }]);
+
+  await t.perceive(merchantWindow());
+  expect(t.take()).toEqual([{ name: "moveTo", ...HOME }]);
+});
+
+test("trains before it shops after a level-up", async () => {
+  const { t } = await grinding([...MERCHANTS, money(0)], [0, 0]);
+  t.take();
+
+  await t.perceive(points(2), player(3));
+
+  expect(t.take()).toEqual([{ name: "stop" }, { name: "command", text: "/train Blades 2" }]);
+});
+
+test("shops when it carries 80% of what it can", async () => {
+  const { t } = await grinding([...MERCHANTS, money(0), inventory([40, item("bear claw")]), encumbrance(100, 79)], [0, 0]);
+  t.take();
+
+  await t.perceive(encumbrance(100, 80));
+
+  expect(t.take()).toEqual([{ name: "stop" }, { name: "talkTo", objectId: 0x202 }]);
+});
+
+test("shops when its backpack is full", async () => {
+  const full = inventory(...Array.from({ length: BACKPACK_SLOTS }, (_, i): [number, ReturnType<typeof item>] => [40 + i, item(`claw ${i}`)]));
+  const { t } = await grinding([...MERCHANTS, money(0), full]);
+
+  expect(t.take()).toEqual([{ name: "talkTo", objectId: 0x202 }]);
+});
+
+// The stand-in can't empty a backpack the merchant won't buy from, so it goes back to grinding until it has picked up more.
+test("doesn't shop again for its load until it has picked up more", async () => {
+  const { t } = await grinding([...MERCHANTS, money(0), inventory([SLOT.rightHand, item("falcata", { level: 2, objectType: BLADES })], [40, item("bear claw")]), encumbrance(100, 90)], [0, 0, 0, 0]);
+  expect(t.take()).toEqual([{ name: "talkTo", objectId: 0x202 }]);
+  await t.perceive(merchantWindow());
+  expect(t.take()).toEqual([{ name: "sell", slot: 40 }]);
+  await t.clock.advance(TRADE_TIMEOUT_MS);
+  await t.perceive(arrived(HOME.x, HOME.y, HOME.z));
+  expect(t.take().map((primitive) => primitive.name)).toEqual(["moveTo", "moveTo"]);
+
+  await t.perceive(inventory([41, item("wolf pelt")]), encumbrance(100, 92));
+
+  expect(t.take()).toEqual([{ name: "stop" }, { name: "sell", slot: 40 }]);
 });

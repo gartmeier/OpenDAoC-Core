@@ -197,6 +197,95 @@ namespace DOL.GS.Agents
             return Command("&stand");
         }
 
+        // The item and merchant requests below aren't captured yet. They follow what their handlers read, and the parameter is the default one.
+        // Where a handler reads a short it doesn't use before the slots, or after the client's position, the Harness writes the session ID.
+
+        // Moves the item in client slot `from` to client slot `to`, as dragging it does: equipment slots are 10-37 and backpack slots 40-79.
+        // `count` is how many of a stack to move, 0 for all of it. Read by `PlayerMoveItemRequestHandler`: an unused short, the destination, the source and the count.
+        public static ClientPacket MoveItem(ushort sessionId, ushort from, ushort to, ushort count)
+        {
+            byte[] data = new byte[8];
+            Span<byte> span = data;
+            BinaryPrimitives.WriteUInt16BigEndian(span[0..], sessionId);
+            BinaryPrimitives.WriteUInt16BigEndian(span[2..], to);
+            BinaryPrimitives.WriteUInt16BigEndian(span[4..], from);
+            BinaryPrimitives.WriteUInt16BigEndian(span[6..], count);
+            return new((byte) eClientPackets.PlayerMoveItem, DEFAULT_PARAMETER, data);
+        }
+
+        // Asks for the details of the item in client slot `slot`, as a shift-click on it does. The server answers with a detail window.
+        public static ClientPacket Examine(ushort slot)
+        {
+            return DetailRequest(1, slot);
+        }
+
+        // Asks for the details of the item at `index` in the merchant's window the client has open: the page times 30, plus the place on the page.
+        public static ClientPacket ExamineMerchantItem(ushort index)
+        {
+            return DetailRequest(4, index);
+        }
+
+        // Picks up the object the client has targeted. Read by `PlayerPickUpRequestHandler`: the client's position, its session ID and the object, none of which the server uses.
+        public static ClientPacket PickUpRequest(uint x, uint y, ushort sessionId, ushort objectId)
+        {
+            return PositionAndTwoShorts(eClientPackets.PickUpRequest, x, y, sessionId, objectId);
+        }
+
+        // Destroys the item in backpack slot `slot`. Read by `DestroyItemRequestHandler`, which skips the first 4 bytes.
+        public static ClientPacket DestroyItemRequest(ushort slot)
+        {
+            byte[] data = new byte[6];
+            BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(4), slot);
+            return new((byte) eClientPackets.DestroyItemRequest, DEFAULT_PARAMETER, data);
+        }
+
+        // Interacts with the object, as a right-click on it does: a merchant answers with its window. Read by `ObjectInteractRequestHandler`: the client's position, its session ID and the object.
+        public static ClientPacket InteractRequest(uint x, uint y, ushort sessionId, ushort objectId)
+        {
+            return PositionAndTwoShorts(eClientPackets.ObjectInteractRequest, x, y, sessionId, objectId);
+        }
+
+        // Buys `count` of the item at `index` in the window of the merchant the client has targeted, as `ExamineMerchantItem` numbers it.
+        // Read by `PlayerBuyRequestHandler`: the client's position, its session ID, the index, the count and the window type. Only housing windows differ from a merchant's normal one.
+        public static ClientPacket BuyRequest(uint x, uint y, ushort sessionId, ushort index, byte count)
+        {
+            byte[] data = new byte[14];
+            WritePositionAndTwoShorts(data, x, y, sessionId, index);
+            data[12] = count;
+            data[13] = (byte) eMerchantWindowType.Normal;
+            return new((byte) eClientPackets.BuyRequest, DEFAULT_PARAMETER, data);
+        }
+
+        // Sells the item in client slot `slot` to the merchant the client has targeted. Read by `PlayerSellRequestHandler`: the client's position, its session ID and the slot.
+        public static ClientPacket SellRequest(uint x, uint y, ushort sessionId, ushort slot)
+        {
+            return PositionAndTwoShorts(eClientPackets.SellRequest, x, y, sessionId, slot);
+        }
+
+        // Read by `DetailDisplayHandler`: what kind of thing to describe, an extra ID only some kinds use, and which one.
+        private static ClientPacket DetailRequest(ushort objectType, ushort objectId)
+        {
+            byte[] data = new byte[8];
+            BinaryPrimitives.WriteUInt16BigEndian(data, objectType);
+            BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(6), objectId);
+            return new((byte) eClientPackets.DetailRequest, DEFAULT_PARAMETER, data);
+        }
+
+        private static ClientPacket PositionAndTwoShorts(eClientPackets code, uint x, uint y, ushort first, ushort second)
+        {
+            byte[] data = new byte[12];
+            WritePositionAndTwoShorts(data, x, y, first, second);
+            return new((byte) code, DEFAULT_PARAMETER, data);
+        }
+
+        private static void WritePositionAndTwoShorts(Span<byte> data, uint x, uint y, ushort first, ushort second)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(data[0..], x);
+            BinaryPrimitives.WriteUInt32BigEndian(data[4..], y);
+            BinaryPrimitives.WriteUInt16BigEndian(data[8..], first);
+            BinaryPrimitives.WriteUInt16BigEndian(data[10..], second);
+        }
+
         private static ClientPacket Target(ushort objectId, ushort flags)
         {
             byte[] data = new byte[4];

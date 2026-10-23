@@ -3,9 +3,10 @@ import { type Agent, failed, type Outcome, succeeded } from "../tactic.ts";
 import { kill } from "./kill.ts";
 import { rest } from "./rest.ts";
 import { RUN_TIMEOUT_MS, runEnd, runTo } from "./run-to.ts";
+import { shop } from "./shop.ts";
 import { affordableLevel, train } from "./train.ts";
 
-// The stand-in rules: deliberately simple, for LLM Planning to replace in milestone 5.
+// The stand-in rules: deliberately simple, for the coding agent to replace in milestone 5.
 
 /** The level the grind ends at. */
 export const GOAL_LEVEL = 5;
@@ -20,6 +21,9 @@ export const REST_UNTIL = 100;
 /** The specialization every spec point goes into. A Guardian's training sword is a blade. */
 export const TRAIN_LINE = "Blades";
 
+/** At this share of its carrying capacity the Agent goes shopping, before it slows down. */
+export const HEAVY = 0.8;
+
 /** In milliseconds. The server revives a released Character at its bind point at once. */
 export const RELEASE_TIMEOUT_MS = 30_000;
 
@@ -28,12 +32,13 @@ const HOPELESS = new Set(["unreachable", "noDamage"]);
 
 /**
  * Levels the Agent to `GOAL_LEVEL` around home, where it stands when the grind starts. Each step, in order:
- * if dead, it releases and runs home; it kills whatever attacks it; it trains the spec points it has; it rests when its health is low;
+ * if dead, it releases and runs home; it kills whatever attacks it; it trains the spec points it has;
+ * it shops after a level-up, or when it carries `HEAVY` of its capacity or its backpack is full, and runs home; it rests when its health is low;
  * it kills the nearest Mob it can take on; and with none in view, it runs to a random spot near home.
  * At the goal it says so, logs a summary and succeeds. It fails with `homeUnreachable` when it can't get home after dying, `notReleased` when releasing doesn't bring it back to life, and `noPosition` when it doesn't know where it is to start with.
  */
 export async function grind(agent: Agent): Promise<Outcome> {
-  const { self, surroundings } = agent;
+  const { self, surroundings, inventory } = agent;
   const home = self.position;
 
   if (!home)
@@ -43,8 +48,12 @@ export async function grind(agent: Agent): Promise<Outcome> {
   // Mobs a kill gave up on for good, and the spec points a `/train` last failed with.
   const hopeless = new Set<number>();
   let untrainable: number | undefined;
+  // The level it last shopped at, and what it carried right after: a shop that couldn't lighten the load isn't tried again for it until it picks up more.
+  let shoppedAt = self.level;
+  let carried: Load | undefined;
   const target = () => nextMob(agent, home, hopeless);
   const attacker = () => (self.objectId === undefined ? undefined : nearest(agent, surroundings.attacking(self.objectId)));
+  const shopDue = () => self.level > shoppedAt || (loaded(agent) && (!carried || inventory.weight > carried.weight || inventory.backpack.length > carried.itemCount));
 
   while (self.level < GOAL_LEVEL) {
     if (self.dead) {
@@ -77,6 +86,19 @@ export async function grind(agent: Agent): Promise<Outcome> {
       continue;
     }
 
+    if (shopDue()) {
+      tally.shops++;
+      tally.note(await shop(agent));
+      shoppedAt = self.level;
+      carried = { weight: inventory.weight, itemCount: inventory.backpack.length };
+      const back = await runTo(agent, home);
+
+      if (!back.ok && back.reason === "unreachable")
+        return failed("homeUnreachable");
+
+      continue;
+    }
+
     if (self.healthPercent < REST_BELOW) {
       tally.rests++;
       tally.note(await rest(agent, REST_UNTIL));
@@ -95,7 +117,7 @@ export async function grind(agent: Agent): Promise<Outcome> {
       continue;
     }
 
-    await wander(agent, home, () => self.dead || attacker() !== undefined || target() !== undefined);
+    await wander(agent, home, () => self.dead || attacker() !== undefined || target() !== undefined || shopDue());
   }
 
   await agent.send({ name: "say", text: `I'm level ${GOAL_LEVEL} now.` });
@@ -122,6 +144,18 @@ export function nextMob(agent: Agent, home: Position, hopeless: ReadonlySet<numb
       !hopeless.has(npc.objectId),
   );
   return nearest(agent, mobs);
+}
+
+/** What the Agent carried after it last shopped. */
+interface Load {
+  readonly weight: number;
+  /** How many backpack slots held something. */
+  readonly itemCount: number;
+}
+
+/** Whether it carries `HEAVY` of its capacity, or has no room for loot. */
+function loaded({ inventory }: Agent): boolean {
+  return (inventory.capacity > 0 && inventory.weight >= HEAVY * inventory.capacity) || inventory.backpackFull;
 }
 
 function nearest(agent: Agent, npcs: readonly KnownNpc[]): KnownNpc | undefined {
@@ -161,6 +195,7 @@ class Tally {
   kills = 0;
   deaths = 0;
   rests = 0;
+  shops = 0;
   readonly #failures = new Map<string, number>();
   readonly #startedMs: number;
 
@@ -183,6 +218,6 @@ class Tally {
   summary(nowMs: number): string {
     const seconds = Math.round((nowMs - this.#startedMs) / 1000);
     const failures = [...this.#failures].map(([reason, count]) => `${reason} ${count}`).join(", ") || "none";
-    return `Reached level ${GOAL_LEVEL} in ${Math.floor(seconds / 60)} min ${seconds % 60} s: ${this.kills} kills, ${this.deaths} deaths, ${this.rests} rests. Tactic failures: ${failures}.`;
+    return `Reached level ${GOAL_LEVEL} in ${Math.floor(seconds / 60)} min ${seconds % 60} s: ${this.kills} kills, ${this.deaths} deaths, ${this.rests} rests, ${this.shops} shops. Tactic failures: ${failures}.`;
   }
 }

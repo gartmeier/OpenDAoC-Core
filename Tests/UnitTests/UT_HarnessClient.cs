@@ -298,6 +298,94 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public async Task ItemPrimitives_ShouldQueueTheRequestsTheClientSends()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            Assert.That(client.Dispatch(new MoveItemPrimitive(41, 10), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new ExaminePrimitive(41), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new ExamineMerchantItemPrimitive(31), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new DestroyPrimitive(42), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new BuyPrimitive(31, 2), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new SellPrimitive(43), mind.Link), Is.Null);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
+                ClientPackets1127.MoveItem(0x0101, 41, 10, 0),
+                ClientPackets1127.Examine(41),
+                ClientPackets1127.ExamineMerchantItem(31),
+                ClientPackets1127.DestroyItemRequest(42),
+                ClientPackets1127.BuyRequest(296516, 641415, 0x0101, 31, 2),
+                ClientPackets1127.SellRequest(296516, 641415, 0x0101, 43)])));
+            await Close(mind);
+        }
+
+        // The server picks up and trades with the client's target, so a click on the object selects it first.
+        [Test]
+        public async Task PickUpAndTalkTo_ShouldTargetTheObjectFirst_WhenItIsntTargeted()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            client.Dispatch(new PickUpPrimitive(0x1F0B), mind.Link);
+            client.Dispatch(new TalkToPrimitive(0x2C54), mind.Link);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
+                ClientPackets1127.Target(0x1F0B),
+                ClientPackets1127.PickUpRequest(296516, 641415, 0x0101, 0x1F0B),
+                ClientPackets1127.Target(0x2C54),
+                ClientPackets1127.InteractRequest(296516, 641415, 0x0101, 0x2C54)])));
+            Assert.That(client.TargetId, Is.EqualTo(0x2C54));
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task PickUpAndTalkTo_ShouldNotTargetAgain_WhenTheObjectIsTargeted()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+
+            client.Dispatch(new TalkToPrimitive(0x1F0B), mind.Link);
+            client.Dispatch(new PickUpPrimitive(0x1F0B), mind.Link);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
+                ClientPackets1127.Target(0x1F0B),
+                ClientPackets1127.InteractRequest(296516, 641415, 0x0101, 0x1F0B),
+                ClientPackets1127.PickUpRequest(296516, 641415, 0x0101, 0x1F0B)])));
+            await Close(mind);
+        }
+
+        private static IEnumerable<TestCaseData> PrimitivesThePacketsCantCarry()
+        {
+            // The paper doll lets the server choose the slot, and above 1000 the item goes to another object.
+            yield return new TestCaseData(new MoveItemPrimitive(0, 10), "A move is between the Character's own slots, 1 to 99");
+            yield return new TestCaseData(new MoveItemPrimitive(41, 100), "A move is between the Character's own slots, 1 to 99");
+            yield return new TestCaseData(new MoveItemPrimitive(41, 1001), "A move is between the Character's own slots, 1 to 99");
+            yield return new TestCaseData(new ExaminePrimitive(65536), "A slot is 0 to 65535");
+            yield return new TestCaseData(new DestroyPrimitive(-1), "A slot is 0 to 65535");
+            yield return new TestCaseData(new SellPrimitive(65536), "A slot is 0 to 65535");
+            yield return new TestCaseData(new ExamineMerchantItemPrimitive(-1), "An index is 0 to 65535");
+            yield return new TestCaseData(new BuyPrimitive(65536, 1), "An index is 0 to 65535");
+            yield return new TestCaseData(new BuyPrimitive(31, 0), "A count is 1 to 255");
+            yield return new TestCaseData(new BuyPrimitive(31, 256), "A count is 1 to 255");
+            yield return new TestCaseData(new PickUpPrimitive(65536), "An object ID is 1 to 65535");
+            yield return new TestCaseData(new TalkToPrimitive(0), "An object ID is 1 to 65535");
+        }
+
+        [TestCaseSource(nameof(PrimitivesThePacketsCantCarry))]
+        public async Task ItemPrimitives_ShouldBeRefusedWithAReason_ForWhatThePacketsCantCarry(Primitive primitive, string reason)
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            Assert.That(client.Dispatch(primitive, mind.Link), Does.StartWith(reason));
+            Assert.That(Inbound(client), Is.Empty);
+            Assert.That(client.TargetId, Is.Zero);
+            await Close(mind);
+        }
+
+        [Test]
         public async Task TakeOver_ShouldConnectTheClientToTheNewMind_AndTellTheOldOneItWasReplaced()
         {
             FakeMind oldMind = new();

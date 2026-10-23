@@ -144,6 +144,19 @@ From `target-attack-sit.tsv`, and the targeting at the end of `run-turn-stop.tsv
 - **Sitting.** `/sit` and `/stand` go out as commands (`&sit`, `&stand`), and the server's handlers sit or stand whatever the Character was doing. The sit key is a toggle: the client sends the sit request (0xC7, parameter 0x0000) with data `01 5E 88 04` to sit or `00 5E 88 04` to stand, deciding which from what it believes its state is. The server reads only the first byte. The Harness uses the commands because they say what they mean. While sitting, position updates carry state flag 0x10 (`SITTING`).
 - The Human moved on sloped ground while fighting, so some updates carry a Z speed (offsets 16–19). The Harness leaves it at 0.
 
+## Items and merchants
+
+Not captured yet, so the Harness builds them as their handlers read them, with the default parameter 0xFFFF. Where a handler reads a field it doesn't use, the Harness writes the client's session ID, or its X and Y as whole units:
+- Move item (0xDD, `PlayerMoveItemRequestHandler`): an unused short, the destination slot, the source slot, and the count, 0 for a whole stack.
+- Detail request (0xD8, `DetailDisplayHandler`): the kind of thing (1 an inventory item, 4 a merchant's item), an unused int, and the slot, or the page times 30 plus the place on the page.
+- Pick up request (0xB5, `PlayerPickUpRequestHandler`): X, Y, the session ID and the object. The server picks up the client's target, so the Harness targets the object first, as a click does.
+- Destroy item request (0x80, `DestroyItemRequestHandler`): 4 skipped bytes and the backpack slot.
+- Interact request (0x7A, `ObjectInteractRequestHandler`): X, Y, the session ID and the object, which the Harness targets first.
+- Buy request (0x78, `PlayerBuyRequestHandler`): X, Y, the session ID, the index as in the detail request, the count and the merchant window type, 0 for a merchant's normal window.
+- Sell request (0x79, `PlayerSellRequestHandler`): X, Y, the session ID and the backpack slot.
+
+The capture to record, with a marker said before each part: moving an item within the backpack; equipping and unequipping an armour piece and a weapon by dragging; examining an item in the backpack and one in a merchant's window; talking to a merchant, buying an item and selling one; destroying an item; and picking up an item from the ground (`/autoloot off` and a kill first).
+
 ## Fields that vary between captures
 
 These hold for every packet:

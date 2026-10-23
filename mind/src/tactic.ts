@@ -1,3 +1,4 @@
+import { Inventory } from "./inventory.ts";
 import type { Percept, PerceptMessage, Primitive, PrimitiveResultMessage } from "./protocol.ts";
 import { Self } from "./self.ts";
 import { Surroundings } from "./surroundings.ts";
@@ -53,13 +54,14 @@ interface Waiter {
 }
 
 /**
- * What a Tactic gets: the Agent's Primitives, its beliefs (Self and Surroundings), and a way to wait for its beliefs to change (ADR 0008).
- * Every Percept goes to Self and Surroundings first, then to whatever is waiting.
+ * What a Tactic gets: the Agent's Primitives, its beliefs (Self, Surroundings and Inventory), and a way to wait for its beliefs to change (ADR 0008).
+ * Every Percept goes to Self, Surroundings and Inventory first, then to whatever is waiting.
  * Stopping it ends every Tactic running on it: whatever they wait on or send next throws `Stopped`.
  */
 export class Agent {
   readonly self = new Self();
   readonly surroundings = new Surroundings();
+  readonly inventory = new Inventory();
   readonly clock: Clock;
   readonly random: () => number;
   readonly log: (line: string) => void;
@@ -83,6 +85,7 @@ export class Agent {
   perceive(message: PerceptMessage): void {
     this.self.perceive(message);
     this.surroundings.perceive(message);
+    this.inventory.perceive(message);
 
     for (const waiter of [...this.#waiters])
       waiter.check(message.percept);
@@ -93,6 +96,8 @@ export class Agent {
     if (this.#stopped)
       throw new Stopped();
 
+    // Before it goes: the Harness can answer with Percepts before the Primitive's result. A refused one only makes the Inventory think it isn't trading, which a Tactic gets over by talking to the merchant again.
+    this.inventory.sent(primitive);
     const result = await this.#send(primitive);
 
     if (!result.queued)
@@ -103,7 +108,7 @@ export class Agent {
 
   /**
    * Waits until `condition` gives something other than `undefined` or `false`, and gives that, or `undefined` once `timeoutMs` have passed.
-   * It's asked at once, with no Percept, then after every Percept, with the Percept, once Self and Surroundings have taken it in.
+   * It's asked at once, with no Percept, then after every Percept, with the Percept, once Self, Surroundings and Inventory have taken it in.
    * Throws `Stopped` once the Agent is stopped.
    */
   waitFor<T>(condition: (percept: Percept | undefined) => T | undefined | false, timeoutMs: number): Promise<T | undefined> {

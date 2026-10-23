@@ -92,7 +92,41 @@ namespace DOL.GS.Tests
             Assert.That(message, Is.EqualTo(new PrimitiveMessage(16, new CommandPrimitive("/train Blades 3"))));
         }
 
+        [Test]
+        public void Read_ShouldReadTheItemAndMerchantPrimitives()
+        {
+            Assert.That(Read("""{"type":"primitive","id":17,"primitive":{"name":"moveItem","from":41,"to":10}}"""), Is.EqualTo(new PrimitiveMessage(17, new MoveItemPrimitive(41, 10))));
+            Assert.That(Read("""{"type":"primitive","id":18,"primitive":{"name":"examine","slot":41}}"""), Is.EqualTo(new PrimitiveMessage(18, new ExaminePrimitive(41))));
+            Assert.That(Read("""{"type":"primitive","id":19,"primitive":{"name":"examineMerchantItem","index":31}}"""), Is.EqualTo(new PrimitiveMessage(19, new ExamineMerchantItemPrimitive(31))));
+            Assert.That(Read("""{"type":"primitive","id":20,"primitive":{"name":"pickUp","objectId":7947}}"""), Is.EqualTo(new PrimitiveMessage(20, new PickUpPrimitive(7947))));
+            Assert.That(Read("""{"type":"primitive","id":21,"primitive":{"name":"destroy","slot":42}}"""), Is.EqualTo(new PrimitiveMessage(21, new DestroyPrimitive(42))));
+            Assert.That(Read("""{"type":"primitive","id":22,"primitive":{"name":"talkTo","objectId":7947}}"""), Is.EqualTo(new PrimitiveMessage(22, new TalkToPrimitive(7947))));
+            Assert.That(Read("""{"type":"primitive","id":23,"primitive":{"name":"buy","index":31,"count":1}}"""), Is.EqualTo(new PrimitiveMessage(23, new BuyPrimitive(31, 1))));
+            Assert.That(Read("""{"type":"primitive","id":24,"primitive":{"name":"sell","slot":43}}"""), Is.EqualTo(new PrimitiveMessage(24, new SellPrimitive(43))));
+        }
+
+        [Test]
+        public void Write_ShouldWriteAnInventoryPercept_WithItsWindowAsANameAndEmptySlotsWithoutAnItem()
+        {
+            InventoryItem falcata = new("falcata", 2, 22, 34, 1, 2, 2, 19, 25, 50, 100, 85, 0, 0, 445, 7, 0, []);
+            string json = Write(new PerceptMessage(8, 1900, new InventoryPercept(eInventoryWindowType.Update, [new(10, falcata), new(40, null)])));
+
+            Assert.That(json, Is.EqualTo("""{"type":"percept","sequence":8,"elapsedMs":1900,"percept":{"kind":"inventory","window":"Update","slots":[{"slot":10,"item":{"name":"falcata","level":2,"dpsAf":22,"speedAbs":34,"count":1,"hand":2,"damageType":2,"objectType":19,"weight":25,"condition":50,"durability":100,"quality":85,"bonus":0,"bonusLevel":0,"model":445,"color":7,"effect":0,"spellNames":[]}},{"slot":40}]}}"""));
+        }
+
+        [Test]
+        public void Write_ShouldWriteTheMoneyEncumbranceExaminedAndMerchantWindowPercepts()
+        {
+            Assert.That(Write(new PerceptMessage(9, 2000, new MoneyPercept(82, 1, 3, 0, 0))), Does.EndWith("""{"kind":"money","copper":82,"silver":1,"gold":3,"mithril":0,"platinum":0}}"""));
+            Assert.That(Write(new PerceptMessage(10, 2100, new EncumbrancePercept(72, 58))), Does.EndWith("""{"kind":"encumbrance","capacity":72,"weight":58}}"""));
+            Assert.That(Write(new PerceptMessage(11, 2200, new ExaminedPercept("falcata", ["- 3 Strength"]))), Does.EndWith("""{"kind":"examined","caption":"falcata","lines":["- 3 Strength"]}}"""));
+            Assert.That(Write(new PerceptMessage(12, 2300, new MerchantWindowPercept(eMerchantWindowType.Normal, [new(0, 1, 2, 22, 34, 1, 2, 2, 19, true, 25, 250, 445, "falcata")]))),
+                Does.EndWith("""{"kind":"merchantWindow","window":"Normal","items":[{"page":0,"place":1,"level":2,"dpsAf":22,"speedAbs":34,"count":1,"hand":2,"damageType":2,"objectType":19,"usable":true,"weight":25,"price":250,"model":445,"name":"falcata"}]}}"""));
+        }
+
         // Neither a missing object ID nor a missing switch means 0 or off.
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"buy","index":31}}""", "count")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"moveItem","from":41}}""", "to")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"target"}}""", "objectId")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"attack"}}""", "on")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"command"}}""", "text")]

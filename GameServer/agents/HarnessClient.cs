@@ -32,6 +32,10 @@ namespace DOL.GS.Agents
         // Object IDs are 16 bits in every packet that carries one.
         private const int MAX_OBJECT_ID = ushort.MaxValue;
 
+        // The Character's own slots, which a move goes between: the ground, its equipment, its backpack and its horse's bags (`eInventorySlot`).
+        private const int MIN_OWN_SLOT = (int) eInventorySlot.Ground;
+        private const int MAX_OWN_SLOT = (int) eInventorySlot.RightRearSaddleBag;
+
         private readonly ConcurrentQueue<ClientPacket> _inbound = new();
         private readonly TaskCompletionSource _disconnected = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private ushort _sequence = FIRST_SEQUENCE;
@@ -198,8 +202,69 @@ namespace DOL.GS.Agents
 
                     break;
                 }
+                case MoveItemPrimitive moveItem:
+                {
+                    // Not the paper doll (100), where the server would choose the slot from the item, and not above 1000, which gives the item to another object.
+                    if (moveItem.From is < MIN_OWN_SLOT or > MAX_OWN_SLOT || moveItem.To is < MIN_OWN_SLOT or > MAX_OWN_SLOT)
+                        return $"A move is between the Character's own slots, {MIN_OWN_SLOT} to {MAX_OWN_SLOT}, not {moveItem.From} to {moveItem.To}.";
+
+                    break;
+                }
+                case ExaminePrimitive examine:
+                {
+                    if (BadSlot(examine.Slot) is string reason)
+                        return reason;
+
+                    break;
+                }
+                case DestroyPrimitive destroy:
+                {
+                    if (BadSlot(destroy.Slot) is string reason)
+                        return reason;
+
+                    break;
+                }
+                case SellPrimitive sell:
+                {
+                    if (BadSlot(sell.Slot) is string reason)
+                        return reason;
+
+                    break;
+                }
+                case ExamineMerchantItemPrimitive examine:
+                {
+                    if (BadIndex(examine.Index) is string reason)
+                        return reason;
+
+                    break;
+                }
+                case BuyPrimitive buy:
+                {
+                    if (BadIndex(buy.Index) is string reason)
+                        return reason;
+
+                    if (buy.Count is < 1 or > byte.MaxValue)
+                        return $"A count is 1 to {byte.MaxValue}, not {buy.Count}.";
+
+                    break;
+                }
+                case PickUpPrimitive pickUp:
+                {
+                    if (TargetFirst(pickUp.ObjectId) is string reason)
+                        return reason;
+
+                    break;
+                }
+                case TalkToPrimitive talkTo:
+                {
+                    if (TargetFirst(talkTo.ObjectId) is string reason)
+                        return reason;
+
+                    break;
+                }
             }
 
+            GamePlayer player = Player;
             ClientPacket packet = primitive switch
             {
                 QuitPrimitive => ClientPackets1127.Quit(),
@@ -211,6 +276,14 @@ namespace DOL.GS.Agents
                 StandPrimitive => ClientPackets1127.Stand(),
                 // The client sends `&` in place of the `/` the Human typed.
                 CommandPrimitive command => ClientPackets1127.Command($"&{command.Text[1..]}"),
+                MoveItemPrimitive moveItem => ClientPackets1127.MoveItem(SessionID, (ushort) moveItem.From, (ushort) moveItem.To, 0),
+                ExaminePrimitive examine => ClientPackets1127.Examine((ushort) examine.Slot),
+                ExamineMerchantItemPrimitive examine => ClientPackets1127.ExamineMerchantItem((ushort) examine.Index),
+                PickUpPrimitive pickUp => ClientPackets1127.PickUpRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) pickUp.ObjectId),
+                DestroyPrimitive destroy => ClientPackets1127.DestroyItemRequest((ushort) destroy.Slot),
+                TalkToPrimitive talkTo => ClientPackets1127.InteractRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) talkTo.ObjectId),
+                BuyPrimitive buy => ClientPackets1127.BuyRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) buy.Index, (byte) buy.Count),
+                SellPrimitive sell => ClientPackets1127.SellRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) sell.Slot),
                 _ => null
             };
 
@@ -218,6 +291,33 @@ namespace DOL.GS.Agents
                 return $"The Harness has no Primitive {primitive?.GetType().Name ?? "null"}.";
 
             Enqueue(packet);
+            return null;
+        }
+
+        // Slots are 16 bits in every packet that carries one.
+        private static string BadSlot(int slot)
+        {
+            return slot is < 0 or > ushort.MaxValue ? $"A slot is 0 to {ushort.MaxValue}, not {slot}." : null;
+        }
+
+        // A merchant window's index is 16 bits in the detail and buy requests.
+        private static string BadIndex(int index)
+        {
+            return index is < 0 or > ushort.MaxValue ? $"An index is 0 to {ushort.MaxValue}, not {index}." : null;
+        }
+
+        // The server picks up and talks to what the client targets, so a click on the object selects it first, unless it's selected already.
+        private string TargetFirst(int objectId)
+        {
+            if (objectId is < 1 or > MAX_OBJECT_ID)
+                return $"An object ID is 1 to {MAX_OBJECT_ID}, not {objectId}.";
+
+            if (_targetId != objectId)
+            {
+                _targetId = (ushort) objectId;
+                Enqueue(ClientPackets1127.Target(_targetId));
+            }
+
             return null;
         }
 

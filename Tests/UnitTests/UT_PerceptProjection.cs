@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -17,7 +19,15 @@ namespace DOL.GS.Tests
     [TestFixture]
     public class UT_PerceptProjection
     {
+        private static readonly MethodInfo SendUpdateWeaponAndArmorStats = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateWeaponAndArmorStats));
         private static readonly MethodInfo SendUpdateMoney = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateMoney));
+        private static readonly MethodInfo SendInventorySlotsUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendInventorySlotsUpdate));
+        private static readonly MethodInfo SendInventoryItemsUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendInventoryItemsUpdate), [typeof(List<DbInventoryItem>)]);
+        private static readonly MethodInfo SendInventoryItemsUpdateWithWindow = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendInventoryItemsUpdate), [typeof(eInventoryWindowType), typeof(List<DbInventoryItem>)]);
+        private static readonly MethodInfo SendInventoryItemsUpdateWithSlots = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendInventoryItemsUpdate), [typeof(IDictionary<int, DbInventoryItem>), typeof(eInventoryWindowType)]);
+        private static readonly MethodInfo SendEncumbrance = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendEncumbrance));
+        private static readonly MethodInfo SendCustomTextWindow = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendCustomTextWindow));
+        private static readonly MethodInfo SendMerchantWindow = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendMerchantWindow));
         private static readonly MethodInfo SendUpdatePoints = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePoints));
         private static readonly MethodInfo SendMessage = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendMessage));
         private static readonly MethodInfo GetBowPrepare = typeof(IPacketLib).GetProperty(nameof(IPacketLib.BowPrepare)).GetMethod;
@@ -58,9 +68,9 @@ namespace DOL.GS.Tests
         [Test]
         public void Project_ShouldGiveABarePerceptWithOnlyTheCallsName_ForACallWithoutAProjection()
         {
-            Percept percept = PerceptProjection.Project(Playing(), SendUpdateMoney, []);
+            Percept percept = PerceptProjection.Project(Playing(), SendUpdateWeaponAndArmorStats, []);
 
-            Assert.That(percept, Is.EqualTo(new BarePercept("SendUpdateMoney")));
+            Assert.That(percept, Is.EqualTo(new BarePercept("SendUpdateWeaponAndArmorStats")));
         }
 
         [Test]
@@ -803,6 +813,168 @@ namespace DOL.GS.Tests
             Assert.That(PerceptProjection.Project(client, SendPlayerRevive, [greeen]), Is.EqualTo(new RevivedPercept(0x0123)));
         }
 
+        [Test]
+        public void Project_ShouldGiveEachSlotWithItsItemAsThePacketWritesIt_ForTheInventorySlotsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestInventory inventory = WorldDoubles.Inventory((TestPlayer) client.Player);
+            inventory.Items[eInventorySlot.RightHandWeapon] = Item(new() { Name = "falcata", Level = 2, DPS_AF = 22, SPD_ABS = 34, Hand = 2, Type_Damage = 2, Object_Type = (int) eObjectType.Blades, Weight = 25, MaxCondition = 100, MaxDurability = 100, Quality = 85, Model = 445, Color = 7 }, condition: 50);
+            inventory.Items[eInventorySlot.FirstBackpack + 1] = Item(new() { Name = "bear claw", Level = 1, Object_Type = (int) eObjectType.GenericItem, Weight = 2, MaxCondition = 100, MaxDurability = 100, Quality = 100, Model = 100 }, count: 300);
+
+            InventoryPercept percept = (InventoryPercept) PerceptProjection.Project(client, SendInventorySlotsUpdate, [new List<eInventorySlot> { eInventorySlot.RightHandWeapon, eInventorySlot.FirstBackpack, eInventorySlot.FirstBackpack + 1 }]);
+
+            Assert.That(percept.Window, Is.EqualTo(eInventoryWindowType.Update));
+            Assert.That(percept.Slots.Select(static slot => slot.Slot), Is.EqualTo(new[] { 10, 40, 41 }));
+            Assert.That(percept.Slots[0].Item with { SpellNames = null }, Is.EqualTo(new InventoryItem("falcata", 2, 22, 34, 1, 2, 2, (int) eObjectType.Blades, 25, 50, 100, 85, 0, 0, 445, 7, 0, null)));
+            Assert.That(percept.Slots[0].Item.SpellNames, Is.Empty);
+            Assert.That(percept.Slots[1].Item, Is.Null);
+            // A generic item's count fills both value fields, a stack's name starts with it, and its weight is the whole stack's.
+            Assert.That(percept.Slots[2].Item with { SpellNames = null }, Is.EqualTo(new InventoryItem("300 bear claw", 1, 0, 0, 300, 0, 0, (int) eObjectType.GenericItem, 600, 100, 100, 100, 0, 0, 100, 0, 0, null)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheWindowAndTheItemsSlots_ForTheInventoryItemsCalls()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestInventory inventory = WorldDoubles.Inventory((TestPlayer) client.Player);
+            DbInventoryItem helm = Item(new() { Name = "rawhide helm", Level = 2, DPS_AF = 4, SPD_ABS = 10, Object_Type = (int) eObjectType.Leather });
+            helm.SlotPosition = (int) eInventorySlot.HeadArmor;
+            inventory.Items[eInventorySlot.HeadArmor] = helm;
+
+            InventoryPercept update = (InventoryPercept) PerceptProjection.Project(client, SendInventoryItemsUpdate, [new List<DbInventoryItem> { helm, null }]);
+            InventoryPercept window = (InventoryPercept) PerceptProjection.Project(client, SendInventoryItemsUpdateWithWindow, [eInventoryWindowType.Equipment, new List<DbInventoryItem> { helm }]);
+            InventoryPercept opened = (InventoryPercept) PerceptProjection.Project(client, SendInventoryItemsUpdateWithWindow, [eInventoryWindowType.Inventory, null]);
+
+            Assert.That((update.Window, update.Slots.Single().Slot, update.Slots.Single().Item.Name), Is.EqualTo((eInventoryWindowType.Update, 21, "rawhide helm")));
+            Assert.That((window.Window, window.Slots.Single().Slot), Is.EqualTo((eInventoryWindowType.Equipment, 21)));
+            Assert.That((opened.Window, opened.Slots), Is.EqualTo((eInventoryWindowType.Inventory, Array.Empty<InventorySlot>())));
+        }
+
+        // A vault's window numbers its own slots, and the items come with them.
+        [Test]
+        public void Project_ShouldGiveTheSlotsAndItemsItIsGiven_ForTheInventoryItemsCallWithSlots()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            DbInventoryItem claw = Item(new() { Name = "bear claw", Object_Type = (int) eObjectType.GenericItem });
+
+            InventoryPercept percept = (InventoryPercept) PerceptProjection.Project(client, SendInventoryItemsUpdateWithSlots, [new Dictionary<int, DbInventoryItem> { [110] = claw, [111] = null }, eInventoryWindowType.HouseVault]);
+
+            Assert.That(percept.Window, Is.EqualTo(eInventoryWindowType.HouseVault));
+            Assert.That((percept.Slots[0].Slot, percept.Slots[0].Item.Name, percept.Slots[1].Slot, percept.Slots[1].Item), Is.EqualTo((110, "bear claw", 111, (InventoryItem) null)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNoSlots_ForTheInventorySlotsCallWithoutSlots()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+
+            InventoryPercept percept = (InventoryPercept) PerceptProjection.Project(client, SendInventorySlotsUpdate, [null]);
+
+            Assert.That(percept.Slots, Is.Empty);
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheCapacityAndTheWeightCarried_ForTheEncumbranceCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestPlayer greeen = (TestPlayer) client.Player;
+            greeen.Modified[eProperty.Strength] = 72;
+            WorldDoubles.Inventory(greeen).Weight = 58;
+
+            Percept percept = PerceptProjection.Project(client, SendEncumbrance, []);
+
+            Assert.That(percept, Is.EqualTo(new EncumbrancePercept(72, 58)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveEachCoin_ForTheMoneyCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestPlayer greeen = (TestPlayer) client.Player;
+            (greeen.TestCopper, greeen.TestSilver, greeen.TestGold, greeen.TestMithril, greeen.TestPlatinum) = (82, 1, 3, 0, 0);
+
+            Percept percept = PerceptProjection.Project(client, SendUpdateMoney, []);
+
+            Assert.That(percept, Is.EqualTo(new MoneyPercept(82, 1, 3, 0, 0)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheCaptionAndEachLine_ForTheDetailWindowCall()
+        {
+            string longLine = new('x', 300);
+
+            ExaminedPercept percept = (ExaminedPercept) PerceptProjection.Project(Playing(), SendCustomTextWindow, ["falcata", new List<string> { "Magical Bonuses:", null, "- 3 Strength", longLine }]);
+
+            Assert.That(percept.Caption, Is.EqualTo("falcata"));
+            // A null line is skipped, and one longer than 255 characters split.
+            Assert.That(percept.Lines, Is.EqualTo(new[] { "Magical Bonuses:", "- 3 Strength", longLine[..255], longLine[255..] }));
+            Assert.That(PerceptProjection.Project(Playing(), SendCustomTextWindow, ["falcata", null]), Is.Null);
+        }
+
+        [Test]
+        public void Project_ShouldStopAtThePacketsLength_ForTheDetailWindowCall()
+        {
+            List<string> lines = [.. Enumerable.Repeat(new string('x', 100), 30)];
+
+            ExaminedPercept percept = (ExaminedPercept) PerceptProjection.Project(Playing(), SendCustomTextWindow, ["caption", lines]);
+
+            // 2048 bytes: 3 of header, 2 of flags, 8 of caption and 102 for each whole line. The last is cut to fit after its number, its length and the packet's trailing 0.
+            Assert.That(percept.Lines, Has.Length.EqualTo(20));
+            Assert.That(percept.Lines[..19], Has.All.Length.EqualTo(100));
+            Assert.That(percept.Lines[19], Has.Length.EqualTo(2048 - 13 - 19 * 102 - 1 - 2));
+        }
+
+        [Test]
+        public void Project_ShouldGiveEveryItemOnEveryPageAsThePacketWritesIt_ForTheMerchantWindowCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            MerchantTradeItems trade = new(null);
+            DbItemTemplate shortSword = new() { Name = "short sword", Level = 1, DPS_AF = 16, SPD_ABS = 30, Hand = 2, Type_Damage = 2, Object_Type = (int) eObjectType.Blades, Weight = 20, Price = 150, Model = 444 };
+            DbItemTemplate broadsword = new() { Name = "broadsword", Level = 3, DPS_AF = 26, SPD_ABS = 38, Type_Damage = 2, Object_Type = (int) eObjectType.Blades, Weight = 30, Price = 350, Model = 447 };
+            DbItemTemplate arrows = new() { Name = "arrows", Level = 1, SPD_ABS = 2, Object_Type = (int) eObjectType.Arrow, Weight = 1, PackSize = 20, Price = 12, Model = 1500 };
+            trade.AddTradeItem(0, eMerchantWindowSlot.FirstInPage, shortSword);
+            trade.AddTradeItem(0, (eMerchantWindowSlot) 2, arrows);
+            trade.AddTradeItem(1, (eMerchantWindowSlot) 1, broadsword);
+            _rules.Unusable = broadsword;
+
+            MerchantWindowPercept percept = (MerchantWindowPercept) PerceptProjection.Project(client, SendMerchantWindow, [trade, eMerchantWindowType.Normal]);
+
+            Assert.That(percept.Window, Is.EqualTo(eMerchantWindowType.Normal));
+            Assert.That(percept.Items, Is.EqualTo(new MerchantItem[]
+            {
+                new(0, 0, 1, 16, 30, 1, 2, 2, (int) eObjectType.Blades, true, 20, 150, 444, "short sword"),
+                // A pack's count and its whole weight.
+                new(0, 2, 1, 0, 2, 20, 0, 0, (int) eObjectType.Arrow, true, 20, 12, 1500, "arrows"),
+                new(1, 1, 3, 26, 38, 1, 0, 2, (int) eObjectType.Blades, false, 30, 350, 447, "broadsword")
+            }));
+        }
+
+        [Test]
+        public void Project_ShouldGiveAnEmptyWindow_ForTheMerchantWindowCallWithoutItems()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+
+            MerchantWindowPercept percept = (MerchantWindowPercept) PerceptProjection.Project(client, SendMerchantWindow, [null, eMerchantWindowType.Normal]);
+
+            Assert.That(percept.Items, Is.Empty);
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheInventoryEncumbranceMoneyAndMerchantCallsBeforeTheAgentHasACharacter()
+        {
+            Assert.That(PerceptProjection.Project(Playing(), SendInventorySlotsUpdate, [null]), Is.Null);
+            Assert.That(PerceptProjection.Project(Playing(), SendEncumbrance, []), Is.Null);
+            Assert.That(PerceptProjection.Project(Playing(), SendUpdateMoney, []), Is.Null);
+            Assert.That(PerceptProjection.Project(Playing(), SendMerchantWindow, [null, eMerchantWindowType.Normal]), Is.Null);
+        }
+
+        private static DbInventoryItem Item(DbItemTemplate template, int count = 1, int condition = 100)
+        {
+            template.MaxCondition = template.MaxCondition == 0 ? 100 : template.MaxCondition;
+            template.MaxDurability = template.MaxDurability == 0 ? 100 : template.MaxDurability;
+            return new DbInventoryItem { Template = template, Count = count, Condition = condition, Durability = template.MaxDurability, Color = template.Color };
+        }
+
         private static GameClient AgentInWorld(Zone zone)
         {
             GameClient client = WorldDoubles.Client(0x0101);
@@ -855,6 +1027,8 @@ namespace DOL.GS.Tests
         {
             public byte LivingRealm { get; set; }
             public bool AllowedToAttack { get; set; }
+            // The one item the Agent's class can't use.
+            public DbItemTemplate Unusable { get; set; }
 
             protected override object Invoke(MethodInfo targetMethod, object[] args)
             {
@@ -867,6 +1041,7 @@ namespace DOL.GS.Tests
                     nameof(IServerRules.GetPlayerLastName) => $"{((GamePlayer) args[1]).Name}'s last name",
                     nameof(IServerRules.GetPlayerPrefixName) => $"{((GamePlayer) args[1]).Name}'s prefix",
                     nameof(IServerRules.GetPlayerTitle) => $"{((GamePlayer) args[1]).Name}'s title",
+                    nameof(IServerRules.CheckAbilityToUseItem) => args[1] != Unusable,
                     _ => throw new NotSupportedException(targetMethod.Name)
                 };
             }

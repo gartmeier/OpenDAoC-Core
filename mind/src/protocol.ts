@@ -45,7 +45,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | DestroyPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -96,7 +96,49 @@ export interface CommandPrimitive {
   text: string;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | DiedPercept | RevivedPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export interface MoveItemPrimitive {
+  name: "moveItem";
+  from: number;
+  to: number;
+}
+
+export interface ExaminePrimitive {
+  name: "examine";
+  slot: number;
+}
+
+export interface ExamineMerchantItemPrimitive {
+  name: "examineMerchantItem";
+  index: number;
+}
+
+export interface PickUpPrimitive {
+  name: "pickUp";
+  objectId: number;
+}
+
+export interface DestroyPrimitive {
+  name: "destroy";
+  slot: number;
+}
+
+export interface TalkToPrimitive {
+  name: "talkTo";
+  objectId: number;
+}
+
+export interface BuyPrimitive {
+  name: "buy";
+  index: number;
+  count: number;
+}
+
+export interface SellPrimitive {
+  name: "sell";
+  slot: number;
+}
+
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -314,6 +356,39 @@ export interface RevivedPercept {
   objectId: number;
 }
 
+export interface InventoryPercept {
+  kind: "inventory";
+  window: eInventoryWindowType;
+  slots: InventorySlot[];
+}
+
+export interface EncumbrancePercept {
+  kind: "encumbrance";
+  capacity: number;
+  weight: number;
+}
+
+export interface MoneyPercept {
+  kind: "money";
+  copper: number;
+  silver: number;
+  gold: number;
+  mithril: number;
+  platinum: number;
+}
+
+export interface ExaminedPercept {
+  kind: "examined";
+  caption: string;
+  lines: string[];
+}
+
+export interface MerchantWindowPercept {
+  kind: "merchantWindow";
+  window: eMerchantWindowType;
+  items: MerchantItem[];
+}
+
 export interface RoutedPercept {
   kind: "routed";
   corners: RouteCorner[];
@@ -376,6 +451,32 @@ export interface SkillEntry {
   page: SkillPage;
 }
 
+export type eInventoryWindowType = "Update" | "Equipment" | "Inventory" | "PlayerVault" | "HouseVault" | "ConsignmentOwner" | "ConsignmentViewer" | "HorseBags";
+
+export interface InventorySlot {
+  slot: number;
+  item?: InventoryItem;
+}
+
+export type eMerchantWindowType = "Normal" | "Bp" | "Count" | "HousingDeedMenu" | "HousingOutsideMenu" | "HousingNPCHookpoint" | "HousingInsideShop" | "HousingOutsideShop" | "HousingVaultHookpoint" | "HousingCraftingHookpoint" | "HousingBindstoneHookpoint" | "HousingInsideMenu" | "HousingTicket" | "HousingGuildTicket";
+
+export interface MerchantItem {
+  page: number;
+  place: number;
+  level: number;
+  dpsAf: number;
+  speedAbs: number;
+  count: number;
+  hand: number;
+  damageType: number;
+  objectType: number;
+  usable: boolean;
+  weight: number;
+  price: number;
+  model: number;
+  name: string;
+}
+
 export interface RouteCorner {
   x: number;
   y: number;
@@ -385,3 +486,24 @@ export interface RouteCorner {
 export type StopReason = "Stop" | "Replaced" | "MovedByServer" | "UnableToMove" | "Unreachable";
 
 export type SkillPage = "Specialization" | "Abilities" | "Styles" | "Spells" | "Songs" | "AbilitiesSpell" | "RealmAbilities";
+
+export interface InventoryItem {
+  name: string;
+  level: number;
+  dpsAf: number;
+  speedAbs: number;
+  count: number;
+  hand: number;
+  damageType: number;
+  objectType: number;
+  weight: number;
+  condition: number;
+  durability: number;
+  quality: number;
+  bonus: number;
+  bonusLevel: number;
+  model: number;
+  color: number;
+  effect: number;
+  spellNames: string[];
+}

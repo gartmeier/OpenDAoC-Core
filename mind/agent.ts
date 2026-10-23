@@ -1,6 +1,6 @@
 // The Mind: logs an Agent's Character in and prints every Percept it gets, until the Agent leaves the world.
-// Said next to the Agent, `come` runs it to the speaker, `grind` levels it to 5 around where it stands, and `stop` stops either. Ctrl+C stops it and quits.
-// Every Percept also goes to the Agent's Self and Surroundings, which the printed lines name players and NPCs from.
+// Said next to the Agent, `come` runs it to the speaker, `grind` levels it to 5 around where it stands, `shop` gears it up in Connla, and `stop` stops any of them. Ctrl+C stops it and quits.
+// Every Percept also goes to the Agent's Self, Surroundings and Inventory, which the printed lines name players, NPCs and items from.
 // Usage: bun mind/agent.ts <character>
 // The server address and token come from mind/.env (see mind/.env.example).
 
@@ -8,12 +8,14 @@ import { heardCommand } from "./src/commands.ts";
 import { Connection } from "./src/connection.ts";
 import { onCtrlC } from "./src/ctrl-c.ts";
 import { loadEnvFile } from "./src/env.ts";
-import type { Percept, PerceptMessage, Primitive } from "./src/protocol.ts";
+import { merchantIndex } from "./src/inventory.ts";
+import type { InventoryItem, Percept, PerceptMessage, Primitive } from "./src/protocol.ts";
 import { Runner } from "./src/runner.ts";
 import type { Position } from "./src/surroundings.ts";
 import { Agent } from "./src/tactic.ts";
 import { come } from "./src/tactics/come.ts";
 import { grind } from "./src/tactics/grind.ts";
+import { shop } from "./src/tactics/shop.ts";
 
 const character = Bun.argv[2];
 
@@ -40,7 +42,7 @@ const agent = new Agent({
   },
   log,
 });
-const { self: agentSelf, surroundings } = agent;
+const { self: agentSelf, surroundings, inventory } = agent;
 const runner = new Runner(agent);
 
 const connection = new Connection({ url, token, character, log }, {
@@ -55,6 +57,9 @@ const connection = new Connection({ url, token, character, log }, {
         break;
       case "grind":
         void runner.start("grind", grind);
+        break;
+      case "shop":
+        void runner.start("shop", shop);
         break;
       case "stop":
         void runner.stop();
@@ -130,6 +135,16 @@ function describe(percept: Percept): string {
       return `died #${percept.objectId} ${nameOf(percept.objectId)}, killed by #${percept.killerId} ${nameOf(percept.killerId)}`;
     case "revived":
       return `revived #${percept.objectId} ${nameOf(percept.objectId)}`;
+    case "inventory":
+      return `inventory${percept.window === "Update" ? "" : ` (${percept.window})`}\t${percept.slots.map(({ slot, item }) => `${slot}: ${item ? describeItem(item) : "empty"}`).join(", ") || "nothing"}`;
+    case "encumbrance":
+      return `encumbrance\t${percept.weight} of ${percept.capacity} lb`;
+    case "money":
+      return `money\t${inventory.money} copper`;
+    case "examined":
+      return `examined ${percept.caption}\t${percept.lines.join(" | ")}`;
+    case "merchantWindow":
+      return `merchantWindow${inventory.merchant?.objectId === undefined ? "" : ` #${inventory.merchant.objectId} ${nameOf(inventory.merchant.objectId)}`}\t${percept.items.map((sold) => `${merchantIndex(sold)}: ${sold.name} level ${sold.level} ${sold.price} copper${sold.usable ? "" : " (unusable)"}`).join(", ") || "nothing"}`;
   }
 }
 
@@ -152,9 +167,30 @@ function describePrimitive(primitive: Primitive): string {
       return `attack ${primitive.on ? "on" : "off"}`;
     case "command":
       return `command ${primitive.text}`;
+    case "moveItem":
+      return `moveItem ${primitive.from} (${inventory.item(primitive.from)?.name ?? "empty"}) to ${primitive.to}`;
+    case "examine":
+    case "destroy":
+    case "sell":
+      return `${primitive.name} ${primitive.slot} (${inventory.item(primitive.slot)?.name ?? "empty"})`;
+    case "examineMerchantItem":
+      return `examineMerchantItem ${primitive.index} (${merchantItemName(primitive.index)})`;
+    case "buy":
+      return `buy ${primitive.count} of ${primitive.index} (${merchantItemName(primitive.index)})`;
+    case "pickUp":
+    case "talkTo":
+      return `${primitive.name} #${primitive.objectId} ${nameOf(primitive.objectId)}`;
     default:
       return primitive.name;
   }
+}
+
+function describeItem(item: InventoryItem): string {
+  return `${item.name} level ${item.level}${item.dpsAf ? ` dps/af ${item.dpsAf}` : ""}`;
+}
+
+function merchantItemName(index: number): string {
+  return inventory.merchant?.items.find((sold) => merchantIndex(sold) === index)?.name ?? "unknown";
 }
 
 // As `/gloc` prints a position, in whole units.
