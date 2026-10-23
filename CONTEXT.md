@@ -58,27 +58,17 @@ _Avoid_: player, status, me
 What an Agent currently believes is around it, such as who and what is near and where, built only from Percepts.
 _Avoid_: world model, world state
 
+**Inventory**:
+What an Agent currently believes it carries, such as what it has equipped, what's in its backpack, its money and how much weight it carries against how much it can, built only from Percepts.
+_Avoid_: bag, items
+
 **Tactic**:
 A unit of Mind-side code that pursues an aim by issuing Primitives and running other Tactics, and ends having succeeded or failed with a reason, written by a Human or by the Agent itself.
 _Avoid_: skill, script, procedure, routine
 
-**Tactic Library**:
-An Agent's collection of Tactics.
-_Avoid_: skill library
-
-**Plan**:
-An Agent's current ordered goals.
-_Avoid_: strategy
-
-**Planning**:
-The LLM producing or revising a Plan.
-
-**Reflection**:
-The LLM reviewing outcomes to revise Tactics and record Lessons.
-
 **Lesson**:
-A durable insight recorded by Reflection that informs future Planning.
+A durable insight the Agent writes down while playing, and reads again before it next acts.
 
 **Journal**:
-An Agent's append-only record of Percepts, Primitives, Planning and Reflection; the material the Human studies.
+An Agent's record of the Percepts it got, the Primitives it sent and the notes it kept while playing; the material the Human studies.
 _Avoid_: event log, telemetry
