@@ -7,6 +7,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `say-hello.tsv` is 17 s of account `admin`'s Hibernia Character standing in the world while the Human types `hello` (plain, no slash), then `/send greeen hello` and `/agent capture off`. Recorded with `/agent capture admin` on 2026-10-20, unmodified. See Say.
 - `run-turn-stop.tsv` is 62 s of the same Character on flat open ground in zone 202. It stands, runs in a straight line and stops, strafes right, turns on the spot with the keyboard, runs past an NPC and stops, then targets the NPC. Before each part the Human said `run`, `turn` and `npc`, which mark the parts in the capture as say commands. Recorded with `/agent capture admin` on 2026-10-20, unmodified. See Movement.
 - `target-attack-sit.tsv` is 91 s of account `joshua`'s Hibernia Character next to a low-level Mob. It attacks with something targeted, targets the Mob, clears the target, then fights the Mob until it dies, and types `/sit`, `/sit` and `/stand`. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Fighting and resting.
+- `items-merchants.tsv` is 15 minutes of account `joshua`'s Character Nuschka, from login at Connla: talking to merchants, buying and selling, equipping and unequipping by dragging, examining items, dropping one, trying salvage, picking up loot and typing `/sell all`. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Items and merchants.
 - `sit-key.tsv` is 26 s of the same Character sitting and standing twice with the sit key. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Fighting and resting.
 - `login-next-to-agent.tsv` is 189 s of the same Character next to the Agent Greeen, who is already in the world. The Human says `come` and types `/speed 0` with Greeen targeted, quits to the character screen with `/q`, logs back in next to Greeen, says `come`, types `/speed 191`, says `come` three more times and types `/jump greeen to vue`. The first 189 s of a recording with `/agent capture admin` on 2026-10-21, taken while it was still running, otherwise unmodified. See Players already in the world.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
@@ -146,16 +147,16 @@ From `target-attack-sit.tsv`, and the targeting at the end of `run-turn-stop.tsv
 
 ## Items and merchants
 
-Not captured yet, so the Harness builds them as their handlers read them, with the default parameter 0xFFFF. Where a handler reads a field it doesn't use, the Harness writes the client's session ID, or its X and Y as whole units:
-- Move item (0xDD, `PlayerMoveItemRequestHandler`): an unused short, the destination slot, the source slot, and the count, 0 for a whole stack.
-- Detail request (0xD8, `DetailDisplayHandler`): the kind of thing (1 an inventory item, 4 a merchant's item), an unused int, and the slot, or the page times 30 plus the place on the page.
-- Pick up request (0xB5, `PlayerPickUpRequestHandler`): X, Y, the session ID and the object. The server picks up the client's target, so the Harness targets the object first, as a click does.
-- Destroy item request (0x80, `DestroyItemRequestHandler`): 4 skipped bytes and the backpack slot.
-- Interact request (0x7A, `ObjectInteractRequestHandler`): X, Y, the session ID and the object, which the Harness targets first.
-- Buy request (0x78, `PlayerBuyRequestHandler`): X, Y, the session ID, the index as in the detail request, the count and the merchant window type, 0 for a merchant's normal window.
-- Sell request (0x79, `PlayerSellRequestHandler`): X, Y, the session ID and the backpack slot.
+From `items-merchants.tsv`. Every one of these packets has parameter 0x0000. Where a handler reads a field it doesn't use, the client writes its session ID, or its X and Y in whole units. No markers were said: the parts are told apart by their packets.
 
-The capture to record, with a marker said before each part: moving an item within the backpack; equipping and unequipping an armour piece and a weapon by dragging; examining an item in the backpack and one in a merchant's window; talking to a merchant, buying an item and selling one; destroying an item; and picking up an item from the ground (`/autoloot off` and a kill first).
+- **Move item (0xDD).** 8 bytes: the session ID, the destination slot, the source slot and the count, which was 0 every time. Dragging onto a slot sends that slot (gloves to 22, the torso to 25, to and from the backpack). Dragging onto the figure sends 600 (`NewPlayerPaperDoll`), and the server then picks the slot from the item. Dragging an item out of the window sends slot 1, the ground, and the server drops it there.
+- **No destroy.** The 1.127 client has no way to destroy an item, so the destroy request (0x80) never appears. Its salvage needs a crafting skill and goes as a detail request of kind 102.
+- **Detail request (0xD8).** 12 bytes: the kind of thing (1 an item in the backpack or equipment, 4 an item in a merchant's window, 102 salvage), then `1A000000` for an item and 0 for salvage, then the slot or the merchant window's index (the page times 30 plus the place on the page), then 4 bytes of 0. The server doesn't read the second field for items.
+- **Interact request (0x7A).** The client targets the NPC first (0xB0, `E000` as for any click), then sends 12 bytes: X, Y, the session ID and the NPC's object ID. A merchant answers with its window.
+- **Buy request (0x78).** 16 bytes: X, Y, the session ID, the index, the count (1), the window type (0, a merchant's normal window) and 2 bytes of 0. The merchant is the client's target.
+- **Sell request (0x79).** 12 bytes: X, Y, the session ID and the backpack slot. The merchant is the client's target.
+- **Pick up request (0xB5).** The client targets the loot first, then sends a single byte, 0: the server picks up its target.
+- `/sell all` sells the whole backpack to the targeted merchant, a server command sent as any other (`&sell all`).
 
 ## Fields that vary between captures
 
@@ -166,7 +167,7 @@ These hold for every packet:
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
 
-Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC and 0xB8; 0xFFFE for 0xFC; 0xFFFF for the rest.
+Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79 and 0xB5; 0xFFFE for 0xFC; 0xFFFF for the rest.
 
 Packet data, by data offset:
 

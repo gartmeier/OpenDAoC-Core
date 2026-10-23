@@ -315,99 +315,79 @@ namespace DOL.GS.Tests
             Assert.That(packet.ReadShortLowEndian(), Is.EqualTo(0x1234));
         }
 
-        // Not captured yet: the item and merchant requests follow their handlers until they are.
+        // Every move in the capture, equipping and unequipping, rearranging the backpack and dropping an item on the ground (slot 1). The client always sent a count of 0.
         [Test]
-        public void MoveItem_ShouldCarryTheSlotsAndCountAsTheHandlerReadsThem()
+        public void MoveItem_ShouldMatchCapture()
         {
-            GSPacketIn packet = Loaded(ClientPackets1127.MoveItem(0x0101, 41, 10, 0));
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.ITEMS, eClientPackets.PlayerMoveItem);
+            Assert.That(captured, Is.Not.Empty);
 
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.PlayerMoveItem));
-            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
-            Assert.That(packet.ReadShort(), Is.EqualTo(10), "to");
-            Assert.That(packet.ReadShort(), Is.EqualTo(41), "from");
-            Assert.That(packet.ReadShort(), Is.Zero, "count");
+            foreach (CapturedPacket packet in captured)
+                AssertMatches(ClientPackets1127.MoveItem(packet.SessionId, Short(packet, 4), Short(packet, 2), 0), packet);
+        }
+
+        // Shift-clicks on items in the backpack, in the equipment and in a merchant's window. The salvage request (type 102) goes the same way, and has no builder.
+        [Test]
+        public void ExamineAndExamineMerchantItem_ShouldMatchCapture()
+        {
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.ITEMS, eClientPackets.DetailRequest);
+            CapturedPacket[] inventory = captured.Where(static packet => Short(packet, 0) == 1).ToArray();
+            CapturedPacket[] merchant = captured.Where(static packet => Short(packet, 0) == 4).ToArray();
+            Assert.That(inventory, Is.Not.Empty);
+            Assert.That(merchant, Is.Not.Empty);
+
+            foreach (CapturedPacket packet in inventory)
+                AssertMatches(ClientPackets1127.Examine(Short(packet, 6)), packet);
+
+            foreach (CapturedPacket packet in merchant)
+                AssertMatches(ClientPackets1127.ExamineMerchantItem(Short(packet, 6)), packet);
         }
 
         [Test]
-        public void Examine_ShouldAskForTheInventoryItemsDetailsAsTheHandlerReadsThem()
+        public void InteractRequest_ShouldMatchCapture_AfterTargetingTheObject()
         {
-            GSPacketIn packet = Loaded(ClientPackets1127.Examine(41));
+            CapturedPacket[] packets = ClientCaptures.Load(ClientCaptures.ITEMS);
+            int[] interacts = [.. Enumerable.Range(0, packets.Length).Where(i => packets[i].Code == (byte) eClientPackets.ObjectInteractRequest)];
+            Assert.That(interacts, Is.Not.Empty);
 
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.DetailRequest));
-            Assert.That(packet.ReadShort(), Is.EqualTo(1), "object type: inventory item");
-            Assert.That(packet.ReadInt(), Is.Zero, "extra ID");
-            Assert.That(packet.ReadShort(), Is.EqualTo(41), "slot");
+            foreach (int i in interacts)
+            {
+                CapturedPacket packet = packets[i];
+                AssertMatches(ClientPackets1127.InteractRequest(Int(packet, 0), Int(packet, 4), packet.SessionId, Short(packet, 10)), packet);
+                Assert.That(Short(packets[i - 1], 0), Is.EqualTo(Short(packet, 10)), "targeted first");
+            }
         }
 
         [Test]
-        public void ExamineMerchantItem_ShouldAskForTheMerchantItemsDetailsAsTheHandlerReadsThem()
+        public void BuyRequest_ShouldMatchCapture()
         {
-            GSPacketIn packet = Loaded(ClientPackets1127.ExamineMerchantItem(31));
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.ITEMS, eClientPackets.BuyRequest);
+            Assert.That(captured, Is.Not.Empty);
 
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.DetailRequest));
-            Assert.That(packet.ReadShort(), Is.EqualTo(4), "object type: merchant item");
-            Assert.That(packet.ReadInt(), Is.Zero, "extra ID");
-            Assert.That(packet.ReadShort(), Is.EqualTo(31), "index");
+            foreach (CapturedPacket packet in captured)
+                AssertMatches(ClientPackets1127.BuyRequest(Int(packet, 0), Int(packet, 4), packet.SessionId, Short(packet, 10), packet.Data[12]), packet);
         }
 
         [Test]
-        public void PickUpRequest_ShouldCarryThePositionAndObjectAsTheHandlerReadsThem()
+        public void SellRequest_ShouldMatchCapture()
         {
-            GSPacketIn packet = Loaded(ClientPackets1127.PickUpRequest(296516, 641415, 0x0101, 0x1F0B));
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.ITEMS, eClientPackets.SellRequest);
+            Assert.That(captured, Is.Not.Empty);
 
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.PickUpRequest));
-            Assert.That(packet.ReadInt(), Is.EqualTo(296516));
-            Assert.That(packet.ReadInt(), Is.EqualTo(641415));
-            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
-            Assert.That(packet.ReadShort(), Is.EqualTo(0x1F0B));
+            foreach (CapturedPacket packet in captured)
+                AssertMatches(ClientPackets1127.SellRequest(Int(packet, 0), Int(packet, 4), packet.SessionId, Short(packet, 10)), packet);
         }
 
+        // The client targeted the loot first, then sent a single byte: the server picks up its target.
         [Test]
-        public void DestroyItemRequest_ShouldCarryTheSlotAsTheHandlerReadsIt()
+        public void PickUpRequest_ShouldMatchCapture_AfterTargetingTheObject()
         {
-            GSPacketIn packet = Loaded(ClientPackets1127.DestroyItemRequest(41));
+            CapturedPacket[] packets = ClientCaptures.Load(ClientCaptures.ITEMS);
+            int i = Array.FindIndex(packets, static packet => packet.Code == (byte) eClientPackets.PickUpRequest);
+            Assert.That(i, Is.Positive);
 
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.DestroyItemRequest));
-            packet.Skip(4);
-            Assert.That(packet.ReadShort(), Is.EqualTo(41));
-        }
-
-        [Test]
-        public void InteractRequest_ShouldCarryThePositionAndObjectAsTheHandlerReadsThem()
-        {
-            GSPacketIn packet = Loaded(ClientPackets1127.InteractRequest(296516, 641415, 0x0101, 0x1F0B));
-
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.ObjectInteractRequest));
-            Assert.That(packet.ReadInt(), Is.EqualTo(296516));
-            Assert.That(packet.ReadInt(), Is.EqualTo(641415));
-            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
-            Assert.That(packet.ReadShort(), Is.EqualTo(0x1F0B));
-        }
-
-        [Test]
-        public void BuyRequest_ShouldCarryTheIndexCountAndWindowAsTheHandlerReadsThem()
-        {
-            GSPacketIn packet = Loaded(ClientPackets1127.BuyRequest(296516, 641415, 0x0101, 31, 2));
-
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.BuyRequest));
-            Assert.That(packet.ReadInt(), Is.EqualTo(296516));
-            Assert.That(packet.ReadInt(), Is.EqualTo(641415));
-            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
-            Assert.That(packet.ReadShort(), Is.EqualTo(31), "index");
-            Assert.That(packet.ReadByte(), Is.EqualTo(2), "count");
-            Assert.That(packet.ReadByte(), Is.EqualTo((int) eMerchantWindowType.Normal), "window");
-        }
-
-        [Test]
-        public void SellRequest_ShouldCarryTheSlotAsTheHandlerReadsIt()
-        {
-            GSPacketIn packet = Loaded(ClientPackets1127.SellRequest(296516, 641415, 0x0101, 41));
-
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.SellRequest));
-            Assert.That(packet.ReadInt(), Is.EqualTo(296516));
-            Assert.That(packet.ReadInt(), Is.EqualTo(641415));
-            Assert.That(packet.ReadShort(), Is.EqualTo(0x0101));
-            Assert.That(packet.ReadShort(), Is.EqualTo(41));
+            AssertMatches(ClientPackets1127.PickUpRequest(), packets[i]);
+            Assert.That(packets[i - 1].Code, Is.EqualTo((byte) eClientPackets.PlayerTarget), "targeted first");
         }
 
         [TestCase(100, 0x00)]
@@ -428,6 +408,17 @@ namespace DOL.GS.Tests
             Assert.That(wire.Bytes[..8], Is.EqualTo(captured.Bytes[..8]), "header");
             Assert.That(wire.Code, Is.EqualTo(captured.Code), "code");
             Assert.That(Masked(wire.Data, maskedDataOffsets), Is.EqualTo(Masked(captured.Data, maskedDataOffsets)), "data");
+        }
+
+        // Big-endian, at a data offset.
+        private static ushort Short(CapturedPacket packet, int offset)
+        {
+            return BinaryPrimitives.ReadUInt16BigEndian(packet.Data.AsSpan(offset));
+        }
+
+        private static uint Int(CapturedPacket packet, int offset)
+        {
+            return BinaryPrimitives.ReadUInt32BigEndian(packet.Data.AsSpan(offset));
         }
 
         // The packet as a handler gets it, ready to read its data.

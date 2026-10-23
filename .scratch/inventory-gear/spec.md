@@ -194,7 +194,8 @@ Acceptance: `shop` gears Greeen up in Connla, and from `/player level 1` the Gri
 
 **2026-10-23 (agent):** Implemented, not yet tested in game. Where it differs from or adds to the spec above:
 
-- **The item and merchant requests aren't captured yet.** The Human still has to record the capture listed under Implementation Decisions. Until then the seven builders follow their handlers' read logic, checked by tests that read them back as the handlers do, and the fixtures README lists what each one writes. Where a handler reads a field it doesn't use, the Harness writes the session ID or the client's X and Y. Then add golden-byte tests and correct the builders if the bytes differ.
+- **Captured on 2026-10-23** in `items-merchants.tsv`. The builders match it byte for byte. Against the handlers' read logic it differed in: parameter 0x0000 on every request, two trailing 0s on the buy request, a 12-byte detail request with `1A000000` after the kind, and a one-byte pick up request.
+- **No `destroy`.** The 1.127 client can't destroy an item: dragging it out of the window moves it to slot 1, the ground, and the server drops it. `moveItem` to slot 1 does the same, so there's no `destroy` Primitive.
 - **The 80% weight risk is gone.** `GamePlayer.UpdateEncumbrance` sends the encumbrance whenever the weight carried or the capacity changes, not only above capacity.
 - **An item's weight is the whole stack's,** in tenths of a pound, as the server's item has it. Encumbrance is in pounds.
 - **`count` comes from the packet only where it carries one** (generic items, arrows, bolts, poisons, thrown weapons), and is 1 otherwise. Any stack of more than one also has its count in front of its name.

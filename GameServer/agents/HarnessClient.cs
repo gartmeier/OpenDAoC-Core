@@ -217,13 +217,6 @@ namespace DOL.GS.Agents
 
                     break;
                 }
-                case DestroyPrimitive destroy:
-                {
-                    if (BadSlot(destroy.Slot) is string reason)
-                        return reason;
-
-                    break;
-                }
                 case SellPrimitive sell:
                 {
                     if (BadSlot(sell.Slot) is string reason)
@@ -279,8 +272,7 @@ namespace DOL.GS.Agents
                 MoveItemPrimitive moveItem => ClientPackets1127.MoveItem(SessionID, (ushort) moveItem.From, (ushort) moveItem.To, 0),
                 ExaminePrimitive examine => ClientPackets1127.Examine((ushort) examine.Slot),
                 ExamineMerchantItemPrimitive examine => ClientPackets1127.ExamineMerchantItem((ushort) examine.Index),
-                PickUpPrimitive pickUp => ClientPackets1127.PickUpRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) pickUp.ObjectId),
-                DestroyPrimitive destroy => ClientPackets1127.DestroyItemRequest((ushort) destroy.Slot),
+                PickUpPrimitive => ClientPackets1127.PickUpRequest(),
                 TalkToPrimitive talkTo => ClientPackets1127.InteractRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) talkTo.ObjectId),
                 BuyPrimitive buy => ClientPackets1127.BuyRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) buy.Index, (byte) buy.Count),
                 SellPrimitive sell => ClientPackets1127.SellRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) sell.Slot),

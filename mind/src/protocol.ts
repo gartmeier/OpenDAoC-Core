@@ -45,7 +45,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | DestroyPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -115,11 +115,6 @@ export interface ExamineMerchantItemPrimitive {
 export interface PickUpPrimitive {
   name: "pickUp";
   objectId: number;
-}
-
-export interface DestroyPrimitive {
-  name: "destroy";
-  slot: number;
 }
 
 export interface TalkToPrimitive {

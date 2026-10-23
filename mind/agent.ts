@@ -170,7 +170,6 @@ function describePrimitive(primitive: Primitive): string {
     case "moveItem":
       return `moveItem ${primitive.from} (${inventory.item(primitive.from)?.name ?? "empty"}) to ${primitive.to}`;
     case "examine":
-    case "destroy":
     case "sell":
       return `${primitive.name} ${primitive.slot} (${inventory.item(primitive.slot)?.name ?? "empty"})`;
     case "examineMerchantItem":

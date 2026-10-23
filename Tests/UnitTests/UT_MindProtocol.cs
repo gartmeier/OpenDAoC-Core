@@ -99,7 +99,6 @@ namespace DOL.GS.Tests
             Assert.That(Read("""{"type":"primitive","id":18,"primitive":{"name":"examine","slot":41}}"""), Is.EqualTo(new PrimitiveMessage(18, new ExaminePrimitive(41))));
             Assert.That(Read("""{"type":"primitive","id":19,"primitive":{"name":"examineMerchantItem","index":31}}"""), Is.EqualTo(new PrimitiveMessage(19, new ExamineMerchantItemPrimitive(31))));
             Assert.That(Read("""{"type":"primitive","id":20,"primitive":{"name":"pickUp","objectId":7947}}"""), Is.EqualTo(new PrimitiveMessage(20, new PickUpPrimitive(7947))));
-            Assert.That(Read("""{"type":"primitive","id":21,"primitive":{"name":"destroy","slot":42}}"""), Is.EqualTo(new PrimitiveMessage(21, new DestroyPrimitive(42))));
             Assert.That(Read("""{"type":"primitive","id":22,"primitive":{"name":"talkTo","objectId":7947}}"""), Is.EqualTo(new PrimitiveMessage(22, new TalkToPrimitive(7947))));
             Assert.That(Read("""{"type":"primitive","id":23,"primitive":{"name":"buy","index":31,"count":1}}"""), Is.EqualTo(new PrimitiveMessage(23, new BuyPrimitive(31, 1))));
             Assert.That(Read("""{"type":"primitive","id":24,"primitive":{"name":"sell","slot":43}}"""), Is.EqualTo(new PrimitiveMessage(24, new SellPrimitive(43))));

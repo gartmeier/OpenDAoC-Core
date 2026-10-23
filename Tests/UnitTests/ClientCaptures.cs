@@ -31,7 +31,10 @@ namespace DOL.GS.Tests
         // A Character sitting and standing with the sit key.
         public const string SIT_KEY = "sit-key";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY];
+        // A Character logging in at Connla to trade with merchants, equip, examine, drop and pick up items.
+        public const string ITEMS = "items-merchants";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS];
 
         public static CapturedPacket[] Load(string capture)
         {

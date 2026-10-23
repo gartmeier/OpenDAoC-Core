@@ -197,11 +197,14 @@ namespace DOL.GS.Agents
             return Command("&stand");
         }
 
-        // The item and merchant requests below aren't captured yet. They follow what their handlers read, and the parameter is the default one.
-        // Where a handler reads a short it doesn't use before the slots, or after the client's position, the Harness writes the session ID.
+        // The item and merchant requests below are as captured in `items-merchants.tsv`. Each has parameter 0x0000.
+        // Where a handler reads a field it doesn't use, the client wrote its session ID, or its X and Y in whole units.
 
-        // Moves the item in client slot `from` to client slot `to`, as dragging it does: equipment slots are 10-37 and backpack slots 40-79.
-        // `count` is how many of a stack to move, 0 for all of it. Read by `PlayerMoveItemRequestHandler`: an unused short, the destination, the source and the count.
+        // What the client writes after the kind of thing to describe, in every detail request for an item. Unknown, and the server doesn't read it for items.
+        private const uint ITEM_DETAIL_EXTRA = 0x1A000000;
+
+        // Moves the item in client slot `from` to client slot `to`, as dragging it does: the ground is 1, equipment slots are 10-37 and backpack slots 40-79.
+        // `count` is how many of a stack to move, 0 for all of it, which is all the captured client sent. Read by `PlayerMoveItemRequestHandler`: the session ID, which it doesn't use, the destination, the source and the count.
         public static ClientPacket MoveItem(ushort sessionId, ushort from, ushort to, ushort count)
         {
             byte[] data = new byte[8];
@@ -210,7 +213,7 @@ namespace DOL.GS.Agents
             BinaryPrimitives.WriteUInt16BigEndian(span[2..], to);
             BinaryPrimitives.WriteUInt16BigEndian(span[4..], from);
             BinaryPrimitives.WriteUInt16BigEndian(span[6..], count);
-            return new((byte) eClientPackets.PlayerMoveItem, DEFAULT_PARAMETER, data);
+            return new((byte) eClientPackets.PlayerMoveItem, NO_PARAMETER, data);
         }
 
         // Asks for the details of the item in client slot `slot`, as a shift-click on it does. The server answers with a detail window.
@@ -225,18 +228,10 @@ namespace DOL.GS.Agents
             return DetailRequest(4, index);
         }
 
-        // Picks up the object the client has targeted. Read by `PlayerPickUpRequestHandler`: the client's position, its session ID and the object, none of which the server uses.
-        public static ClientPacket PickUpRequest(uint x, uint y, ushort sessionId, ushort objectId)
+        // Picks up the object the client has targeted, which the server reads instead of anything in the packet: the captured client sent a single 0.
+        public static ClientPacket PickUpRequest()
         {
-            return PositionAndTwoShorts(eClientPackets.PickUpRequest, x, y, sessionId, objectId);
-        }
-
-        // Destroys the item in backpack slot `slot`. Read by `DestroyItemRequestHandler`, which skips the first 4 bytes.
-        public static ClientPacket DestroyItemRequest(ushort slot)
-        {
-            byte[] data = new byte[6];
-            BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(4), slot);
-            return new((byte) eClientPackets.DestroyItemRequest, DEFAULT_PARAMETER, data);
+            return new((byte) eClientPackets.PickUpRequest, NO_PARAMETER, [0x00]);
         }
 
         // Interacts with the object, as a right-click on it does: a merchant answers with its window. Read by `ObjectInteractRequestHandler`: the client's position, its session ID and the object.
@@ -246,14 +241,14 @@ namespace DOL.GS.Agents
         }
 
         // Buys `count` of the item at `index` in the window of the merchant the client has targeted, as `ExamineMerchantItem` numbers it.
-        // Read by `PlayerBuyRequestHandler`: the client's position, its session ID, the index, the count and the window type. Only housing windows differ from a merchant's normal one.
+        // Read by `PlayerBuyRequestHandler`: the client's position, its session ID, the index, the count and the window type, 0 for a merchant's normal one. Two bytes of 0 follow, which it doesn't read.
         public static ClientPacket BuyRequest(uint x, uint y, ushort sessionId, ushort index, byte count)
         {
-            byte[] data = new byte[14];
+            byte[] data = new byte[16];
             WritePositionAndTwoShorts(data, x, y, sessionId, index);
             data[12] = count;
             data[13] = (byte) eMerchantWindowType.Normal;
-            return new((byte) eClientPackets.BuyRequest, DEFAULT_PARAMETER, data);
+            return new((byte) eClientPackets.BuyRequest, NO_PARAMETER, data);
         }
 
         // Sells the item in client slot `slot` to the merchant the client has targeted. Read by `PlayerSellRequestHandler`: the client's position, its session ID and the slot.
@@ -262,20 +257,21 @@ namespace DOL.GS.Agents
             return PositionAndTwoShorts(eClientPackets.SellRequest, x, y, sessionId, slot);
         }
 
-        // Read by `DetailDisplayHandler`: what kind of thing to describe, an extra ID only some kinds use, and which one.
+        // Read by `DetailDisplayHandler`: what kind of thing to describe, an extra ID it doesn't read for items, and which one. Four bytes of 0 follow.
         private static ClientPacket DetailRequest(ushort objectType, ushort objectId)
         {
-            byte[] data = new byte[8];
+            byte[] data = new byte[12];
             BinaryPrimitives.WriteUInt16BigEndian(data, objectType);
+            BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(2), ITEM_DETAIL_EXTRA);
             BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(6), objectId);
-            return new((byte) eClientPackets.DetailRequest, DEFAULT_PARAMETER, data);
+            return new((byte) eClientPackets.DetailRequest, NO_PARAMETER, data);
         }
 
         private static ClientPacket PositionAndTwoShorts(eClientPackets code, uint x, uint y, ushort first, ushort second)
         {
             byte[] data = new byte[12];
             WritePositionAndTwoShorts(data, x, y, first, second);
-            return new((byte) code, DEFAULT_PARAMETER, data);
+            return new((byte) code, NO_PARAMETER, data);
         }
 
         private static void WritePositionAndTwoShorts(Span<byte> data, uint x, uint y, ushort first, ushort second)

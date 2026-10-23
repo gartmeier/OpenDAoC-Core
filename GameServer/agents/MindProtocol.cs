@@ -122,7 +122,6 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(ExaminePrimitive), "examine")]
     [JsonDerivedType(typeof(ExamineMerchantItemPrimitive), "examineMerchantItem")]
     [JsonDerivedType(typeof(PickUpPrimitive), "pickUp")]
-    [JsonDerivedType(typeof(DestroyPrimitive), "destroy")]
     [JsonDerivedType(typeof(TalkToPrimitive), "talkTo")]
     [JsonDerivedType(typeof(BuyPrimitive), "buy")]
     [JsonDerivedType(typeof(SellPrimitive), "sell")]
@@ -168,6 +167,7 @@ namespace DOL.GS.Agents
 
     // Moves the item in slot `From` to slot `To`, as dragging it does, which equips and unequips too. Slots are the client's: equipment 10-37 (right hand 10, left hand 11, two-handed 12, ranged 13, head 21, hands 22, feet 23, torso 25, cloak 26, legs 27, arms 28), backpack 40-79.
     // A whole stack moves. Onto a taken slot, the two items swap. Slot 1 is the ground, and the horse's bags are 80-99. The Harness refuses anything else.
+    // Moving an item to the ground drops it there, the only way a 1.127 client gets rid of one: it has no way to destroy an item.
     public sealed record MoveItemPrimitive([property: JsonRequired] int From, [property: JsonRequired] int To) : Primitive;
 
     // Asks for the details of the item in slot `Slot`, as a shift-click does. They come as an `examined` Percept.
@@ -178,9 +178,6 @@ namespace DOL.GS.Agents
 
     // Picks up the object from the ground, targeting it first as a click does. The server checks the Character may take it and stands within 256 units.
     public sealed record PickUpPrimitive([property: JsonRequired] int ObjectId) : Primitive;
-
-    // Destroys the item in backpack slot `Slot`. The server won't destroy what's equipped.
-    public sealed record DestroyPrimitive([property: JsonRequired] int Slot) : Primitive;
 
     // Talks to the NPC, as a right-click does, targeting it first. The server needs it within 192 units. A merchant answers with its window, as a `merchantWindow` Percept.
     public sealed record TalkToPrimitive([property: JsonRequired] int ObjectId) : Primitive;
