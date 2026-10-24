@@ -52,21 +52,29 @@ export interface GrindOptions {
   prefer?: string;
   /** Mob names never to pull, such as blackthorns, which call lunantishee to their defence. */
   exclude?: string[];
+  /** Rest up to this percent. */
+  restTo?: number;
+  /** Seconds spent fighting, resting, roaming and dead, added up here. */
+  times?: Record<string, number>;
 }
 
 /** Kills Mobs in a level band, nearest first but preferring higher levels, until `goal` level, resting between fights. */
-export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spots = [], minutes = 25, band = [-1, -1], restBelow = 90, money = Infinity, prefer, exclude = [] }: GrindOptions): Promise<Outcome> {
+export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spots = [], minutes = 25, band = [-1, -1], restBelow = 90, money = Infinity, prefer, exclude = [], restTo = 100, times = {} }: GrindOptions): Promise<Outcome> {
   const deadline = Date.now() + minutes * 60_000;
   const levelOf = () => Math.max(agent.self.level, knownLevel);
   const avoid = new Map<number, number>();
   let spot = 0;
   let roams = 0;
+  const timed = async <T>(what: string, p: Promise<T>): Promise<T> => {
+    const t = Date.now();
+    try { return await p; } finally { times[what] = Math.round((times[what] ?? 0) + (Date.now() - t) / 1000); }
+  };
 
   while (levelOf() < goal) {
     if (Date.now() > deadline) return failed("outOfTime");
     if (agent.inventory.money >= money) return failed("enoughMoney");
     if (agent.self.dead) {
-      const alive = await agent.sendAndWait({ name: "command", text: "/release" }, () => !agent.self.dead, 30_000);
+      const alive = await timed("dead", agent.sendAndWait({ name: "command", text: "/release" }, () => !agent.self.dead, 30_000));
       log.push(alive ? "died, released" : "died, still dead");
       if (!alive) return failed("stillDead");
       continue;
@@ -77,13 +85,13 @@ export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spot
     const me = agent.self.objectId;
     const attacker = me === undefined ? undefined : agent.surroundings.attacking(me)[0];
     if (attacker) {
-      const r = await kill(agent, attacker.objectId);
+      const r = await timed("fight", kill(agent, attacker.objectId));
       log.push(`defended vs ${attacker.name} L${attacker.level}: ${r.ok ? "ok" : r.reason}`);
       continue;
     }
 
     if (agent.self.healthPercent < restBelow) {
-      await rest(agent, 100);
+      await timed("rest", rest(agent, restTo));
       continue;
     }
 
@@ -104,17 +112,23 @@ export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spot
       // Twice round every spot with nothing in the band: the area is camped out, so go elsewhere.
       if (++roams > spots.length * 2) return failed("areaEmpty");
       const to = spots[spot++ % spots.length];
-      const ran = await runTo(agent, to, 200);
+      const ran = await timed("roam", runTo(agent, to, 200));
       log.push(`roamed to X:${to.x} Y:${to.y}: ${ran.ok ? "ok" : ran.reason}`);
       continue;
     }
 
     roams = 0;
+    // `kill` gives up after 30 s without damage, which a long run to the Mob already takes: run most of the way first.
+    if (Math.hypot(mob.position.x - pos.x, mob.position.y - pos.y) > 2000) {
+      const ran = await timed("roam", runTo(agent, mob.position, 800));
+      if (!ran.ok) avoid.set(mob.objectId, (avoid.get(mob.objectId) ?? 0) + 1);
+      continue;
+    }
     const xpBefore = agent.self.level * 1000 + agent.self.levelPermill;
-    const stats = await fight(agent, mob.objectId);
+    const stats = await timed("fight", fight(agent, mob.objectId));
     const r = stats.outcome;
     const gained = agent.self.level * 1000 + agent.self.levelPermill - xpBefore;
-    log.push(`${mob.name} L${mob.level}: ${describe(stats)} +${gained}‰ (lvl ${levelOf()}, hp ${agent.self.healthPercent}%, end ${agent.self.endurancePercent}%)`);
+    log.push(`${mob.name} L${mob.level} at X:${Math.round(mob.position.x)} Y:${Math.round(mob.position.y)}: ${describe(stats)} +${gained}‰ (lvl ${levelOf()}, hp ${agent.self.healthPercent}%, end ${agent.self.endurancePercent}%)`);
     if (!r.ok) avoid.set(mob.objectId, (avoid.get(mob.objectId) ?? 0) + 1);
     if (r.ok && mob.name === prefer) return failed("preferredKilled");
   }

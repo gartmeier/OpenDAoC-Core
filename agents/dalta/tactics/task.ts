@@ -1,17 +1,20 @@
 import { type Agent, failed, type Outcome } from "../../../mind/src/tactic.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
 import { talkTo } from "../../../mind/src/tactics/trade.ts";
+import { grind, type GrindOptions } from "./grind.ts";
 
 /** Sentinel Eimile in Ardagh, a named guard who gives Kill Tasks. */
 export const EIMILE = { name: "Sentinel Eimile", x: 352314, y: 553250, z: 5100 };
+/** Sentinel Ornora in Tir na mBeo (Lough Derg), by the Healer Ionhar. */
+export const ORNORA = { name: "Sentinel Ornora", x: 345307, y: 526666, z: 5495 };
 
 /**
  * Goes to the task guard, hands in a finished Kill Task (talking to the guard does it) and asks for a new one.
  * Succeeds with the Mob to kill in `log`; fails with `noGuard`, or `noTask` if the guard gave none (e.g. the limit per level).
  */
-export async function takeTask(agent: Agent, log: string[] = []): Promise<Outcome & { mob?: string }> {
-  await runTo(agent, EIMILE, 100);
-  const guard = agent.surroundings.npcs.find((n) => n.name === EIMILE.name);
+export async function takeTask(agent: Agent, log: string[] = [], at = EIMILE): Promise<Outcome & { mob?: string }> {
+  await runTo(agent, at, 100);
+  const guard = agent.surroundings.npcs.find((n) => n.name === at.name);
   if (!guard) return failed("noGuard");
 
   const xp = agent.self.level * 1000 + agent.self.levelPermill;
@@ -26,4 +29,23 @@ export async function takeTask(agent: Agent, log: string[] = []): Promise<Outcom
   if (typeof said !== "string") return failed("noTask");
   log.push(`task: kill ${said}`);
   return { ok: true, mob: said };
+}
+
+/**
+ * Takes a Kill Task at `at`, grinds (with `opts`) until the task Mob dies, runs back and hands it in, over and over.
+ * Grinding also kills what's in the band on the way. Ends with the grind's reason when it isn't `preferredKilled`, or `noTask`.
+ */
+export async function taskLoop(agent: Agent, minutes: number, at: typeof EIMILE, opts: Omit<GrindOptions, "minutes" | "prefer" | "goal">): Promise<Outcome> {
+  const deadline = Date.now() + minutes * 60_000;
+  const log = opts.log ?? [];
+  const times = opts.times ?? {};
+  while (Date.now() < deadline) {
+    const t = Date.now();
+    const task = await takeTask(agent, log, at);
+    times.town = Math.round((times.town ?? 0) + (Date.now() - t) / 1000);
+    if (!task.ok || !task.mob) return task;
+    const r = await grind(agent, { ...opts, log, times, goal: 51, prefer: task.mob, minutes: (deadline - Date.now()) / 60_000 });
+    if (r.ok || r.reason !== "preferredKilled") return r;
+  }
+  return failed("outOfTime");
 }
