@@ -315,24 +315,22 @@ namespace DOL.GS.Tests
             Assert.That(packet.ReadShortLowEndian(), Is.EqualTo(0x1234));
         }
 
-        // No capture has a style used yet: until one does, the skill packet is checked against what `UseSkillHandler` reads, in its order.
+        // Every style Dalta used from the quickbar, with Mobs targeted: Shining Blade is 9 and Return Blade 10 after the specializations.
         [Test]
-        public void UseSkill_ShouldCarryThePositionFlagsAndIndexAsTheHandlerReadsThem()
+        public void UseSkill_ShouldMatchCapture()
         {
-            GSPacketIn packet = Loaded(ClientPackets1127.UseSkill(new Vector3(296516, 641415, 4848), 191, 0x09DF, 0xA000, 2));
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.STYLES, eClientPackets.UseSkill);
+            Assert.That(captured, Has.Length.EqualTo(7));
 
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.UseSkill));
-            Assert.That(packet.ReadFloatLowEndian(), Is.EqualTo(296516));
-            Assert.That(packet.ReadFloatLowEndian(), Is.EqualTo(641415));
-            Assert.That(packet.ReadFloatLowEndian(), Is.EqualTo(4848));
-            Assert.That(packet.ReadFloatLowEndian(), Is.EqualTo(191));
-            Assert.That(packet.ReadShort(), Is.EqualTo(0x09DF));
-            Assert.That(packet.ReadShort(), Is.EqualTo(0xA000));
-            Assert.That(packet.ReadByte(), Is.EqualTo(2), "the index after the specializations");
-            Assert.That(packet.ReadByte(), Is.Not.Zero, "the type, which says the index counts from after the specializations");
+            foreach (CapturedPacket packet in captured)
+            {
+                byte[] data = packet.Data;
+                Vector3 position = new(BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(0)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(4)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(8)));
+                AssertMatches(ClientPackets1127.UseSkill(position, ClientCaptures.Speed(packet), Short(packet, 16), 0xA000, data[20]), packet);
+            }
         }
 
-        // As above, against what `DetailDisplayHandler` reads: a style is kind 6, numbered 100 plus its place after the specializations.
+        // No capture has a style examined yet: until one does, the detail request is checked against what `DetailDisplayHandler` reads, a style as kind 6, numbered 100 plus its place after the specializations.
         [Test]
         public void ExamineStyle_ShouldAskForTheStyleAsTheHandlerReadsIt()
         {

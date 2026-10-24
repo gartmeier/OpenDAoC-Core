@@ -9,6 +9,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `target-attack-sit.tsv` is 91 s of account `joshua`'s Hibernia Character next to a low-level Mob. It attacks with something targeted, targets the Mob, clears the target, then fights the Mob until it dies, and types `/sit`, `/sit` and `/stand`. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Fighting and resting.
 - `items-merchants.tsv` is 15 minutes of account `joshua`'s Character Nuschka, from login at Connla: talking to merchants, buying and selling, equipping and unequipping by dragging, examining items, dropping one, trying salvage, picking up loot and typing `/sell all`. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Items and merchants.
 - `sit-key.tsv` is 26 s of the same Character sitting and standing twice with the sit key. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Fighting and resting.
+- `styles.tsv` is 209 s of account `agent2`'s Character Dalta, a level 5 Blademaster, already in the world, fighting Mobs and using styles from the quickbar. Recorded with `/agent capture agent2` on 2026-10-24, unmodified apart from its first line. See Styles.
 - `login-next-to-agent.tsv` is 189 s of the same Character next to the Agent Greeen, who is already in the world. The Human says `come` and types `/speed 0` with Greeen targeted, quits to the character screen with `/q`, logs back in next to Greeen, says `come`, types `/speed 191`, says `come` three more times and types `/jump greeen to vue`. The first 189 s of a recording with `/agent capture admin` on 2026-10-21, taken while it was still running, otherwise unmodified. See Players already in the world.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
@@ -158,6 +159,15 @@ From `items-merchants.tsv`. Every one of these packets has parameter 0x0000. Whe
 - **Pick up request (0xB5).** The client targets the loot first, then sends a single byte, 0: the server picks up its target.
 - `/sell all` sells the whole backpack to the targeted merchant, a server command sent as any other (`&sell all`).
 
+## Styles
+
+From `styles.tsv`. The Human, possessing Dalta, fought Mobs and clicked styles on the quickbar, ending with Return Blade after a parry and then Shining Blade. No style was examined.
+
+- **Use skill (0xBB).** Parameter 0x0000, 24 bytes: X, Y and Z as little-endian floats, the speed as a float (0 every time), the heading (the low 12 bits only), 2 bytes of flags, the index, the type and 2 bytes of 0.
+  - The flags were `A000` every time, with a Mob targeted: both target-in-view bits, which the server takes from this packet as from a position update.
+  - The type was `01`, so the index counts from the first entry after the specializations: Shining Blade was 9 and Return Blade 10.
+  - The position is where the client stands, which the server takes as a position update too.
+
 ## Fields that vary between captures
 
 These hold for every packet:
@@ -167,7 +177,7 @@ These hold for every packet:
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
 
-Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79 and 0xB5; 0xFFFE for 0xFC; 0xFFFF for the rest.
+Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79, 0xB5 and 0xBB; 0xFFFE for 0xFC; 0xFFFF for the rest.
 
 Packet data, by data offset:
 

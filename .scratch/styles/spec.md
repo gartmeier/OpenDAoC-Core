@@ -134,8 +134,8 @@ Acceptance: Dalta carries on, as the same Agent with its Lessons and Tactics, in
 
 **2026-10-24 (agent):** Implemented, not yet tested in game. Where it differs from or adds to the spec above:
 
-- **The capture is still to come.** No 1.127 capture has a skill packet (0xBB) or a Style detail request yet, so both builders follow what `UseSkillHandler` and `DetailDisplayHandler` read, and their tests read them back as the handlers do. Once the Human has recorded the capture, add golden-byte tests and correct the builders. Three things to look for:
-  - the skill packet's type byte (the Harness sends 1, for an index counted after the specializations) and its parameter (0x0000 here);
+- **Captured on 2026-10-24** in `styles.tsv`: Dalta, possessed by the Human, using Shining Blade (index 9) and Return Blade (10) from the quickbar. The skill packet matches it byte for byte, after one correction: it's 24 bytes, ending in 2 bytes of 0. Its type is 1 and its parameter 0x0000, as built.
+- **Examining a Style isn't captured yet.** `examineStyle` follows what `DetailDisplayHandler` reads, and its test reads it back as the handler does. A later capture should settle:
   - whether the client examines a Style as kind 6 (100 plus its index, answered with a text window, which is what `examineStyle` sends) or kind 25 (its internal ID, answered with delve info, which isn't projected as a Percept yet);
   - what the client writes in the detail request's extra ID for a Style (the item one here).
 - **The field is `style`, not `name`:** `useStyle { style, line? }` and `examineStyle { style, line? }`. `name` is already the Primitive's discriminator.

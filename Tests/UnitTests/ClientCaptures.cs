@@ -34,7 +34,10 @@ namespace DOL.GS.Tests
         // A Character logging in at Connla to trade with merchants, equip, examine, drop and pick up items.
         public const string ITEMS = "items-merchants";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS];
+        // A Blademaster fighting Mobs with styles from the quickbar.
+        public const string STYLES = "styles";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES];
 
         public static CapturedPacket[] Load(string capture)
         {

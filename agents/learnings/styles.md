@@ -32,6 +32,8 @@ return answered && examined ? [examined.caption, ...examined.lines] : "no answer
 - "You are too fatigued to use this style!" without the endurance;
 - "You must perform the Return Blade style before this one!" for a follow-up used too early.
 
+Every Style costs endurance, which `agent.self.endurancePercent` shows and which comes back over time. Without enough, the server says you're too fatigued and your swings go on without the Style.
+
 Each Style is used once, so queue it again for the next swing. This one fights with `kill` and queues Shining Blade again each time it's performed or failed:
 
 ```ts

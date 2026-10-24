@@ -203,7 +203,7 @@ namespace DOL.GS.Agents
         // What the client writes after the kind of thing to describe, in every detail request for an item. Unknown, and the server doesn't read it for items.
         private const uint ITEM_DETAIL_EXTRA = 0x1A000000;
 
-        // The skill packet's type for an index counted from the first entry after the specializations, as for a style. Any value above 0 says so: 1 until a capture shows the client's.
+        // The skill packet's type for an index counted from the first entry after the specializations, as the captured client sent for a style. The server takes any value above 0 so.
         private const byte SKILL_AFTER_SPECIALIZATIONS = 1;
 
         // Moves the item in client slot `from` to client slot `to`, as dragging it does: the ground is 1, equipment slots are 10-37 and backpack slots 40-79.
@@ -240,11 +240,11 @@ namespace DOL.GS.Agents
         }
 
         // Uses the skill at `index` in the skill list, counting from the first entry after the specializations, as a click on its icon does. A style waits for the next swing.
-        // Not captured yet: it's as `UseSkillHandler` reads it from a 1.124+ client. First where the client is, its speed and heading, which the server takes as a position update,
-        // then `flags`, whose strafing (0x4000), target in view (0xA000) and ground target in view (0x1000) bits it takes too, the index, and a type above 0, which says where the index counts from.
+        // As captured in `styles.tsv`, read by `UseSkillHandler`: where the client is, its speed and heading (the low 12 bits only), which the server takes as a position update,
+        // then `flags`, whose strafing (0x4000), target in view (0xA000) and ground target in view (0x1000) bits it takes too, the index, the type and 2 bytes of 0.
         public static ClientPacket UseSkill(Vector3 position, float speed, ushort heading, ushort flags, byte index)
         {
-            byte[] data = new byte[22];
+            byte[] data = new byte[24];
             Span<byte> span = data;
             BinaryPrimitives.WriteSingleLittleEndian(span[0..], position.X);
             BinaryPrimitives.WriteSingleLittleEndian(span[4..], position.Y);
