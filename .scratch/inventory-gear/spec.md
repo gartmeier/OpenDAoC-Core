@@ -1,6 +1,6 @@
 # Milestone 4b: Inventory and gear
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -217,3 +217,5 @@ Acceptance: `shop` gears Greeen up in Connla, and from `/player level 1` the Gri
 2. From `/player level 1`, `grind` took him to level 5 unattended, shopping after each level-up. The Mind's summary: `Reached level 5 in 233 min 48 s: 45 kills, 209 deaths, 34 rests, 3 shops. Tactic failures: died 209.` Levels 1 to 4 took 40 minutes. Level 4 to 5 took 3 h 21 min: mudmen killed him 208 times, mostly the same one (#8101), because after each death he runs home and attacks it again. The Grind gives up on a Mob only when it can't reach or damage it, not when it keeps losing to it. Money stayed the bottleneck: he could rarely afford the next piece.
 3. `stop` during a shop stopped him standing.
 4. The server logs have no speed-check entries (`Speed hack (teleport)` or `(kick)`).
+
+**2026-10-24 (Human, recorded by agent):** Resolved. The run proves the item and merchant Primitives, the Percepts, Inventory and the porcelain Tactics work end to end, which is what this milestone was for. Its time, kills and deaths aren't a baseline: no comparison of the coding agent against the hand-written Tactics is planned.
