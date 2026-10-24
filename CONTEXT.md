@@ -67,7 +67,14 @@ A unit of Mind-side code that pursues an aim by issuing Primitives and running o
 _Avoid_: skill, script, procedure, routine
 
 **Lesson**:
-A durable insight the Agent writes down while playing, and reads again before it next acts.
+A durable insight the Agent writes down while playing, and reads again before it next acts. It belongs to that one Agent.
+
+**Learning**:
+A working pattern or gotcha a Human writes down for every Agent, often promoted from a Lesson of an earlier Agent.
+_Avoid_: tip, recipe
+
+**Wiki**:
+Game data written out for every Agent, such as where Mobs spawn and what merchants sell; what a Human would look up on a fan site.
 
 **Journal**:
 An Agent's record of the Percepts it got, the Primitives it sent and the notes it kept while playing; the material the Human studies.

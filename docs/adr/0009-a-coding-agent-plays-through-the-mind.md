@@ -13,3 +13,5 @@ This replaces the plan of milestones 5 (LLM Planning) and 6 (Reflection and Tact
 - An LLM-written Tactic is just a TypeScript file in the shape of ADR 0008, and nothing sandboxes it (ADR 0003).
 - Game knowledge reaches the LLM as documents in the repo, as rs-sdk's guide, learnings and wiki do.
 - A Primitive or Percept is added when the coding agent turns out to need it, not ahead of time.
+- The Mind becomes a stdio MCP server with rs-sdk's `execute_code` tool, started by the coding agent. Since the Mind's connection is the Agent's (ADR 0005), a Mind per script would log the Character out whenever a script ends; one Mind for the whole session keeps it in the world. MCP is only the outer layer: the snippet's code still calls Primitives directly (ADR 0003).
+- An Agent's Tactics, Lessons and Journal live in its own folder, and the guide, Learnings and Wiki in one shared folder. Starting over with a fresh Character makes a new Agent with an empty folder: what carries over is what the Human improved in the Harness, the Mind, the guide and the Learnings.
