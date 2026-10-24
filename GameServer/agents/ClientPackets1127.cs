@@ -231,14 +231,6 @@ namespace DOL.GS.Agents
             return DetailRequest(4, index);
         }
 
-        // Asks for the details of the style at `index` in the skill list, counting from the first entry after the specializations, as a shift-click on its icon does.
-        // Not captured yet: it's as `DetailDisplayHandler` reads it, which numbers a style 100 plus its index, with the extra ID an item's request carries.
-        // The handler also has a newer kind, 25, by the style's internal ID, answered with delve info instead of a text window. The capture will show which the 1.127 client sends.
-        public static ClientPacket ExamineStyle(ushort index)
-        {
-            return DetailRequest(6, (ushort) (100 + index));
-        }
-
         // Uses the skill at `index` in the skill list, counting from the first entry after the specializations, as a click on its icon does. A style waits for the next swing.
         // As captured in `styles.tsv`, read by `UseSkillHandler`: where the client is, its speed and heading (the low 12 bits only), which the server takes as a position update,
         // then `flags`, whose strafing (0x4000), target in view (0xA000) and ground target in view (0x1000) bits it takes too, the index, the type and 2 bytes of 0.

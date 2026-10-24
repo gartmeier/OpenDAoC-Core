@@ -161,7 +161,9 @@ From `items-merchants.tsv`. Every one of these packets has parameter 0x0000. Whe
 
 ## Styles
 
-From `styles.tsv`. The Human, possessing Dalta, fought Mobs and clicked styles on the quickbar, ending with Return Blade after a parry and then Shining Blade. No style was examined.
+From `styles.tsv`. The Human, possessing Dalta, fought Mobs and clicked styles on the quickbar, ending with Return Blade after a parry and then Shining Blade.
+
+- **Examining a style sends nothing.** In two later captures, not checked in, the Human hovered and examined styles, and the client sent only position updates and pings. It shows the tooltip the server sent alongside the skill list (the forced tooltip update of 1.110+ clients).
 
 - **Use skill (0xBB).** Parameter 0x0000, 24 bytes: X, Y and Z as little-endian floats, the speed as a float (0 every time), the heading (the low 12 bits only), 2 bytes of flags, the index, the type and 2 bytes of 0.
   - The flags were `A000` every time, with a Mob targeted: both target-in-view bits, which the server takes from this packet as from a position update.

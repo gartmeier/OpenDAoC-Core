@@ -794,9 +794,44 @@ namespace DOL.GS.Tests
             Ability sprint = new("Sprint", "Sprint", "", 0, 0, 1, 0);
             Style shiningBlade = new(new DbStyle { Name = "Shining Blade", SpecKeyName = "Blades", SpecLevelRequirement = 2 }, null);
 
-            SkillEntry[] entries = PerceptProjection.SkillEntries([(blades, blades), (sprint, sprint), (shiningBlade, blades)]);
+            SkillEntry[] entries = PerceptProjection.SkillEntries([(blades, blades), (sprint, sprint), (shiningBlade, blades)], [shiningBlade]);
 
-            Assert.That(entries, Is.EqualTo(new SkillEntry[] { new("Blades", 3, SkillPage.Specialization), new("Sprint", 1, SkillPage.Abilities), new("Shining Blade", 2, SkillPage.Styles, "Blades") }));
+            Assert.That(entries.Select(static entry => entry with { Details = null }), Is.EqualTo(new SkillEntry[] { new("Blades", 3, SkillPage.Specialization), new("Sprint", 1, SkillPage.Abilities), new("Shining Blade", 2, SkillPage.Styles, "Blades") }));
+        }
+
+        // A Blademaster's Blades styles, as in the database: Return Blade after a parry, Glowing Blade from the side, Lunging Blade after Return Blade.
+        private static readonly Style ShiningBlade = new(new DbStyle { ID = 245, Name = "Shining Blade", SpecKeyName = "Blades", SpecLevelRequirement = 2, EnduranceCost = 15, GrowthRate = 0.5 }, null);
+        private static readonly Style ReturnBlade = new(new DbStyle { ID = 246, Name = "Return Blade", SpecKeyName = "Blades", SpecLevelRequirement = 4, OpeningRequirementType = 1, AttackResultRequirement = 3, EnduranceCost = 5, BonusToHit = 10, GrowthRate = 0.75 }, null);
+        private static readonly Style GlowingBlade = new(new DbStyle { ID = 249, Name = "Glowing Blade", SpecKeyName = "Blades", SpecLevelRequirement = 10, OpeningRequirementType = 2, OpeningRequirementValue = 1, EnduranceCost = 10, BonusToDefense = 5 }, null);
+        private static readonly Style LungingBlade = new(new DbStyle { ID = 250, Name = "Lunging Blade", SpecKeyName = "Blades", SpecLevelRequirement = 12, OpeningRequirementValue = 246, AttackResultRequirement = 7, EnduranceCost = 10 }, null);
+
+        // What the server's forced tooltip update tells the client about each style it lists (`SpellDelve.GetStyleString`), which the client shows when its icon is hovered.
+        [Test]
+        public void SkillEntries_ShouldGiveEachStyleTheDetailsItsTooltipShows()
+        {
+            Specialization blades = new("Blades", "Blades", 0) { Level = 10 };
+            Style[] allStyles = [ShiningBlade, ReturnBlade, GlowingBlade, LungingBlade];
+
+            SkillEntry[] entries = PerceptProjection.SkillEntries([(blades, blades), (ShiningBlade, blades), (ReturnBlade, blades), (GlowingBlade, blades)], allStyles);
+
+            Assert.That(entries[0].Details, Is.Null, "a specialization has none");
+            Assert.That(entries[1].Details with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Offensive, Style.eAttackResultRequirement.Any, null, null, null, 15, 0, 0, 100, false, null)));
+            Assert.That(entries[2].Details with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Defensive, Style.eAttackResultRequirement.Parry, null, null, null, 5, 10, 0, 150, false, null)));
+            Assert.That(entries[2].Details.FollowupStyles, Is.EqualTo(new[] { "Lunging Blade" }), "styles it opens, even one not trained yet");
+            Assert.That(entries[3].Details with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Positional, Style.eAttackResultRequirement.Any, Style.eOpeningPosition.Side, null, null, 10, 0, 5, 0, false, null)));
+            Assert.That(entries[1].Details.FollowupStyles, Is.Empty);
+        }
+
+        [Test]
+        public void SkillEntries_ShouldNameTheStyleAFollowUpNeeds()
+        {
+            Specialization blades = new("Blades", "Blades", 0) { Level = 12 };
+
+            SkillEntry[] entries = PerceptProjection.SkillEntries([(blades, blades), (LungingBlade, blades)], [ShiningBlade, ReturnBlade, GlowingBlade, LungingBlade]);
+
+            Assert.That(entries[1].Details.Opening, Is.EqualTo(Style.eOpening.Offensive));
+            Assert.That(entries[1].Details.OpeningResult, Is.EqualTo(Style.eAttackResultRequirement.Style));
+            Assert.That(entries[1].Details.OpeningStyle, Is.EqualTo("Return Blade"));
         }
 
         [Test]
@@ -804,9 +839,9 @@ namespace DOL.GS.Tests
         {
             Style style = new(new DbStyle { Name = "Odd Style", SpecKeyName = "No Such Spec", SpecLevelRequirement = 1 }, null);
 
-            SkillEntry[] entries = PerceptProjection.SkillEntries([(style, style)]);
+            SkillEntry[] entries = PerceptProjection.SkillEntries([(style, style)], [style]);
 
-            Assert.That(entries, Is.EqualTo(new SkillEntry[] { new("Odd Style", 1, SkillPage.Styles) }));
+            Assert.That(entries.Select(static entry => entry with { Details = null }), Is.EqualTo(new SkillEntry[] { new("Odd Style", 1, SkillPage.Styles) }));
         }
 
         [Test]

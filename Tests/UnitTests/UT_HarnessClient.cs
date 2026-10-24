@@ -370,7 +370,7 @@ namespace DOL.GS.Tests
 
         // The index counts from Sprint, the first entry after the specializations, as the skill handler reads it.
         [Test]
-        public async Task StylePrimitives_ShouldQueueTheStylesIndexInTheSkillListLastSent_TheFirstMatchUnlessALineIsGiven()
+        public async Task UseStyle_ShouldQueueTheStylesIndexInTheSkillListLastSent_TheFirstMatchUnlessALineIsGiven()
         {
             FakeMind mind = new();
             HarnessClient client = InWorld(mind.Link, 0x0101);
@@ -379,14 +379,12 @@ namespace DOL.GS.Tests
             Assert.That(client.Dispatch(new UseStylePrimitive("Shining Blade"), mind.Link), Is.Null);
             Assert.That(client.Dispatch(new UseStylePrimitive("Slam"), mind.Link), Is.Null);
             Assert.That(client.Dispatch(new UseStylePrimitive("Slam", "Shields"), mind.Link), Is.Null);
-            Assert.That(client.Dispatch(new ExamineStylePrimitive("Slam", "Shields"), mind.Link), Is.Null);
 
             Vector3 at = new(296516, 641415, 4848);
             Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
                 ClientPackets1127.UseSkill(at, 0, 0, 0, 1),
                 ClientPackets1127.UseSkill(at, 0, 0, 0, 2),
-                ClientPackets1127.UseSkill(at, 0, 0, 0, 3),
-                ClientPackets1127.ExamineStyle(3)])));
+                ClientPackets1127.UseSkill(at, 0, 0, 0, 3)])));
             await Close(mind);
         }
 
@@ -427,14 +425,13 @@ namespace DOL.GS.Tests
         {
             yield return new TestCaseData(new UseStylePrimitive("Taunting Blade"), "Greeen has no Style \"Taunting Blade\".");
             yield return new TestCaseData(new UseStylePrimitive("Slam", "Blades"), "Greeen has no Style \"Slam\" in Blades.");
-            yield return new TestCaseData(new ExamineStylePrimitive("Taunting Blade"), "Greeen has no Style \"Taunting Blade\".");
             // Only styles match, never a specialization or an ability of that name.
             yield return new TestCaseData(new UseStylePrimitive("Blades"), "Greeen has no Style \"Blades\".");
             yield return new TestCaseData(new UseStylePrimitive("Sprint"), "Greeen has no Style \"Sprint\".");
         }
 
         [TestCaseSource(nameof(StylesTheCharacterDoesntHave))]
-        public async Task StylePrimitives_ShouldBeRefusedWithAReason_ForAStyleTheCharacterDoesntHave(Primitive primitive, string reason)
+        public async Task UseStyle_ShouldBeRefusedWithAReason_ForAStyleTheCharacterDoesntHave(Primitive primitive, string reason)
         {
             FakeMind mind = new();
             HarnessClient client = InWorld(mind.Link, 0x0101);

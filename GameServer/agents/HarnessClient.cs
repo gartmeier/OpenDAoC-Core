@@ -231,13 +231,6 @@ namespace DOL.GS.Agents
 
                     break;
                 }
-                case ExamineStylePrimitive examine:
-                {
-                    if (StyleIndex(examine.Style, examine.Line, out styleIndex) is string reason)
-                        return reason;
-
-                    break;
-                }
                 case TargetPrimitive target:
                 {
                     if (target.ObjectId is < 0 or > MAX_OBJECT_ID)
@@ -334,7 +327,6 @@ namespace DOL.GS.Agents
                 SellPrimitive sell => ClientPackets1127.SellRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) sell.Slot),
                 // Where the server has the Character, so the position it takes from the packet moves it nowhere.
                 UseStylePrimitive => ClientPackets1127.UseSkill(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) styleIndex),
-                ExamineStylePrimitive => ClientPackets1127.ExamineStyle((ushort) styleIndex),
                 _ => null
             };
 
@@ -357,7 +349,7 @@ namespace DOL.GS.Agents
             return index is < 0 or > ushort.MaxValue ? $"An index is 0 to {ushort.MaxValue}, not {index}." : null;
         }
 
-        // The style's index as the skill and detail handlers read it: its place in the skill list the server last sent, counting from the first entry after the specializations.
+        // The style's index as the skill handler reads it: its place in the skill list the server last sent, counting from the first entry after the specializations.
         // Only styles match. Without `line`, the first of that name does, as a Human clicks the first icon they see.
         private string StyleIndex(string name, string line, out int index)
         {

@@ -330,18 +330,6 @@ namespace DOL.GS.Tests
             }
         }
 
-        // No capture has a style examined yet: until one does, the detail request is checked against what `DetailDisplayHandler` reads, a style as kind 6, numbered 100 plus its place after the specializations.
-        [Test]
-        public void ExamineStyle_ShouldAskForTheStyleAsTheHandlerReadsIt()
-        {
-            GSPacketIn packet = Loaded(ClientPackets1127.ExamineStyle(2));
-
-            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.DetailRequest));
-            Assert.That(packet.ReadShort(), Is.EqualTo(6));
-            packet.ReadInt();
-            Assert.That(packet.ReadShort(), Is.EqualTo(102));
-        }
-
         // Every move in the capture, equipping and unequipping, rearranging the backpack and dropping an item on the ground (slot 1). The client always sent a count of 0.
         [Test]
         public void MoveItem_ShouldMatchCapture()

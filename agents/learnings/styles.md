@@ -14,12 +14,15 @@ return agent.self.skills
 
 ## What a Style needs
 
-Examine it, as a shift-click on its icon does: the description lands in `agent.inventory.examined`, as an item's does. It says what the Style needs to open (any time, after the Mob parries or you parry, from the side or behind, after another Style), what it does and how much endurance it costs.
+Each Style in `agent.self.skills` has `details`, what its tooltip shows when a Human hovers its icon:
+
+- `opening` and `openingResult` say what opens it. `Offensive` with `Any` needs nothing. `Offensive` with `Hit`, `Miss`, `Parry`, `Block` or `Evade` needs your last swing to have hit, missed, or been parried, blocked or evaded. `Offensive` with `Style` needs `openingStyle` to have landed just before. `Defensive` with `Parry`, `Block` or `Evade` needs the Mob's last attack on you to have been parried, blocked or evaded. `Positional` needs you at the Mob's `openingPosition` (`Back`, `Side` or `Front`), facing it.
+- `followupStyles` are the Styles it opens, `fatigue` is its endurance cost, and `attackMod`, `defensiveMod` and `openingDamage` are its bonuses as the tooltip numbers them.
 
 ```ts
-const answered = await agent.sendAndWait({ name: "examineStyle", style: "Return Blade" }, (percept) => percept?.kind === "examined", 5_000);
-const examined = agent.inventory.examined;
-return answered && examined ? [examined.caption, ...examined.lines] : "no answer";
+return agent.self.skills
+  .filter((skill) => skill.page === "Styles" && skill.details)
+  .map(({ name, details }) => `${name}: ${details!.opening} ${details!.openingResult}${details!.openingPosition ? ` ${details!.openingPosition}` : ""}${details!.openingStyle ? ` after ${details!.openingStyle}` : ""}, fatigue ${details!.fatigue}, opens ${details!.followupStyles.join(", ") || "nothing"}`);
 ```
 
 ## Using one
@@ -83,7 +86,7 @@ The messages for the other openings: "... parries your attack!", "... blocks you
 
 ## Two Styles with the same name
 
-A Blademaster has two Slams, in Blunt and in Shields. Without `line`, `useStyle` and `examineStyle` take the first Style of that name in `agent.self.skills`. Give the line to choose:
+A Blademaster has two Slams, in Blunt and in Shields. Without `line`, `useStyle` takes the first Style of that name in `agent.self.skills`. Give the line to choose:
 
 ```ts
 return await agent.send({ name: "useStyle", style: "Slam", line: "Shields" });

@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DOL.GS.PacketHandler;
+using DOL.GS.Styles;
 
 namespace DOL.GS.Agents
 {
@@ -126,7 +127,6 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(BuyPrimitive), "buy")]
     [JsonDerivedType(typeof(SellPrimitive), "sell")]
     [JsonDerivedType(typeof(UseStylePrimitive), "useStyle")]
-    [JsonDerivedType(typeof(ExamineStylePrimitive), "examineStyle")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -192,12 +192,8 @@ namespace DOL.GS.Agents
 
     // Uses the style named `Style` on the next swing, as a click on its icon does. `Line` is its specialization, as in `skills`: without it, the first style of that name in the skill list.
     // The Harness refuses a style the server's last `skills` didn't list. Whether it's performed, and why not, the server says in `message` Percepts.
+    // What a style needs and does is in its `skills` entry: a client never asks the server, it has the tooltip the server sent with the skill list.
     public sealed record UseStylePrimitive(
-        [property: JsonRequired] string Style,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null) : Primitive;
-
-    // Asks for the details of the style, named as for `useStyle`, as a shift-click on its icon does: what it needs, what it does and what it costs. They come as an `examined` Percept.
-    public sealed record ExamineStylePrimitive(
         [property: JsonRequired] string Style,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null) : Primitive;
 
@@ -419,12 +415,31 @@ namespace DOL.GS.Agents
     public sealed record SkillsPercept(SkillEntry[] Skills) : Percept;
 
     // One skill. `Level` is a specialization's trained level, an ability's or a spell's level, or the specialization level a style needs. `Page` is the skill page it's on.
-    // `Line` is a style's specialization, which the packet names by an index the client knows. Anything else has none.
+    // `Line` is a style's specialization, which the packet names by an index the client knows. `Details` are a style's, which its tooltip shows. Anything else has neither.
     public sealed record SkillEntry(
         string Name,
         int Level,
         SkillPage Page,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null);
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] StyleDetails Details = null);
+
+    // What a style needs and does, as the server's forced tooltip update tells a 1.110+ client alongside the skill list, and the client shows when its icon is hovered.
+    // `Opening` is what opens it: `Offensive` (your last attack's `OpeningResult` on the target, such as `Parry` when it parried, or `Style` after `OpeningStyle`),
+    // `Defensive` (the target's last attack on you, such as `Parry` when you parried it) or `Positional` (you at the target's `OpeningPosition`, facing it). `Any` needs nothing.
+    // `FollowupStyles` are the styles it opens. `Fatigue` is its endurance cost, `AttackMod` and `DefensiveMod` its bonuses to hit and to defence, and `OpeningDamage` its damage growth,
+    // as the tooltip numbers them. `Hidden` says it needs stealth, and `Weapon` names the weapon it needs, if any.
+    public sealed record StyleDetails(
+        Style.eOpening Opening,
+        Style.eAttackResultRequirement OpeningResult,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Style.eOpeningPosition? OpeningPosition,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string OpeningStyle,
+        string[] FollowupStyles,
+        int Fatigue,
+        int AttackMod,
+        int DefensiveMod,
+        float OpeningDamage,
+        bool Hidden,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Weapon);
 
     // The pages of the client's skill window, as the packet numbers them.
     public enum SkillPage

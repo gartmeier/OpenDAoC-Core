@@ -488,17 +488,41 @@ namespace DOL.GS.Agents
             if (player == null)
                 return null;
 
-            return new SkillsPercept(SkillEntries(player.GetAllUsableSkills(updateInternalCache)));
+            // The library sends each style's tooltip alongside, naming follow-ups among every style the Character's specializations have up to the highest level, as `SpellDelve.GetStyleString` does.
+            List<Style> allStyles = [.. player.GetSpecList().SelectMany(spec => spec.PretendStylesForLiving(player, GamePlayer.MAX_LEVEL))];
+            return new SkillsPercept(SkillEntries(player.GetAllUsableSkills(updateInternalCache), allStyles));
         }
 
         // Each skill as the packet lists it: a style with the specialization level it needs and its specialization, which the packet carries as an index (none for 0), anything else with its own level.
-        public static SkillEntry[] SkillEntries(IEnumerable<(Skill Skill, Skill Related)> skills)
+        // A style also has the details its tooltip shows, with follow-ups and opening styles found among `allStyles`.
+        public static SkillEntry[] SkillEntries(IEnumerable<(Skill Skill, Skill Related)> skills, IReadOnlyCollection<Style> allStyles)
         {
-            return skills.Select(static entry => new SkillEntry(
-                Encoded(entry.Skill.Name),
-                entry.Skill is Style style ? style.SpecLevelRequirement : entry.Skill.Level,
-                (SkillPage) entry.Skill.SkillType,
-                entry.Skill is Style lined && GlobalConstants.GetSpecToInternalIndex(lined.Spec) != 0 ? Encoded(lined.Spec) : null)).ToArray();
+            return skills.Select(entry => entry.Skill is Style style
+                ? new SkillEntry(Encoded(style.Name), style.SpecLevelRequirement, SkillPage.Styles, GlobalConstants.GetSpecToInternalIndex(style.Spec) != 0 ? Encoded(style.Spec) : null, Details(style, allStyles))
+                : new SkillEntry(Encoded(entry.Skill.Name), entry.Skill.Level, (SkillPage) entry.Skill.SkillType)).ToArray();
+        }
+
+        // Mirrors `SpellDelve.GetStyleString`, without the icon and the proc, which is a spell's delve of its own.
+        private static StyleDetails Details(Style style, IReadOnlyCollection<Style> allStyles)
+        {
+            bool afterStyle = style.OpeningRequirementType is Style.eOpening.Offensive && style.AttackResultRequirement is Style.eAttackResultRequirement.Style;
+            string openingStyle = afterStyle ? allStyles.FirstOrDefault(other => other.ID == style.OpeningRequirementValue)?.Name : null;
+            string[] followupStyles = [.. allStyles
+                .Where(other => other.OpeningRequirementType is Style.eOpening.Offensive && other.AttackResultRequirement is Style.eAttackResultRequirement.Style && other.OpeningRequirementValue == style.ID)
+                .Select(static other => Encoded(other.Name))];
+
+            return new StyleDetails(
+                style.OpeningRequirementType,
+                style.AttackResultRequirement,
+                style.OpeningRequirementType is Style.eOpening.Positional ? (Style.eOpeningPosition) style.OpeningRequirementValue : null,
+                openingStyle == null ? null : Encoded(openingStyle),
+                followupStyles,
+                style.EnduranceCost,
+                style.BonusToHit,
+                style.BonusToDefense,
+                (float) (style.GrowthRate * 200),
+                style.StealthRequirement,
+                style.WeaponTypeRequirement > 0 ? Encoded(style.GetRequiredWeaponName()) : null);
         }
 
         // Mirrors `PacketLib168.SendPlayerDied`, which no later library overrides.

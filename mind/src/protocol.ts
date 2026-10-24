@@ -46,7 +46,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | ExamineStylePrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -136,12 +136,6 @@ export interface SellPrimitive {
 
 export interface UseStylePrimitive {
   name: "useStyle";
-  style: string;
-  line?: string;
-}
-
-export interface ExamineStylePrimitive {
-  name: "examineStyle";
   style: string;
   line?: string;
 }
@@ -458,6 +452,7 @@ export interface SkillEntry {
   level: number;
   page: SkillPage;
   line?: string;
+  details?: StyleDetails;
 }
 
 export type eInventoryWindowType = "Update" | "Equipment" | "Inventory" | "PlayerVault" | "HouseVault" | "ConsignmentOwner" | "ConsignmentViewer" | "HorseBags";
@@ -496,6 +491,20 @@ export type StopReason = "Stop" | "Replaced" | "MovedByServer" | "UnableToMove" 
 
 export type SkillPage = "Specialization" | "Abilities" | "Styles" | "Spells" | "Songs" | "AbilitiesSpell" | "RealmAbilities";
 
+export interface StyleDetails {
+  opening: eOpening;
+  openingResult: eAttackResultRequirement;
+  openingPosition?: eOpeningPosition;
+  openingStyle?: string;
+  followupStyles: string[];
+  fatigue: number;
+  attackMod: number;
+  defensiveMod: number;
+  openingDamage: number;
+  hidden: boolean;
+  weapon?: string;
+}
+
 export interface InventoryItem {
   name: string;
   level: number;
@@ -516,3 +525,9 @@ export interface InventoryItem {
   effect: number;
   spellNames: string[];
 }
+
+export type eOpening = "Offensive" | "Defensive" | "Positional";
+
+export type eAttackResultRequirement = "Any" | "Miss" | "Hit" | "Parry" | "Block" | "Evade" | "Fumble" | "Style";
+
+export type eOpeningPosition = "Back" | "Side" | "Front";

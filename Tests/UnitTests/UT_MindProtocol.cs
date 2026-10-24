@@ -1,6 +1,7 @@
 using System.Text;
 using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
+using DOL.GS.Styles;
 using NUnit.Framework;
 
 namespace DOL.GS.Tests
@@ -105,11 +106,10 @@ namespace DOL.GS.Tests
         }
 
         [Test]
-        public void Read_ShouldReadTheStylePrimitives_WithOrWithoutALine()
+        public void Read_ShouldReadAUseStylePrimitive_WithOrWithoutALine()
         {
             Assert.That(Read("""{"type":"primitive","id":25,"primitive":{"name":"useStyle","style":"Shining Blade"}}"""), Is.EqualTo(new PrimitiveMessage(25, new UseStylePrimitive("Shining Blade"))));
             Assert.That(Read("""{"type":"primitive","id":26,"primitive":{"name":"useStyle","style":"Slam","line":"Shields"}}"""), Is.EqualTo(new PrimitiveMessage(26, new UseStylePrimitive("Slam", "Shields"))));
-            Assert.That(Read("""{"type":"primitive","id":27,"primitive":{"name":"examineStyle","style":"Slam","line":"Blunt"}}"""), Is.EqualTo(new PrimitiveMessage(27, new ExamineStylePrimitive("Slam", "Blunt"))));
         }
 
         [Test]
@@ -118,6 +118,15 @@ namespace DOL.GS.Tests
             string json = Write(new PerceptMessage(13, 2400, new SkillsPercept([new("Blades", 5, SkillPage.Specialization), new("Shining Blade", 2, SkillPage.Styles, "Blades")])));
 
             Assert.That(json, Does.EndWith("""{"kind":"skills","skills":[{"name":"Blades","level":5,"page":"Specialization"},{"name":"Shining Blade","level":2,"page":"Styles","line":"Blades"}]}}"""));
+        }
+
+        [Test]
+        public void Write_ShouldWriteAStylesDetails_WithItsOpeningAsNames()
+        {
+            StyleDetails glowingBlade = new(Style.eOpening.Positional, Style.eAttackResultRequirement.Any, Style.eOpeningPosition.Side, null, ["Auroric Blade"], 10, 0, 5, 0, false, null);
+            string json = Write(new PerceptMessage(14, 2500, new SkillsPercept([new("Glowing Blade", 10, SkillPage.Styles, "Blades", glowingBlade)])));
+
+            Assert.That(json, Does.EndWith("""{"name":"Glowing Blade","level":10,"page":"Styles","line":"Blades","details":{"opening":"Positional","openingResult":"Any","openingPosition":"Side","followupStyles":["Auroric Blade"],"fatigue":10,"attackMod":0,"defensiveMod":5,"openingDamage":0,"hidden":false}}]}}"""));
         }
 
         [Test]
