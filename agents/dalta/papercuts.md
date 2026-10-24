@@ -15,3 +15,8 @@ A Hastener's speed buff lasts 10 minutes and ends in a fight, but I couldn't tel
 The same goes for debuffs, on me or on a Mob: when Return Blade slowed a rock, only the chat said so ("can't attack as fast as normal", then "attacks return to normal"), and a debuff a Mob puts on me would show the same way, if at all.
 Workaround: watch `agent.self.maxSpeed` for the speed buff, and the chat for the rest.
 Needed: a Percept for my buff bar (buffs and debuffs, each with its name and time left) kept on the Self, plus whatever a Human sees of the effects on their target.
+
+## `train` can't train a line with a space in its name (2026-10-24)
+
+`train(agent, "Celtic Dual", 3)` sends `/train Celtic Dual 3`, which the server ignores without a word, so it fails with `notTrained`. Sending `/train "Celtic Dual" 3` myself worked.
+Needed: the porcelain quotes the line name.

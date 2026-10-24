@@ -5,13 +5,24 @@ import { rest } from "../../../mind/src/tactics/rest.ts";
 import { train } from "../../../mind/src/tactics/train.ts";
 import { describe, fight } from "./fight.ts";
 
-/** Spends spec points on Blades. */
-async function trainBlades(agent: Agent): Promise<void> {
+/**
+ * Spends spec points on Blades, which can't go above my level, then what's left beyond the next Blades step on Parry
+ * (more parries open Return Blade).
+ */
+export async function trainBlades(agent: Agent): Promise<void> {
+  const level = agent.self.level;
+  if (level === 0) return;
   const blades = agent.self.specs.get("Blades") ?? 1;
   let target = blades;
   let points = agent.self.specPoints;
-  while (points >= target + 1) points -= ++target;
+  while (target < level && points >= target + 1) points -= ++target;
   if (target > blades) await train(agent, "Blades", target);
+
+  const reserve = level + 1;
+  const parry = agent.self.specs.get("Parry") ?? 1;
+  let parryTarget = parry;
+  while (parryTarget < level && points - reserve >= parryTarget + 1) points -= ++parryTarget;
+  if (parryTarget > parry) await train(agent, "Parry", parryTarget);
 }
 
 export interface GrindOptions {
@@ -29,14 +40,17 @@ export interface GrindOptions {
   restBelow?: number;
   /** Stop once money reaches this many copper. */
   money?: number;
+  /** A Mob name to seek out (a Kill Task's), even 3000 units further; grind stops with `preferredKilled` once one dies. */
+  prefer?: string;
 }
 
-/** Kills Mobs in a level band nearest first until `goal` level, resting between fights. */
-export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spots = [], minutes = 25, band = [-1, -1], restBelow = 90, money = Infinity }: GrindOptions): Promise<Outcome> {
+/** Kills Mobs in a level band, nearest first but preferring higher levels, until `goal` level, resting between fights. */
+export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spots = [], minutes = 25, band = [-1, -1], restBelow = 90, money = Infinity, prefer }: GrindOptions): Promise<Outcome> {
   const deadline = Date.now() + minutes * 60_000;
   const levelOf = () => Math.max(agent.self.level, knownLevel);
   const avoid = new Map<number, number>();
   let spot = 0;
+  let roams = 0;
 
   while (levelOf() < goal) {
     if (Date.now() > deadline) return failed("outOfTime");
@@ -70,24 +84,29 @@ export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spot
     const low = level + band[0];
     const high = level + band[1];
     const mob = agent.surroundings.npcs
-      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && n.level >= low && n.level <= high && (avoid.get(n.objectId) ?? 0) < 2)
-      .map((n) => ({ n, d: Math.hypot(n.position.x - pos.x, n.position.y - pos.y) }))
+      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && (n.level >= low || n.name === prefer) && n.level <= high && (avoid.get(n.objectId) ?? 0) < 2)
+      // A Mob a level higher pays about double: worth running 1500 units further for.
+      .map((n) => ({ n, d: Math.hypot(n.position.x - pos.x, n.position.y - pos.y) - (n.level - low) * 1500 - (n.name === prefer ? 3000 : 0) }))
       .sort((a, b) => a.d - b.d)[0]?.n;
     if (!mob) {
       // Nothing to fight here: roam to the next spot, if there are any.
       if (spots.length === 0) return failed("noMob");
+      // Twice round every spot with nothing in the band: the area is camped out, so go elsewhere.
+      if (++roams > spots.length * 2) return failed("areaEmpty");
       const to = spots[spot++ % spots.length];
       const ran = await runTo(agent, to, 200);
       log.push(`roamed to X:${to.x} Y:${to.y}: ${ran.ok ? "ok" : ran.reason}`);
       continue;
     }
 
+    roams = 0;
     const xpBefore = agent.self.level * 1000 + agent.self.levelPermill;
     const stats = await fight(agent, mob.objectId);
     const r = stats.outcome;
     const gained = agent.self.level * 1000 + agent.self.levelPermill - xpBefore;
     log.push(`${mob.name} L${mob.level}: ${describe(stats)} +${gained}‰ (lvl ${levelOf()}, hp ${agent.self.healthPercent}%, end ${agent.self.endurancePercent}%)`);
     if (!r.ok) avoid.set(mob.objectId, (avoid.get(mob.objectId) ?? 0) + 1);
+    if (r.ok && mob.name === prefer) return failed("preferredKilled");
   }
 
   await trainBlades(agent);
