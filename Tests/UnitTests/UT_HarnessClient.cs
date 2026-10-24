@@ -418,7 +418,7 @@ namespace DOL.GS.Tests
             await Close(newMind);
 
             Assert.That(refusal, Is.Null);
-            Assert.That(newMind.Sent, Is.EqualTo(new ServerMessage[] { new EnteredMessage() }));
+            Assert.That(newMind.Sent, Is.EqualTo(new ServerMessage[] { new EnteredMessage(TookOver: true) }));
             // As `WorldInitRequestHandler` tells a client entering the world, in its order, with the status and encumbrance it sends later.
             Assert.That(calls.Names, Is.EqualTo(new[]
             {

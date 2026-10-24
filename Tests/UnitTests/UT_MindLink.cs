@@ -74,9 +74,9 @@ namespace DOL.GS.Tests
         {
             FakeMind mind = new();
 
-            mind.Link.Send(new EnteredMessage());
+            mind.Link.Send(new EnteredMessage(TookOver: false));
             mind.Link.Close();
-            mind.Link.Send(new EnteredMessage());
+            mind.Link.Send(new EnteredMessage(TookOver: false));
             await mind.Link.Completion;
 
             Assert.That(mind.Sent, Has.Count.EqualTo(1));
@@ -111,12 +111,12 @@ namespace DOL.GS.Tests
         {
             FakeMind mind = new();
 
-            mind.Link.Send(new EnteredMessage());
+            mind.Link.Send(new EnteredMessage(TookOver: false));
             mind.Link.Replace();
-            mind.Link.Send(new EnteredMessage());
+            mind.Link.Send(new EnteredMessage(TookOver: false));
             await mind.Link.Completion;
 
-            Assert.That(mind.Sent, Is.EqualTo(new ServerMessage[] { new EnteredMessage(), new ReplacedMessage() }));
+            Assert.That(mind.Sent, Is.EqualTo(new ServerMessage[] { new EnteredMessage(TookOver: false), new ReplacedMessage() }));
             Assert.That(mind.ClosedAfter, Is.EqualTo(2));
             Assert.That(mind.Link.IsReplaced, Is.True);
         }
@@ -129,7 +129,7 @@ namespace DOL.GS.Tests
             Assert.That(mind.Link.IsConnected, Is.True);
 
             mind.Link.OnLost();
-            mind.Link.Send(new EnteredMessage());
+            mind.Link.Send(new EnteredMessage(TookOver: false));
             await mind.Link.Completion;
 
             Assert.That(mind.Link.IsConnected, Is.False);
@@ -142,11 +142,11 @@ namespace DOL.GS.Tests
         {
             FakeMind mind = new(failSends: true);
 
-            Assert.DoesNotThrow(() => mind.Link.Send(new EnteredMessage()));
+            Assert.DoesNotThrow(() => mind.Link.Send(new EnteredMessage(TookOver: false)));
             await mind.Link.Completion;
 
             Assert.That(mind.Link.IsConnected, Is.False);
-            Assert.DoesNotThrow(() => mind.Link.Send(new EnteredMessage()));
+            Assert.DoesNotThrow(() => mind.Link.Send(new EnteredMessage(TookOver: false)));
         }
 
         // Stands in for the WebSocket. Holds every send until the gate opens, like a Mind that stopped reading, and remembers which threads sent.

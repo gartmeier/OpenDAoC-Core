@@ -17,8 +17,8 @@ export interface ConnectionOptions {
 export interface ConnectionHandlers {
   /** Every Percept, in the order the server made the calls. Some arrive before `onEntered`, while the Character enters the world. */
   onPercept?: (message: PerceptMessage, connection: Connection) => void;
-  /** The Character is in the world, so Primitives can be sent. */
-  onEntered?: (connection: Connection) => void;
+  /** The Character is in the world, so Primitives can be sent. `tookOver` says whether this Mind took the Agent over from another while the Character stayed in it, rather than logging it in. */
+  onEntered?: (connection: Connection, tookOver: boolean) => void;
 }
 
 /** How the connection ended. */
@@ -197,7 +197,7 @@ export class Connection {
       case "entered": {
         this.#entered = true;
         this.#options.log(`${this.#options.character} is in the world.`);
-        this.#handlers.onEntered?.(this);
+        this.#handlers.onEntered?.(this, message.tookOver);
         break;
       }
       case "percept": {

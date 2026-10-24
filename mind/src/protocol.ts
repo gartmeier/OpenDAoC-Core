@@ -25,6 +25,7 @@ export interface RefusedMessage {
 
 export interface EnteredMessage {
   type: "entered";
+  tookOver: boolean;
 }
 
 export interface PerceptMessage {

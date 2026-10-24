@@ -28,9 +28,12 @@ export interface MindOptions {
 export interface World {
   /** Whether the Character is in the world, so Primitives can be sent. */
   inWorld(): boolean;
-  /** Enters the world again. Gives why it couldn't, or nothing once the Character is in it. */
-  enter(): Promise<string | undefined>;
+  /** Enters the world again, or waits for the entry under way, and gives how that went. */
+  enter(): Promise<Entry>;
 }
+
+/** How entering the world went: in it, by logging in or by a Takeover; failed, and why; or not tried, since another Mind has taken the Agent over. */
+export type Entry = { kind: "entered"; tookOver: boolean } | { kind: "failed"; reason: string } | { kind: "replaced" };
 
 export interface ExecuteCodeRequest {
   /** TypeScript, run as the body of an async function. */
@@ -112,12 +115,15 @@ export class Mind {
     let ending: SnippetEnding;
 
     if (world && !world.inWorld()) {
-      const refusal = await world.enter();
+      const entry = await world.enter();
 
-      if (refusal !== undefined)
-        return { text: `${character} isn't in the world, and entering it failed: ${refusal}.\n`, isError: true };
+      if (entry.kind === "replaced")
+        return { text: `Another Mind has taken ${character} over, and this one won't take it back.\n`, isError: true };
 
-      lines.push(`${character} wasn't in the world, and has entered it first.`);
+      if (entry.kind === "failed")
+        return { text: `${character} isn't in the world, and entering it failed: ${entry.reason}.\n`, isError: true };
+
+      lines.push(entry.tookOver ? `${character} was in the world under another Mind, and this Mind has taken it over first.` : `${character} wasn't in the world, and has entered it first.`);
     }
 
     try {

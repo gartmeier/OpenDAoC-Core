@@ -48,7 +48,7 @@ test("sends a hello first, delivers Percepts in order, and ends as left when the
       return;
 
     send(socket, percept(1, "SendCharacterOverview"));
-    send(socket, { type: "entered" });
+    send(socket, { type: "entered", tookOver: false });
     send(socket, percept(2, "SendUpdatePoints"));
     socket.close(1000);
   });
@@ -62,6 +62,22 @@ test("sends a hello first, delivers Percepts in order, and ends as left when the
   expect(percepts.map((message) => message.percept)).toEqual([{ kind: "bare", call: "SendCharacterOverview" }, { kind: "bare", call: "SendUpdatePoints" }]);
   expect(connection.entered).toBe(true);
   expect(ending).toEqual({ kind: "left" });
+});
+
+test("says whether it entered by taking the Agent over from another Mind", async () => {
+  const server = fakeServer((message, socket) => {
+    if (message.type !== "hello")
+      return;
+
+    send(socket, { type: "entered", tookOver: true });
+    socket.close(1000);
+  });
+  let tookOver: boolean | undefined;
+  const connection = connect(server.url, { onEntered: (_, entered) => (tookOver = entered) });
+
+  await connection.run({ handleCtrlC: false });
+
+  expect(tookOver).toBe(true);
 });
 
 test("ends as refused, with the server's reason", async () => {
@@ -78,7 +94,7 @@ test("ends as refused, with the server's reason", async () => {
 test("interrupting in the world sends a stop, then a quit, and waits for the server to close the connection", async () => {
   const server = fakeServer((message, socket) => {
     if (message.type === "hello")
-      send(socket, { type: "entered" });
+      send(socket, { type: "entered", tookOver: false });
 
     if (message.type === "primitive") {
       send(socket, { type: "primitiveResult", id: message.id, queued: true });
@@ -101,7 +117,7 @@ test("interrupting in the world sends a stop, then a quit, and waits for the ser
 test("a Primitive's result comes back for its own request", async () => {
   const server = fakeServer((message, socket) => {
     if (message.type === "hello")
-      send(socket, { type: "entered" });
+      send(socket, { type: "entered", tookOver: false });
 
     if (message.type === "primitive")
       send(socket, { type: "primitiveResult", id: message.id, queued: false, reason: "Greeen isn't in the world." });
@@ -133,7 +149,7 @@ test("retries while a refusal says to, saying so, and logs in once the server le
       return;
     }
 
-    send(socket, { type: "entered" });
+    send(socket, { type: "entered", tookOver: false });
     socket.close(1000);
   });
   const lines: string[] = [];
@@ -183,7 +199,7 @@ test("interrupting while waiting to retry stops retrying", async () => {
 
 test("ends as replaced when another Mind takes over, and doesn't reconnect", async () => {
   const server = fakeServer((_, socket) => {
-    send(socket, { type: "entered" });
+    send(socket, { type: "entered", tookOver: false });
     send(socket, { type: "replaced" });
     socket.close(1000);
   });
@@ -199,7 +215,7 @@ test("ends as replaced when another Mind takes over, and doesn't reconnect", asy
 
 test("ends as lost when the server drops the connection", async () => {
   const server = fakeServer((_, socket) => {
-    send(socket, { type: "entered" });
+    send(socket, { type: "entered", tookOver: false });
     socket.close(1011, "Server error");
   });
 

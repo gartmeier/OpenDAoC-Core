@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Mind, type MindOptions } from "./mind.ts";
+import { type Entry, Mind, type MindOptions } from "./mind.ts";
 import type { Percept, Primitive } from "./protocol.ts";
 import { FakeClock, settle } from "./test-agent.ts";
 import { encumbrance, inventory, item, message, money, npcCreate, ownPosition, player, playerCreate, points, sayLine, status } from "./test-percepts.ts";
@@ -234,13 +234,13 @@ test("the Journal gets every Percept, every Primitive and every snippet with how
 
 test("a call while the Agent is out of the world enters it first, or says why it can't", async () => {
   let inWorld = false;
-  let refusal: string | undefined = "the server is unreachable";
+  let entry: Entry = { kind: "failed", reason: "the server is unreachable" };
   const t = new TestMind({
     world: {
       inWorld: () => inWorld,
       enter: async () => {
-        inWorld = refusal === undefined;
-        return refusal;
+        inWorld = entry.kind === "entered";
+        return entry;
       },
     },
   });
@@ -251,12 +251,42 @@ test("a call while the Agent is out of the world enters it first, or says why it
   expect(refused.text).toContain("Greeen isn't in the world, and entering it failed: the server is unreachable.");
   expect(t.take()).toEqual([]);
 
-  refusal = undefined;
+  entry = { kind: "entered", tookOver: false };
   const entered = await t.mind.executeCode({ code: `await agent.send({ name: "sit" });` });
 
   expect(entered.isError).toBe(false);
   expect(entered.text).toContain("Greeen wasn't in the world, and has entered it first.");
   expect(t.take()).toEqual([{ name: "sit" }]);
+});
+
+test("a call that waits for a Takeover says the Character was in the world under another Mind", async () => {
+  let inWorld = false;
+  const t = new TestMind({
+    world: {
+      inWorld: () => inWorld,
+      enter: async () => {
+        inWorld = true;
+        return { kind: "entered", tookOver: true };
+      },
+    },
+  });
+
+  const result = await t.mind.executeCode({ code: `await agent.send({ name: "sit" });` });
+
+  expect(result.isError).toBe(false);
+  expect(result.text).toContain("Greeen was in the world under another Mind, and this Mind has taken it over first.");
+  expect(result.text).not.toContain("wasn't in the world");
+  expect(t.take()).toEqual([{ name: "sit" }]);
+});
+
+test("a call after another Mind took the Agent over says so, and runs nothing", async () => {
+  const t = new TestMind({ world: { inWorld: () => false, enter: async () => ({ kind: "replaced" }) } });
+
+  const result = await t.mind.executeCode({ code: `await agent.send({ name: "sit" });` });
+
+  expect(result.isError).toBe(true);
+  expect(result.text).toBe("Another Mind has taken Greeen over, and this one won't take it back.\n");
+  expect(t.take()).toEqual([]);
 });
 
 test("a snippet imports from the Agent's folder", async () => {

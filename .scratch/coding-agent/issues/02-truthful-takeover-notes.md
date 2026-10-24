@@ -13,9 +13,18 @@ A Takeover is also the only sign the coding agent gets that its MCP server resta
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The Harness's `entered` says it took over after a Takeover, and doesn't after a login (C# unit tests, beside the existing Takeover tests in `UT_HarnessClient`)
-- [ ] The TypeScript protocol types have the new field
-- [ ] A call that waits for a Takeover gives the Takeover note, and a call that waits for a login still gives the login note (Mind tests)
-- [ ] A call on a replaced Mind gives the new note, runs nothing and is an error (Mind tests)
+- [x] The Harness's `entered` says it took over after a Takeover, and doesn't after a login (C# unit tests, beside the existing Takeover tests in `UT_HarnessClient`)
+- [x] The TypeScript protocol types have the new field
+- [x] A call that waits for a Takeover gives the Takeover note, and a call that waits for a login still gives the login note (Mind tests)
+- [x] A call on a replaced Mind gives the new note, runs nothing and is an error (Mind tests)
+
+## Comments
+
+**2026-10-24 (agent):** Done. Not yet tried on the live server. Where it differs from or adds to the ticket above:
+
+- **`entered` after a login isn't unit-tested in `UT_HarnessClient`,** since world entry has no unit seam there. The protocol test writes both `tookOver: false` and `true`, and the record's field has no default, so every sender says which.
+- **A Takeover while the Character is still entering the world counts as a login:** the new Mind hears `tookOver: false` once world entry ends, and says it "wasn't in the world", which is true then.
+- **The note shows only on a call that waits for the entry,** as the login's always has. A Takeover the Mind started at launch that's done before the first call shows none.
+- **`World.enter` gives an `Entry`** (entered and whether by Takeover, failed and why, or replaced) in place of a refusal string, and `Connection`'s `onEntered` gets `tookOver` with the connection.

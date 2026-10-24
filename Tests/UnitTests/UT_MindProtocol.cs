@@ -262,7 +262,8 @@ namespace DOL.GS.Tests
         [Test]
         public void Write_ShouldWriteEnteredRefusedAndReplaced()
         {
-            Assert.That(Write(new EnteredMessage()), Is.EqualTo("""{"type":"entered"}"""));
+            Assert.That(Write(new EnteredMessage(TookOver: false)), Is.EqualTo("""{"type":"entered","tookOver":false}"""));
+            Assert.That(Write(new EnteredMessage(TookOver: true)), Is.EqualTo("""{"type":"entered","tookOver":true}"""));
             Assert.That(Write(new RefusedMessage("No token.", false)), Is.EqualTo("""{"type":"refused","reason":"No token.","retry":false}"""));
             Assert.That(Write(new ReplacedMessage()), Is.EqualTo("""{"type":"replaced"}"""));
         }

@@ -13,7 +13,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { Connection, type Ending } from "./src/connection.ts";
 import { loadEnvFile } from "./src/env.ts";
-import { DEFAULT_TIMEOUT_MINUTES, MAX_TIMEOUT_MINUTES, Mind, MIN_TIMEOUT_MINUTES } from "./src/mind.ts";
+import { DEFAULT_TIMEOUT_MINUTES, type Entry, MAX_TIMEOUT_MINUTES, Mind, MIN_TIMEOUT_MINUTES } from "./src/mind.ts";
 
 const character = Bun.argv[2] ?? "";
 
@@ -42,7 +42,7 @@ const journal = (line: string) => journalFile.write(`${line}\n`);
 let connection: Connection | undefined;
 let ending: Ending | undefined;
 let connected: Promise<Ending> | undefined;
-let entering: Promise<string | undefined> | undefined;
+let entering: Promise<Entry> | undefined;
 
 const mind = new Mind({
   character,
@@ -52,16 +52,16 @@ const mind = new Mind({
   world: { inWorld: () => ending === undefined && connection?.entered === true, enter },
 });
 
-/** Logs the Character in, or waits for the login already under way. Gives why it couldn't, or nothing once it's in the world. */
-function enter(): Promise<string | undefined> {
+/** Logs the Character in, or waits for the login already under way, and gives how that went. Once another Mind has taken the Agent over, this one doesn't try. */
+function enter(): Promise<Entry> {
   if (ending?.kind === "replaced")
-    return Promise.resolve("another Mind took over the Agent, and this one won't take it back");
+    return Promise.resolve({ kind: "replaced" });
 
   entering ??= login().finally(() => (entering = undefined));
   return entering;
 }
 
-function login(): Promise<string | undefined> {
+function login(): Promise<Entry> {
   // After a lost connection, what the Agent believed may be long gone, such as the objects it saw before a server restart.
   if (connection)
     mind.forget();
@@ -70,12 +70,12 @@ function login(): Promise<string | undefined> {
     ending = undefined;
     const next = new Connection({ url, token, character, log: journal }, {
       onPercept: (message) => mind.perceive(message),
-      onEntered: () => resolve(undefined),
+      onEntered: (_, tookOver) => resolve({ kind: "entered", tookOver }),
     });
     connection = next;
     connected = next.run({ handleCtrlC: false }).then((end) => {
       ending = end;
-      resolve(describe(end));
+      resolve(end.kind === "replaced" ? { kind: "replaced" } : { kind: "failed", reason: describe(end) });
       return end;
     });
   });

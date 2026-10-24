@@ -131,7 +131,7 @@ namespace DOL.GS.Agents
             // Before any call the server makes from here on, so the new Mind hears it in order.
             if (_worldEntry == null && IsInWorld)
             {
-                mind.Send(new EnteredMessage());
+                mind.Send(new EnteredMessage(TookOver: true));
                 TellAnew();
             }
 
@@ -488,7 +488,7 @@ namespace DOL.GS.Agents
                     _worldEntry = null;
                     _liveness = new(GameLoop.GameLoopTime);
                     // Before any call the server makes from here on, so the Mind hears it in order.
-                    Mind.Send(new EnteredMessage());
+                    Mind.Send(new EnteredMessage(TookOver: false));
                     break;
                 }
                 case WorldEntry.Progress.GaveUp:

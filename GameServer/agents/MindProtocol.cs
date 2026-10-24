@@ -92,8 +92,8 @@ namespace DOL.GS.Agents
     // `Retry` says whether the same hello can succeed later, for example once the server has removed a linkdead Character.
     public sealed record RefusedMessage(string Reason, bool Retry) : ServerMessage;
 
-    // The Character is in the world.
-    public sealed record EnteredMessage : ServerMessage;
+    // The Character is in the world. `TookOver` says whether this Mind took over the Agent's connection from another while the Character stayed in the world, rather than logging it in.
+    public sealed record EnteredMessage(bool TookOver) : ServerMessage;
 
     // One call the server made on the Agent's packet library. `Sequence` counts from 1 in call order, and `ElapsedMs` is the time since the login.
     public sealed record PerceptMessage(long Sequence, long ElapsedMs, Percept Percept) : ServerMessage;
