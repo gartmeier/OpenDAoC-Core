@@ -15,6 +15,7 @@ export interface FightStats {
 /**
  * Kills the Mob with `kill`, using Styles: answers each parry with Return Blade, and keeps Shining Blade queued
  * while endurance is above `fillerEndurance` percent (it's the backup when Return Blade comes up).
+ * The server forgets a queued Style after each swing, so it queues again after each one.
  */
 export async function fight(agent: Agent, mobId: number, fillerEndurance = 50): Promise<FightStats> {
   const started = Date.now();
@@ -36,13 +37,16 @@ export async function fight(agent: Agent, mobId: number, fillerEndurance = 50): 
     const text = await agent.waitFor((p) => {
       if (!fighting) return "done";
       if (p?.kind !== "message") return undefined;
-      return /attacks you and you parry the blow|You perform your|You fail to execute your|too fatigued/.test(p.text) ? p.text : undefined;
+      return /attacks you and you parry the blow|You perform your|You fail to execute your|too fatigued|^You (attack|miss|enter combat mode)/.test(p.text) ? p.text : undefined;
     }, 5_000);
     if (typeof text !== "string" || text === "done") continue;
 
     if (/attacks you and you parry/.test(text)) {
       stats.parries++;
       if (reactive) await agent.send({ name: "useStyle", style: reactive });
+    } else if (/^You (attack|miss|enter combat mode)/.test(text)) {
+      // The server forgets a queued Style after every swing, a miss too, and whenever attack stops.
+      fillerQueued = false;
     } else if (/too fatigued/.test(text)) {
       stats.fatigued++;
       fillerQueued = false;

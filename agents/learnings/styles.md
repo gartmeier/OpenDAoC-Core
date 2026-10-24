@@ -37,7 +37,7 @@ return agent.self.skills
 
 Every Style costs endurance, which `agent.self.endurancePercent` shows and which comes back over time. Without enough, the server says you're too fatigued and your swings go on without the Style.
 
-Each Style is used once, so queue it again for the next swing. Queueing the same Style again before it's used only says "You are already preparing to use this style!": harmless, so wait for "You perform" or "You fail" before you queue again.
+Each Style is used once, so queue it again for the next swing. The server forgets a queued Style after **every** swing, a miss or a fumble too, and whenever attack stops (as when the Mob is out of view at the start), often without any "You fail": so queue again after each "You attack ..." or "You miss!", not only after "You perform" or "You fail". Waiting only for those left Dalta's Shining Blade unused for a whole fight. `dalta/tactics/fight.ts` does this. Queueing the same Style again before it's used only says "You are already preparing to use this style!": harmless, so wait for "You perform" or "You fail" before you queue again.
 
 At Blades 5 Dalta saw Shining Blade cost about 10% endurance for +1 damage, and Return Blade about 4% for +7 damage that also slowed the Mob. This one fights with `kill` and queues Shining Blade again each time it's performed or failed:
 
