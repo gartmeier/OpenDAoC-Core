@@ -1,0 +1,108 @@
+# Kylirean
+
+Armor Merchant, a merchant in [Lough Derg](../zones/lough-derg.md), at X:345733 Y:489942 Z:5200. The index is what `buy` takes.
+
+## Page 1
+
+| Index | Item | Level | DPS/AF | Speed | Object type | Price (copper) |
+|---|---|---|---|---|---|---|
+| 0 | rawhide brea jerkin | 2 | 4 | 10 | Leather | 125 |
+| 1 | rawhide brea leggings | 2 | 4 | 10 | Leather | 75 |
+| 2 | rawhide brea sleeves | 2 | 4 | 10 | Leather | 50 |
+| 3 | rawhide brea gloves | 2 | 4 | 10 | Leather | 25 |
+| 4 | rawhide brea boots | 2 | 4 | 10 | Leather | 25 |
+| 5 | rawhide brea helm | 2 | 4 | 10 | Leather | 75 |
+| 6 | tanned brea jerkin | 5 | 10 | 10 | Leather | 2000 |
+| 7 | tanned brea leggings | 5 | 10 | 10 | Leather | 1200 |
+| 8 | tanned brea sleeves | 5 | 10 | 10 | Leather | 800 |
+| 9 | tanned brea gloves | 5 | 10 | 10 | Leather | 400 |
+| 10 | tanned brea boots | 5 | 10 | 10 | Leather | 400 |
+| 11 | tanned brea helm | 5 | 10 | 10 | Leather | 1200 |
+| 12 | cured brea jerkin | 10 | 20 | 10 | Leather | 8000 |
+| 13 | cured brea leggings | 10 | 20 | 10 | Leather | 4800 |
+| 14 | cured brea sleeves | 10 | 20 | 10 | Leather | 3200 |
+| 15 | cured brea gloves | 10 | 20 | 10 | Leather | 1600 |
+| 16 | cured brea boots | 10 | 20 | 10 | Leather | 1600 |
+| 17 | cured brea helm | 10 | 20 | 10 | Leather | 4800 |
+| 18 | hard brea jerkin | 15 | 30 | 10 | Leather | 24000 |
+| 19 | hard brea leggings | 15 | 30 | 10 | Leather | 14400 |
+| 20 | hard brea sleeves | 15 | 30 | 10 | Leather | 9600 |
+| 21 | hard brea gloves | 15 | 30 | 10 | Leather | 4800 |
+| 22 | hard brea boots | 15 | 30 | 10 | Leather | 4800 |
+| 23 | hard brea helm | 15 | 30 | 10 | Leather | 14400 |
+| 24 | rigid brea jerkin | 20 | 40 | 10 | Leather | 72000 |
+| 25 | rigid brea leggings | 20 | 40 | 10 | Leather | 43200 |
+| 26 | rigid brea sleeves | 20 | 40 | 10 | Leather | 28800 |
+| 27 | rigid brea gloves | 20 | 40 | 10 | Leather | 14400 |
+| 28 | rigid brea boots | 20 | 40 | 10 | Leather | 14400 |
+| 29 | rigid brea helm | 20 | 40 | 10 | Leather | 43200 |
+
+## Page 2
+
+| Index | Item | Level | DPS/AF | Speed | Object type | Price (copper) |
+|---|---|---|---|---|---|---|
+| 30 | tacuil vest | 2 | 4 | 19 | Reinforced | 187 |
+| 31 | tacuil leggings | 2 | 4 | 19 | Reinforced | 112 |
+| 32 | tacuil sleeves | 2 | 4 | 19 | Reinforced | 75 |
+| 33 | tacuil gauntlets | 2 | 4 | 19 | Reinforced | 37 |
+| 34 | tacuil boots | 2 | 4 | 19 | Reinforced | 37 |
+| 35 | tacuil helm | 2 | 4 | 19 | Reinforced | 112 |
+| 36 | bone tacuil vest | 5 | 10 | 19 | Reinforced | 3000 |
+| 37 | bone tacuil leggings | 5 | 10 | 19 | Reinforced | 1800 |
+| 38 | bone tacuil sleeves | 5 | 10 | 19 | Reinforced | 1200 |
+| 39 | bone tacuil gauntlets | 5 | 10 | 19 | Reinforced | 600 |
+| 40 | bone tacuil boots | 5 | 10 | 19 | Reinforced | 600 |
+| 41 | bone tacuil helm | 5 | 10 | 19 | Reinforced | 1800 |
+| 42 | vine tacuil vest | 10 | 20 | 19 | Reinforced | 12000 |
+| 43 | vine tacuil leggings | 10 | 20 | 19 | Reinforced | 7200 |
+| 44 | vine tacuil sleeves | 10 | 20 | 19 | Reinforced | 4800 |
+| 45 | vine tacuil gauntlets | 10 | 20 | 19 | Reinforced | 2400 |
+| 46 | vine tacuil boots | 10 | 20 | 19 | Reinforced | 2400 |
+| 47 | vine tacuil helm | 10 | 20 | 19 | Reinforced | 7200 |
+| 48 | shell tacuil vest | 15 | 30 | 19 | Reinforced | 36000 |
+| 49 | shell tacuil leggings | 15 | 30 | 19 | Reinforced | 21600 |
+| 50 | shell tacuil sleeves | 15 | 30 | 19 | Reinforced | 14400 |
+| 51 | shell tacuil gauntlets | 15 | 30 | 19 | Reinforced | 7200 |
+| 52 | shell tacuil boots | 15 | 30 | 19 | Reinforced | 7200 |
+| 53 | shell tacuil helm | 15 | 30 | 19 | Reinforced | 21600 |
+| 54 | fossil tacuil vest | 20 | 40 | 19 | Reinforced | 108000 |
+| 55 | fossil tacuil leggings | 20 | 40 | 19 | Reinforced | 64800 |
+| 56 | fossil tacuil sleeves | 20 | 40 | 19 | Reinforced | 43200 |
+| 57 | fossil tacuil gauntlets | 20 | 40 | 19 | Reinforced | 21600 |
+| 58 | fossil tacuil boots | 20 | 40 | 19 | Reinforced | 21600 |
+| 59 | fossil tacuil helm | 20 | 40 | 19 | Reinforced | 64800 |
+
+## Page 3
+
+| Index | Item | Level | DPS/AF | Speed | Object type | Price (copper) |
+|---|---|---|---|---|---|---|
+| 60 | cruanach hauberk | 2 | 4 | 27 | _LastArmor | 375 |
+| 61 | cruanach leggings | 2 | 4 | 27 | _LastArmor | 225 |
+| 62 | cruanach sleeves | 2 | 4 | 27 | _LastArmor | 150 |
+| 63 | cruanach gloves | 2 | 4 | 27 | _LastArmor | 75 |
+| 64 | cruanach boots | 2 | 4 | 27 | _LastArmor | 75 |
+| 65 | cruanach coif | 2 | 4 | 27 | _LastArmor | 225 |
+| 66 | ferrite cruanach hauberk | 5 | 10 | 27 | _LastArmor | 6000 |
+| 67 | ferrite cruanach leggings | 5 | 10 | 27 | _LastArmor | 3600 |
+| 68 | ferrite cruanach sleeves | 5 | 10 | 27 | _LastArmor | 2400 |
+| 69 | ferrite cruanach gloves | 5 | 10 | 27 | _LastArmor | 1200 |
+| 70 | ferrite cruanach boots | 5 | 10 | 27 | _LastArmor | 1200 |
+| 71 | ferrite cruanach coif | 5 | 10 | 27 | _LastArmor | 3600 |
+| 72 | quartz cruanach hauberk | 10 | 20 | 27 | _LastArmor | 24000 |
+| 73 | quartz cruanach leggings | 10 | 20 | 27 | _LastArmor | 14400 |
+| 74 | quartz cruanach sleeves | 10 | 20 | 27 | _LastArmor | 9600 |
+| 75 | quartz cruanach gloves | 10 | 20 | 27 | _LastArmor | 4800 |
+| 76 | quartz cruanach boots | 10 | 20 | 27 | _LastArmor | 4800 |
+| 77 | quartz cruanach coif | 10 | 20 | 27 | _LastArmor | 14400 |
+| 78 | dolomite cruanach hauberk | 15 | 30 | 27 | _LastArmor | 72000 |
+| 79 | dolomite cruanach leggings | 15 | 30 | 27 | _LastArmor | 43200 |
+| 80 | dolomite cruanach sleeves | 15 | 30 | 27 | _LastArmor | 28800 |
+| 81 | dolomite cruanach gloves | 15 | 30 | 27 | _LastArmor | 14400 |
+| 82 | dolomite cruanach boots | 15 | 30 | 27 | _LastArmor | 14400 |
+| 83 | dolomite cruanach coif | 15 | 30 | 27 | _LastArmor | 43200 |
+| 84 | cobalt cruanach hauberk | 20 | 40 | 27 | _LastArmor | 216000 |
+| 85 | cobalt cruanach leggings | 20 | 40 | 27 | _LastArmor | 129600 |
+| 86 | cobalt cruanach sleeves | 20 | 40 | 27 | _LastArmor | 86400 |
+| 87 | cobalt cruanach gloves | 20 | 40 | 27 | _LastArmor | 43200 |
+| 88 | cobalt cruanach boots | 20 | 40 | 27 | _LastArmor | 43200 |
+| 89 | cobalt cruanach coif | 20 | 40 | 27 | _LastArmor | 129600 |

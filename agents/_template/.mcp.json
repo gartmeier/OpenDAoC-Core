@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mind": {
+      "command": "bun",
+      "args": ["../../mind/mcp.ts", "CHARACTER"]
+    }
+  }
+}

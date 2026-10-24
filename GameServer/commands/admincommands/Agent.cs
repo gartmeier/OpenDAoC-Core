@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using DOL.GS.Agents;
 
@@ -10,7 +12,8 @@ namespace DOL.GS.Commands
         ePrivLevel.Admin,
         "Remove an Agent from the world, or record a real client's packets",
         "/agent logout <char> - Quit the Agent's Character through the normal quit path, which ends its Mind's connection",
-        "/agent capture <account> - Record every packet a real client logged into <account> sends, until /agent capture off")]
+        "/agent capture <account> - Record every packet a real client logged into <account> sends, until /agent capture off",
+        "/agent wiki <realm> <folder> - Write the realm's Wiki for Agents into <folder>: its zones with their Mobs and NPCs, and its merchants with their wares")]
     public class AgentCommand : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)
@@ -38,6 +41,11 @@ namespace DOL.GS.Commands
                 case "capture":
                 {
                     Capture(client, args);
+                    return;
+                }
+                case "wiki":
+                {
+                    WriteWiki(client, args);
                     return;
                 }
                 default:
@@ -97,6 +105,22 @@ namespace DOL.GS.Commands
 
             string path = InboundPacketCapture.Start(args[2]);
             DisplayMessage(client, $"Capturing packets from account '{args[2]}' to {path}");
+        }
+
+        // The Wiki comes from the world the server has loaded, so it shows what an Agent will meet (ADR 0006).
+        private void WriteWiki(GameClient client, string[] args)
+        {
+            if (args.Length != 4 || !Enum.TryParse(args[2], true, out eRealm realm) || realm is not (eRealm.Albion or eRealm.Midgard or eRealm.Hibernia))
+            {
+                DisplaySyntax(client);
+                return;
+            }
+
+            string folder = Path.GetFullPath(args[3]);
+            List<WikiZone> zones = Wiki.FromWorld(realm);
+            IReadOnlyDictionary<string, string> pages = Wiki.Pages(realm.ToString(), zones);
+            Wiki.Write(folder, pages);
+            DisplayMessage(client, $"Wrote {pages.Count} pages of {realm}'s Wiki, for {zones.Count} zones, to {folder}.");
         }
     }
 }

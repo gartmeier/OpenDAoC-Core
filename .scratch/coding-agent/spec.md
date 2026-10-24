@@ -158,3 +158,16 @@ Acceptance: from a fresh level 1 Character, with the Human only nudging it on wh
 - **Milestone ladder:** 1 login and logout → 2 Mind connection → 3 movement → 3b terrain and pathing → 4 hand-written grind → 4b inventory and gear (all done) → **5 a coding agent plays (this spec)**. After 5: runs, improvements and restarts, and Primitives, Percepts, Learnings and Wiki pages as the coding agent turns out to need them.
 
 ## Comments
+
+**2026-10-24 (agent):** Implemented. Not yet played by a coding agent: the manual acceptance test is the Human's. A live check logged Greeen in through the MCP server, ran a snippet whose result showed his real State and Chat, and quit him through the normal quit path when its input closed. Where it differs from or adds to the spec above:
+
+- **A call while out of the world logs in and then runs** in the same call, and says so in its Console. A failed login is the call's error. The first call can also wait for the login the Mind started at startup.
+- **Logging in again forgets the old beliefs.** After a lost connection the Mind starts Self, Surroundings and Inventory afresh, because objects seen before a server restart are gone.
+- **The State has no zone,** since Self doesn't track one. **Players near the Agent show only name and distance,** because their Percepts carry no level or health.
+- **`SLOT` is a snippet global too,** for naming equipment slots. A snippet's own `console` goes to its own Console, so what an aborted snippet logs later never shows in the next one's.
+- **A result that JSON can't hold** (circular, BigInt) comes back as Bun prints it, and maps and sets come back as objects and arrays.
+- **Each snippet imports the Agent's files afresh,** so an edited Tactic takes effect in the next snippet.
+- **`/agent wiki <realm> <folder>`** takes the folder to write to. The database leaves every zone's realm unset, so a zone without one belongs to the realm most of its region's guards, merchants and trainers belong to. That brings in shared areas such as the Thidranki battleground, and leaves out dungeon regions with no realm NPCs, such as Muire Tomb.
+- **The Wiki lists at most 5 spawn points of a Mob,** spread from west to east, with how many more there are. Zone pages were up to 47 KB with all of them. It also leaves out zones with no NPCs, and tells apart zones and merchants of the same name. The index sorts zones by their lowest Mob, with each zone's merchants, and merchant pages have each item's speed.
+- **The Wiki's tests run on plain records,** the pages a function of zones and NPCs, not on world doubles. Reading those records from the loaded world (which NPCs are Mobs, the pet and untargetable filters, the realm fallback) is untested, and was checked only by generating Hibernia's Wiki: 41 zones and 429 merchants. The Wiki is checked in.
+- **The template's settings** add the shared folder and the Mind as directories Claude Code may read, and a 62-minute MCP tool timeout so a 60-minute snippet isn't cut short.

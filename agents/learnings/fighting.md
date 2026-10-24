@@ -1,0 +1,76 @@
+# Fighting
+
+Learned by the hand-written Grind of milestones 4 and 4b, which took a Guardian from level 1 to 5.
+
+## Picking a Mob
+
+A Mob is an NPC of no realm (`realm === "None"`) that isn't peaceful. Its level against yours is its con colour: grey and green are well below you, blue is a level or so below, yellow is your level, orange and red above.
+
+- At level 1, with a training sword and no armour, a yellow level 1 sand crab killed Greeen in 12 s. Blue Mobs were safe but wore him down to about 30% health a fight.
+- Once he had some armour, yellow Mobs were fine too, and there are more of them to fight.
+- Mobs of the same level aren't equal: at level 4 to 5 a mudman killed Greeen 208 times, mostly the same one, because after each death he ran back and attacked it again. If a Mob keeps killing you, leave it alone.
+
+```ts
+const level = agent.self.level;
+const position = agent.self.position;
+const mobs = agent.surroundings.npcs
+  .filter((npc) => npc.realm === "None" && !npc.peaceful && npc.healthPercent > 0 && npc.level >= level - 1 && npc.level <= level)
+  .map((npc) => ({ npc, away: position ? Math.hypot(npc.position.x - position.x, npc.position.y - position.y) : Infinity }))
+  .sort((a, b) => a.away - b.away);
+return mobs.slice(0, 5).map(({ npc, away }) => `#${npc.objectId} ${npc.name} level ${npc.level}, ${Math.round(away)} away`);
+```
+
+## Killing it
+
+`kill(agent, objectId)` targets the Mob, attacks, runs to it and faces it, and follows it until it dies. It turns attack off when it ends. It fails with `died`, `outOfView` (it went out of view or left the world alive), `unreachable` (no route gets to it) or `noDamage` (neither side's health fell for 30 s, for example because the server ignored the attack).
+
+```ts
+const mob = agent.surroundings.npcs.find((npc) => npc.name === "sand crab");
+return mob ? await kill(agent, mob.objectId) : "no sand crab in view";
+```
+
+A Mob only counts as attacking you once it's within reach: while it runs towards you its target shows as 65535. Fight back first:
+
+```ts
+const me = agent.self.objectId;
+const attacker = me === undefined ? undefined : agent.surroundings.attacking(me)[0];
+return attacker ? await kill(agent, attacker.objectId) : "nothing attacks me";
+```
+
+## Resting
+
+`rest(agent, untilPercent)` sits until your health gets there, then stands. It fails with `attacked` as soon as something attacks you or your health drops, standing up first. Resting to 100% between fights kept Greeen alive where resting to 80% didn't.
+
+```ts
+if (agent.self.healthPercent < 80)
+  return await rest(agent, 100);
+
+return "healthy enough";
+```
+
+## Dying
+
+When you die, `agent.self.dead` is true. Send `/release` and you come back to life at your bind point. The server releases you by itself about 10 s after you die anyway. Then run back.
+
+```ts
+if (!agent.self.dead)
+  return "alive";
+
+const alive = await agent.sendAndWait({ name: "command", text: "/release" }, () => !agent.self.dead, 30_000);
+return alive ? `released, now at X:${agent.self.position?.x} Y:${agent.self.position?.y}` : "still dead";
+```
+
+## Training
+
+Each level gives you specialization points (`agent.self.specPoints`). Raising a line to level n costs n points. `train(agent, line, level)` types `/train` as a Human would, and fails with `notTrained` without enough points. `agent.self.specs` has your lines and their levels.
+
+```ts
+const blades = agent.self.specs.get("Blades") ?? 1;
+let target = blades;
+let points = agent.self.specPoints;
+
+while (points >= target + 1)
+  points -= ++target;
+
+return target > blades ? await train(agent, "Blades", target) : "not enough points";
+```

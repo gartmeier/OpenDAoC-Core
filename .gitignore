@@ -489,3 +489,7 @@ $RECYCLE.BIN/
 
 # Local Docker Compose overrides
 docker-compose.override.yml
+
+# Agents: each session's Journal, and the folders the Learnings test makes while it runs
+agents/*/journal/
+mind/src/.learnings-*/
