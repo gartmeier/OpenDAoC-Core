@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { BACKPACK_SLOTS } from "../inventory.ts";
 import type { Percept } from "../protocol.ts";
 import { settle, TestAgent } from "../test-agent.ts";
-import { arrived, inventory, item, merchantItem, merchantWindow, money, npcCreate, ownPosition, stopped } from "../test-percepts.ts";
-import { buy, MERCHANT_CLOSE_IN, sell, TRADE_TIMEOUT_MS, WINDOW_TIMEOUT_MS } from "./trade.ts";
+import { arrived, inventory, item, merchantItem, merchantWindow, money, npcCreate, ownPosition, popup, stopped } from "../test-percepts.ts";
+import { ANSWER_TIMEOUT_MS, buy, sell, TALK_CLOSE_IN, talkTo, TRADE_TIMEOUT_MS } from "./trade.ts";
 
 const EIRA = 0x2c54;
 const AT = { x: 294899, y: 641231, z: 4848 };
@@ -39,9 +39,9 @@ test("buy talks to the merchant, buys the item and succeeds once it lands in the
 test("buy runs within reach of a merchant that's too far to talk to", async () => {
   const t = await nearEira([], { x: AT.x + 1000, y: AT.y, z: AT.z });
   await started(t, t.agent.run(buy, EIRA, 1));
-  expect(t.take()).toEqual([{ name: "moveTo", ...AT, within: MERCHANT_CLOSE_IN }]);
+  expect(t.take()).toEqual([{ name: "moveTo", ...AT, within: TALK_CLOSE_IN }]);
 
-  await t.perceive(arrived(AT.x + MERCHANT_CLOSE_IN, AT.y, AT.z));
+  await t.perceive(arrived(AT.x + TALK_CLOSE_IN, AT.y, AT.z));
 
   expect(t.take()).toEqual([{ name: "talkTo", objectId: EIRA }]);
 });
@@ -66,7 +66,7 @@ test("buy fails with timeout when the merchant's window never comes", async () =
   const t = await nearEira();
   const { outcome } = await started(t, t.agent.run(buy, EIRA, 1));
 
-  await t.clock.advance(WINDOW_TIMEOUT_MS);
+  await t.clock.advance(ANSWER_TIMEOUT_MS);
 
   expect(await outcome).toEqual({ ok: false, reason: "timeout" });
 });
@@ -140,4 +140,44 @@ test("sell fails with notSold when the merchant doesn't take it, or there's noth
   expect(await outcome).toEqual({ ok: false, reason: "notSold" });
 
   expect(await t.agent.run(sell, EIRA, 41)).toEqual({ ok: false, reason: "notSold" });
+});
+
+const EA = 0x2c60;
+
+// Greeen 100 units from Ea, the Blademaster trainer, who has no merchant window.
+async function nearEa() {
+  const t = new TestAgent();
+  await t.perceive(ownPosition(AT.x + 100, AT.y, AT.z), npcCreate(EA, "Ea", AT.x, AT.y, AT.z, { peaceful: true, realm: "Hibernia" }));
+  return t;
+}
+
+test("talkTo succeeds once an NPC with no merchant window answers in words", async () => {
+  const t = await nearEa();
+  const { outcome } = await started(t, t.agent.run(talkTo, EA));
+  expect(t.take()).toEqual([{ name: "talkTo", objectId: EA }]);
+
+  await t.perceive(popup("Ea says, \"Greeen, do you choose the Path of Harmony, and life as a [Blademaster]?\""));
+
+  expect(await outcome).toEqual({ ok: true });
+});
+
+test("talkTo doesn't take another NPC's words, or what the NPC said before, for its answer", async () => {
+  const t = await nearEa();
+  await t.perceive(popup("Ea says, \"Do you wish to learn some more, Greeen?\""));
+  const { outcome } = await started(t, t.agent.run(talkTo, EA));
+
+  await t.perceive(popup("Ea guard says, \"Well met, Greeen.\""), popup("Ea is busy."));
+  await t.clock.advance(ANSWER_TIMEOUT_MS);
+
+  expect(await outcome).toEqual({ ok: false, reason: "timeout" });
+});
+
+test("talkTo takes an NPC's words said with its article for its answer", async () => {
+  const t = await nearEa();
+  await t.perceive(npcCreate(0x2c61, "town guard", AT.x, AT.y, AT.z, { peaceful: true, realm: "Hibernia" }));
+  const { outcome } = await started(t, t.agent.run(talkTo, 0x2c61));
+
+  await t.perceive(popup("The town guard says, \"Move along.\""));
+
+  expect(await outcome).toEqual({ ok: true });
 });

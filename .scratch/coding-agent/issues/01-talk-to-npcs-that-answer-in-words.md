@@ -11,11 +11,21 @@ A trainer answers in a message (a popup or say) whose text starts with its name,
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `talkTo` succeeds on a trainer's words, on a merchant window, and fails with `timeout` when the NPC says nothing (tests on the fake Agent, beside the existing trade tests)
-- [ ] Words from another NPC, or words from before the `talkTo`, don't count as the NPC's answer
-- [ ] `whisper` targets the NPC, sends the whisper and succeeds on its words. It fails with `outOfView`, `tooFar` and `timeout` (tests on the fake Agent)
-- [ ] `whisper` is a snippet global, and the snippet-globals declaration the Learnings test checks against has it
-- [ ] The guide and the tool description list `whisper`
-- [ ] `fighting.md` has a Promoting section whose snippet typechecks in the Learnings test
+- [x] `talkTo` succeeds on a trainer's words, on a merchant window, and fails with `timeout` when the NPC says nothing (tests on the fake Agent, beside the existing trade tests)
+- [x] Words from another NPC, or words from before the `talkTo`, don't count as the NPC's answer
+- [x] `whisper` targets the NPC, sends the whisper and succeeds on its words. It fails with `outOfView`, `tooFar` and `timeout` (tests on the fake Agent)
+- [x] `whisper` is a snippet global, and the snippet-globals declaration the Learnings test checks against has it
+- [x] The guide and the tool description list `whisper`
+- [x] `fighting.md` has a Promoting section whose snippet typechecks in the Learnings test
+
+## Comments
+
+**2026-10-24 (agent):** Done. Not yet tried on the live server: the tests run on the fake Agent. Where it differs from or adds to the ticket above:
+
+- **An NPC's words are a say line** (`<speaker> says, "…"`) whose speaker is the NPC's name, in any case and with or without its article (`The town guard says, …`), as the server writes them. A message that only starts with the name, or another NPC whose name starts with it, doesn't count. The say-line parsing that hears `stop` now shares this, in `mind/src/say-line.ts`.
+- **`talkTo`'s constants are renamed** to `TALK_CLOSE_IN` and `ANSWER_TIMEOUT_MS`, since they're no longer only a merchant's.
+- **`whisper` runs to 400 units** from an NPC farther than 512, and sends `target` and then `/whisper <keyword>`.
+- **The Mind's README** lists `whisper` too.
+- The approach (run within range, else `tooFar`) is now in `talkTo`, `whisper` and `kill` alike; left as it is.

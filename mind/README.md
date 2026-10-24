@@ -34,7 +34,7 @@ Who gets in (ADR 0005):
 - `src/summary.ts` and `src/journal.ts`: the lines a result ends with, and the Journal's lines.
 - `src/connection.ts`: the connection to the server. It knows nothing about what the Mind decides.
 - `src/tactic.ts`: what every Tactic gets (ADR 0008): the Agent's Primitives, its Self, Surroundings and Inventory, and `waitFor`, which waits on them with a timeout. Stopping the Agent ends every Tactic running on it.
-- `src/tactics/`: one Tactic each: `kill`, `rest`, `train`, `runTo`, `equip` and `trade` (`talkTo`, `buy` and `sell`), the porcelain, mechanical and without judgement.
+- `src/tactics/`: one Tactic each: `kill`, `rest`, `train`, `runTo`, `equip`, `trade` (`talkTo`, `buy` and `sell`) and `whisper`, the porcelain, mechanical and without judgement.
 - `src/runner.ts`: runs one top-level Tactic at a time, and leaves the Agent standing still with attack off when it stops one.
 - `src/self.ts`: what the Agent believes about its own Character, built only from Percepts: where it is, which way it faces, how fast it may run, one movement status (standing, moving to a target, arrived, or stopped with a reason), its health and whether it sits or is dead, its level, experience, spec points and skills.
 - `src/surroundings.ts`: what the Agent believes is around it, built only from Percepts: the players and NPCs it knows of, in one collection by object ID, with their names and where they last were, and for NPCs their level, realm, health and whom they attack. It forgets what's out of view when the Agent's Character moves, never by time.

@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import { describePercept, describePrimitive } from "./journal.ts";
 import type { Percept, PerceptMessage, Primitive, PrimitiveResultMessage } from "./protocol.ts";
 import { Runner } from "./runner.ts";
+import { readSayLine } from "./say-line.ts";
 import { SNIPPET_GLOBALS } from "./snippet-globals.ts";
 import { summarize } from "./summary.ts";
 import { Agent, type Clock, failed, type Outcome, Stopped, succeeded, type Tactic } from "./tactic.ts";
@@ -197,19 +198,12 @@ export class Mind {
   }
 }
 
-// How a say line reads to those who hear it (`GamePlayer.SayReceive.Says` in the server's English language file): `Vue says, "stop"`.
-// The speaker is a Character's name, or an NPC's with its article (`the town guard`). The Agent's own line reads `You say, "stop"`, so it doesn't match.
-const SAY_LINE = /^(.+?) says, "(.+)"$/;
-
-/**
- * Who said `stop` next to the Agent, in any case, or nothing.
- * The message packet has no speaker field, so the speaker is read from the say line's text.
- */
+/** Who said `stop` next to the Agent, in any case, or nothing. */
 function heardStop(percept: Percept, character: string): string | undefined {
   if (percept.kind !== "message" || percept.chatType !== "CT_Say")
     return undefined;
 
-  const [, speaker, words] = SAY_LINE.exec(percept.text) ?? [];
+  const { speaker, words } = readSayLine(percept.text) ?? {};
   return speaker && words?.toLowerCase() === "stop" && speaker.toLowerCase() !== character.toLowerCase() ? speaker : undefined;
 }
 

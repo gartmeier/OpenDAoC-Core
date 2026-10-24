@@ -75,3 +75,17 @@ while (points >= target + 1)
 
 return target > blades ? await train(agent, "Blades", target) : "not enough points";
 ```
+
+## Promoting
+
+At level 5 your class trainer promotes you. The Wiki's zone pages list trainers by class, such as "Blademaster Trainer". A trainer has no merchant window: `talkTo` succeeds once it answers in words, which ask which class you choose in [brackets] and reach you in the chat. `whisper(agent, npcId, keyword)` answers one, as clicking it in the client does, and succeeds once the trainer answers again.
+
+```ts
+const ea = agent.surroundings.npcs.find((npc) => npc.name === "Ea");
+if (!ea) return "Ea isn't in view";
+
+const talked = await talkTo(agent, ea.objectId);
+if (!talked.ok) return talked;
+
+return await whisper(agent, ea.objectId, "Blademaster");
+```

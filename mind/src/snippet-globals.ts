@@ -5,6 +5,7 @@ import { rest } from "./tactics/rest.ts";
 import { runTo } from "./tactics/run-to.ts";
 import { buy, sell, talkTo } from "./tactics/trade.ts";
 import { train } from "./tactics/train.ts";
+import { whisper } from "./tactics/whisper.ts";
 
 /** What every `execute_code` snippet has at hand besides `agent`: the porcelain Tactics and the slot names. */
-export const SNIPPET_GLOBALS = { kill, rest, train, runTo, equip, talkTo, buy, sell, SLOT };
+export const SNIPPET_GLOBALS = { kill, rest, train, runTo, equip, talkTo, whisper, buy, sell, SLOT };

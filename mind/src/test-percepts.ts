@@ -42,6 +42,11 @@ export function sayLine(text: string): Percept {
   return { kind: "message", text, chatType: "CT_Say", chatLocation: "CL_ChatWindow" };
 }
 
+/** What an NPC says in a popup, as a trainer asks which class a Character chooses. */
+export function popup(text: string): Percept {
+  return { kind: "message", text, chatType: "CT_System", chatLocation: "CL_PopupWindow" };
+}
+
 export function playerCreate(objectId: number, name: string, x: number, y: number, z: number): PlayerCreatePercept {
   return {
     kind: "playerCreate",

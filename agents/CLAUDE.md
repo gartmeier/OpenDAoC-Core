@@ -32,7 +32,7 @@ return await kill(agent, mudman.objectId);
 In scope:
 
 - `agent`: your Agent (`mind/src/tactic.ts`): `agent.self`, `agent.surroundings`, `agent.inventory`, `agent.send(primitive)`, `agent.waitFor(condition, ms)`, `agent.sendAndWait(primitive, condition, ms)` and `agent.run(tactic, ...args)`.
-- The porcelain Tactics: `kill`, `rest`, `train`, `runTo`, `equip`, `talkTo`, `buy` and `sell` (`mind/src/tactics/`).
+- The porcelain Tactics: `kill`, `rest`, `train`, `runTo`, `equip`, `talkTo`, `whisper`, `buy` and `sell` (`mind/src/tactics/`).
 - `SLOT`: the equipment slot numbers by name, such as `SLOT.rightHand`. The backpack is slots 40 to 79.
 - Your own files, with `await import("./tactics/hunt.ts")`. Paths are relative to your folder, and you get the file as it is now, even if you changed it since.
 

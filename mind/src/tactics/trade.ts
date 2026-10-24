@@ -1,4 +1,5 @@
 import { merchantIndex } from "../inventory.ts";
+import { saidBy } from "../say-line.ts";
 import { distance } from "../surroundings.ts";
 import { type Agent, failed, type Outcome, succeeded } from "../tactic.ts";
 import { runTo } from "./run-to.ts";
@@ -6,38 +7,38 @@ import { runTo } from "./run-to.ts";
 /** How close, in game units, a player must stand to talk to an NPC. Buying and selling allow 256. Static knowledge, as a Human learns it. */
 export const TALK_RANGE = 192;
 
-/** How far short of the merchant a run to it ends, well inside talking range. */
-export const MERCHANT_CLOSE_IN = 100;
+/** How far short of the NPC a run to it ends, well inside talking range. */
+export const TALK_CLOSE_IN = 100;
 
-/** In milliseconds. A merchant answers with its window, and a trade with the changed slots and money, at once. */
-export const WINDOW_TIMEOUT_MS = 5_000;
+/** In milliseconds. A merchant answers with its window, another NPC with its words, and a trade with the changed slots and money, at once. */
+export const ANSWER_TIMEOUT_MS = 5_000;
 export const TRADE_TIMEOUT_MS = 5_000;
 
 /**
- * Gets within talking range of the merchant and talks to it, unless the Agent is trading in its window already, and succeeds once its window is the last one seen.
- * It fails with `outOfView` (the merchant isn't in view), `tooFar` (the Agent can't get within reach) or `timeout` (no window came).
+ * Gets within talking range of the NPC and talks to it, unless the Agent is trading in its window already, and succeeds once it answers: a merchant with its window, another NPC, such as a trainer, with its words.
+ * It fails with `outOfView` (the NPC isn't in view), `tooFar` (the Agent can't get within reach) or `timeout` (no answer came).
  */
-export async function talkTo(agent: Agent, merchantId: number): Promise<Outcome> {
+export async function talkTo(agent: Agent, npcId: number): Promise<Outcome> {
   const { self, surroundings, inventory } = agent;
-  const merchant = surroundings.npc(merchantId);
+  const npc = surroundings.npc(npcId);
 
-  if (!merchant)
+  if (!npc)
     return failed("outOfView");
 
-  const near = () => self.position !== undefined && distance(self.position, merchant.position) <= TALK_RANGE;
+  const near = () => self.position !== undefined && distance(self.position, npc.position) <= TALK_RANGE;
 
   if (!near()) {
-    const ran = await runTo(agent, merchant.position, MERCHANT_CLOSE_IN);
+    const ran = await runTo(agent, npc.position, TALK_CLOSE_IN);
 
     if (!ran.ok || !near())
       return failed("tooFar");
   }
 
-  if (inventory.trading(merchantId))
+  if (inventory.trading(npcId))
     return succeeded;
 
-  const window = await agent.sendAndWait({ name: "talkTo", objectId: merchantId }, (percept) => percept?.kind === "merchantWindow", WINDOW_TIMEOUT_MS);
-  return window ? succeeded : failed("timeout");
+  const answer = await agent.sendAndWait({ name: "talkTo", objectId: npcId }, (percept) => percept?.kind === "merchantWindow" || saidBy(npc.name, percept), ANSWER_TIMEOUT_MS);
+  return answer ? succeeded : failed("timeout");
 }
 
 /**
