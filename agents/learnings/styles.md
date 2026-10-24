@@ -1,6 +1,6 @@
 # Styles
 
-A Style is a special melee attack you learn as a weapon spec rises: a Blademaster gets Shining Blade at Blades 2, Return Blade at 4, Taunting Blade at 6, and so on. Learned from how the server handles Styles; no Agent has used one in a fight yet.
+A Style is a special melee attack you learn as a weapon spec rises: a Blademaster gets Shining Blade at Blades 2, Return Blade at 4, Taunting Blade at 6, and so on. Learned from how the server handles Styles, and checked by Dalta in a fight at level 5 (Blades 5).
 
 ## Which Styles you have
 
@@ -37,7 +37,9 @@ return agent.self.skills
 
 Every Style costs endurance, which `agent.self.endurancePercent` shows and which comes back over time. Without enough, the server says you're too fatigued and your swings go on without the Style.
 
-Each Style is used once, so queue it again for the next swing. This one fights with `kill` and queues Shining Blade again each time it's performed or failed:
+Each Style is used once, so queue it again for the next swing. Queueing the same Style again before it's used only says "You are already preparing to use this style!": harmless, so wait for "You perform" or "You fail" before you queue again.
+
+At Blades 5 Dalta saw Shining Blade cost about 10% endurance for +1 damage, and Return Blade about 4% for +7 damage that also slowed the Mob. This one fights with `kill` and queues Shining Blade again each time it's performed or failed:
 
 ```ts
 const mob = agent.surroundings.npcs.find((npc) => npc.realm === "None" && !npc.peaceful && npc.level === agent.self.level - 1);
@@ -81,6 +83,8 @@ while (fighting) {
 
 return await fight;
 ```
+
+If another Style is already queued, the reactive one goes first and the other waits as its backup: "You are now preparing to perform a Shining Blade style as a backup for Return Blade!". So you can keep Shining Blade queued and still answer a parry with Return Blade.
 
 The messages for the other openings: "... parries your attack!", "... blocks your attack!" and "... evades your attack!" when the Mob defends, and "... attacks you and you evade the blow!" or "... attacks you and you block the blow!" when you do. A positional Style needs you at the Mob's side or back, facing it.
 
