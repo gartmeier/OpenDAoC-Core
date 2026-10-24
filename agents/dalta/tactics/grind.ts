@@ -6,8 +6,8 @@ import { train } from "../../../mind/src/tactics/train.ts";
 import { describe, fight } from "./fight.ts";
 
 /**
- * Spends spec points on Blades, which can't go above my level, then what's left beyond the next Blades step on Parry
- * (more parries open Return Blade).
+ * Spends spec points on Blades, which can't go above my level, then the rest on Parry (more parries open Return Blade)
+ * and Celtic Dual (the left hand hits more and harder), lower first. The next level always brings enough for Blades.
  */
 export async function trainBlades(agent: Agent): Promise<void> {
   const level = agent.self.level;
@@ -18,11 +18,19 @@ export async function trainBlades(agent: Agent): Promise<void> {
   while (target < level && points >= target + 1) points -= ++target;
   if (target > blades) await train(agent, "Blades", target);
 
-  const reserve = level + 1;
-  const parry = agent.self.specs.get("Parry") ?? 1;
-  let parryTarget = parry;
-  while (parryTarget < level && points - reserve >= parryTarget + 1) points -= ++parryTarget;
-  if (parryTarget > parry) await train(agent, "Parry", parryTarget);
+  const lines = ["Parry", "Celtic Dual"];
+  const from = new Map(lines.map((l) => [l, agent.self.specs.get(l) ?? 1]));
+  const to = new Map(from);
+  for (;;) {
+    const next = lines.filter((l) => to.get(l)! < level && points >= to.get(l)! + 1).sort((a, b) => to.get(a)! - to.get(b)!)[0];
+    if (!next) break;
+    to.set(next, to.get(next)! + 1);
+    points -= to.get(next)!;
+  }
+  // `train` sends the line unquoted, which the server ignores for "Celtic Dual".
+  for (const l of lines)
+    if (to.get(l)! > from.get(l)!)
+      await agent.sendAndWait({ name: "command", text: `/train "${l}" ${to.get(l)}` }, () => (agent.self.specs.get(l) ?? 0) >= to.get(l)!, 10_000);
 }
 
 export interface GrindOptions {
@@ -42,10 +50,12 @@ export interface GrindOptions {
   money?: number;
   /** A Mob name to seek out (a Kill Task's), even 3000 units further; grind stops with `preferredKilled` once one dies. */
   prefer?: string;
+  /** Mob names never to pull, such as blackthorns, which call lunantishee to their defence. */
+  exclude?: string[];
 }
 
 /** Kills Mobs in a level band, nearest first but preferring higher levels, until `goal` level, resting between fights. */
-export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spots = [], minutes = 25, band = [-1, -1], restBelow = 90, money = Infinity, prefer }: GrindOptions): Promise<Outcome> {
+export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spots = [], minutes = 25, band = [-1, -1], restBelow = 90, money = Infinity, prefer, exclude = [] }: GrindOptions): Promise<Outcome> {
   const deadline = Date.now() + minutes * 60_000;
   const levelOf = () => Math.max(agent.self.level, knownLevel);
   const avoid = new Map<number, number>();
@@ -84,7 +94,7 @@ export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spot
     const low = level + band[0];
     const high = level + band[1];
     const mob = agent.surroundings.npcs
-      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && (n.level >= low || n.name === prefer) && n.level <= high && (avoid.get(n.objectId) ?? 0) < 2)
+      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && !exclude.includes(n.name) && (n.level >= low || n.name === prefer) && (n.level <= high || n.name === prefer) && (avoid.get(n.objectId) ?? 0) < 2)
       // A Mob a level higher pays about double: worth running 1500 units further for.
       .map((n) => ({ n, d: Math.hypot(n.position.x - pos.x, n.position.y - pos.y) - (n.level - low) * 1500 - (n.name === prefer ? 3000 : 0) }))
       .sort((a, b) => a.d - b.d)[0]?.n;

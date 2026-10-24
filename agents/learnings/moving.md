@@ -46,3 +46,7 @@ return agent.surroundings.objects.map((object) => `${object.kind} ${object.name}
 ## Don't teleport
 
 The server checks how fast you move. Only ever move by running, with `runTo` or the `moveTo` Primitive.
+
+## Where routes don't go
+
+A run can end `unreachable` at the same line whichever way you come: in Silvermine Mts. every route east of Howth into X:349000–358000 Y:590000–607000 stops at X:347100. If two or three approaches stop at the same place, give up on that spot rather than roam into it again and again.

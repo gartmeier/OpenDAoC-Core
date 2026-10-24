@@ -109,3 +109,7 @@ if (!talked.ok) return talked;
 
 return await whisper(agent, ea.objectId, "Blademaster");
 ```
+
+## Mobs that call for help
+
+Some Mobs bring others when you hit them. In Lough Derg, a blackthorn (L8–9) "rustles menacingly, and lunantishee swarm to its defense!": Dalta, level 9, died three times to two or three lunantishee at once. Read the chat for such lines and keep away from that Mob's kind.

@@ -20,3 +20,13 @@ Needed: a Percept for my buff bar (buffs and debuffs, each with its name and tim
 
 `train(agent, "Celtic Dual", 3)` sends `/train Celtic Dual 3`, which the server ignores without a word, so it fails with `notTrained`. Sending `/train "Celtic Dual" 3` myself worked.
 Needed: the porcelain quotes the line name.
+
+## Healer's Constitution dialog can't be answered (2026-10-25)
+
+After dying, "You've lost some constitution, go to a healer". `talkTo` the Healer Ionhar cured resurrection sickness, then the server sent its "It will cost ... Do you accept?" custom dialog (`Healer.cs`, `SendCustomDialog`), which reached the Mind as nothing and has no Primitive to accept. Max health stayed 172 instead of 179.
+Needed: a Percept for custom dialogs (text) and a Primitive to accept or decline them.
+
+## Routes stop at X≈347100 east of Howth (2026-10-25)
+
+Every `runTo` into X:349000–358000 Y:590000–607000 (large eirebugs, cluricaun trips, sheevra) ends `unreachable` at exactly X:347100 Z:4613, from the north, the west and the south. A Human could walk there, as far as I know. Maybe the navmesh is missing tiles there.
+Needed: a navmesh there, or to know it's not walkable.
