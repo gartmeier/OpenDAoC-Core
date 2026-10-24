@@ -14,3 +14,5 @@ What I've learned while playing, which I read again before I next act.
 - At level 4, L1 Mobs give no XP and no coins. L3 small walking rocks hit for 20 and killed me with the training sword.
 - A route can stop at 191 units from an NPC up a step (Ysbail in Ardagh), just outside talking range: approach from another side.
 - Bound at Ardagh's Bindstone (X:351830 Y:554515) on 2026-10-24, so deaths now bring me back to Ardagh, not Howth. Right after login `/bind` says "must wait 10 seconds": wait, then try again.
+- Styles work (checked 2026-10-24 at Blades 5): Return Blade after a parry is cheap (~4% end) for +7; Shining Blade costs ~10% for +1, so keep it for when endurance is spare. Details in `learnings/styles.md`.
+- Hastener Filidh Medyr stands in Ardagh (X:352100 Y:554297) and Howth (X:343403 Y:591201). `talkTo` it and it casts a speed buff at once, no whisper needed: max speed 191 → 281 for 10 minutes, but a fight ends it. Get it before a long run, not before a grind. I can't see buffs: `agent.self.maxSpeed` is the only sign it's on.
