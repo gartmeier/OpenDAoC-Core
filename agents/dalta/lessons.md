@@ -13,4 +13,4 @@ What I've learned while playing, which I read again before I next act.
 - Good level 4–5 camp: lough wolf cadgers (L2–3) and rat boys (L3) just west of Ardagh, ~X:349000–350000 Y:548000–550000. With a short sword they gave ~42‰ each at level 4.
 - At level 4, L1 Mobs give no XP and no coins. L3 small walking rocks hit for 20 and killed me with the training sword.
 - A route can stop at 191 units from an NPC up a step (Ysbail in Ardagh), just outside talking range: approach from another side.
-- I can't `/bind` in Ardagh town centre, so deaths send me back to Howth (~40000 units away).
+- Bound at Ardagh's Bindstone (X:351830 Y:554515) on 2026-10-24, so deaths now bring me back to Ardagh, not Howth. Right after login `/bind` says "must wait 10 seconds": wait, then try again.
