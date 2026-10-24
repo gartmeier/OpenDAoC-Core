@@ -43,7 +43,7 @@ namespace DOL.GS.Agents
         private Liveness _liveness;
         private WorldExit _worldExit;
         private readonly HarnessMovement _movement;
-        private readonly PlayerCreateRequests _playerCreateRequests = new();
+        private PlayerCreateRequests _playerCreateRequests = new();
         // The heading of a heading update still in the inbound queue, which the server hasn't set on the Character yet.
         private ushort? _queuedHeading;
         // What the client has selected, 0 for nothing, and whether it's in attack mode.
@@ -130,9 +130,47 @@ namespace DOL.GS.Agents
 
             // Before any call the server makes from here on, so the new Mind hears it in order.
             if (_worldEntry == null && IsInWorld)
+            {
                 mind.Send(new EnteredMessage());
+                TellAnew();
+            }
 
             return null;
+        }
+
+        // The new Mind knows nothing of what the old one was told, though a real client never forgets. So the server tells the client again what it tells one entering the world (`WorldInitRequestHandler`), with the status and encumbrance it sends just after.
+        // The client also forgets which NPCs, items and doors the server sent it, so that the server creates them anew, and which players it knows, so that it asks for them again.
+        private void TellAnew()
+        {
+            GamePlayer player = Player;
+            IPacketLib packetLib = player.Out;
+            packetLib.SendPlayerPositionAndObjectID();
+            packetLib.SendUpdateMaxSpeed();
+            packetLib.SendInventoryItemsUpdate(eInventoryWindowType.Equipment, player.Inventory.EquippedItems);
+            packetLib.SendInventoryItemsUpdate(eInventoryWindowType.Inventory, player.Inventory.GetItemRange(eInventorySlot.FirstBackpack, eInventorySlot.LastBagHorse));
+            packetLib.SendUpdatePlayerSkills(false);
+            packetLib.SendUpdatePlayer();
+            packetLib.SendUpdateMoney();
+            packetLib.SendUpdatePoints();
+            packetLib.SendStatusUpdate();
+            packetLib.SendEncumbrance();
+
+            PlayerObjectCache cache = player.PlayerObjectCache;
+
+            // In the order `ClientService.UpdateWorld` takes them, one at a time.
+            lock (cache.NpcUpdateCacheLock)
+                cache.NpcUpdateCache.Clear();
+
+            lock (cache.ItemUpdateCacheLock)
+                cache.ItemUpdateCache.Clear();
+
+            lock (cache.DoorUpdateCacheLock)
+                cache.DoorUpdateCache.Clear();
+
+            lock (cache.HouseUpdateCacheLock)
+                cache.HouseUpdateCache.Clear();
+
+            _playerCreateRequests = new();
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -83,6 +84,14 @@ namespace DOL.GS.Tests
             IGameInventory proxy = DispatchProxy.Create<IGameInventory, TestInventory>();
             player.Inventory = proxy;
             return (TestInventory) proxy;
+        }
+
+        // Gives the player the cache of objects the server has sent its client, which its constructor would have made.
+        public static PlayerObjectCache ObjectCache(TestPlayer player)
+        {
+            PlayerObjectCache cache = new();
+            typeof(GamePlayer).GetField($"<{nameof(GamePlayer.PlayerObjectCache)}>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(player, cache);
+            return cache;
         }
 
         public static TestNpc Npc(string name)
@@ -383,6 +392,8 @@ namespace DOL.GS.Tests
             return targetMethod.Name switch
             {
                 nameof(IGameInventory.GetItem) => Items.GetValueOrDefault((eInventorySlot) args[0]),
+                nameof(IGameInventory.GetItemRange) => Items.Where(pair => pair.Key >= (eInventorySlot) args[0] && pair.Key <= (eInventorySlot) args[1]).Select(static pair => pair.Value).ToList(),
+                "get_" + nameof(IGameInventory.EquippedItems) => Items.Where(static pair => pair.Key is >= eInventorySlot.MinEquipable and <= eInventorySlot.MaxEquipable).Select(static pair => pair.Value).ToList(),
                 "get_" + nameof(IGameInventory.InventoryWeight) => Weight,
                 _ => throw new NotSupportedException(targetMethod.Name)
             };

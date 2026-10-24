@@ -1,8 +1,5 @@
 {
   "enabledMcpjsonServers": ["mind"],
-  "env": {
-    "MCP_TOOL_TIMEOUT": "3720000"
-  },
   "permissions": {
     "allow": ["mcp__mind__execute_code", "Edit(./**)"],
     "additionalDirectories": ["../", "../../mind/"]

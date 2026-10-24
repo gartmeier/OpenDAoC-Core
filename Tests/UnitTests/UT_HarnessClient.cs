@@ -404,6 +404,59 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public async Task TakeOver_ShouldHaveTheServerTellTheNewMindWhatWorldEntryTellsAClient_AndCreateEveryObjectInViewAnew()
+        {
+            FakeMind oldMind = new();
+            FakeMind newMind = new();
+            HarnessClient client = InWorld(oldMind.Link, 1);
+            WorldDoubles.Inventory((TestPlayer) client.Player);
+            RecordingPacketLib calls = RecordingPacketLib.Install(client);
+            PlayerObjectCache cache = WorldDoubles.ObjectCache((TestPlayer) client.Player);
+            cache.NpcUpdateCache[WorldDoubles.Npc("mudman")] = new(0, 100);
+
+            string refusal = client.TakeOver(newMind.Link);
+            await Close(newMind);
+
+            Assert.That(refusal, Is.Null);
+            Assert.That(newMind.Sent, Is.EqualTo(new ServerMessage[] { new EnteredMessage() }));
+            // As `WorldInitRequestHandler` tells a client entering the world, in its order, with the status and encumbrance it sends later.
+            Assert.That(calls.Names, Is.EqualTo(new[]
+            {
+                nameof(IPacketLib.SendPlayerPositionAndObjectID),
+                nameof(IPacketLib.SendUpdateMaxSpeed),
+                nameof(IPacketLib.SendInventoryItemsUpdate),
+                nameof(IPacketLib.SendInventoryItemsUpdate),
+                nameof(IPacketLib.SendUpdatePlayerSkills),
+                nameof(IPacketLib.SendUpdatePlayer),
+                nameof(IPacketLib.SendUpdateMoney),
+                nameof(IPacketLib.SendUpdatePoints),
+                nameof(IPacketLib.SendStatusUpdate),
+                nameof(IPacketLib.SendEncumbrance)
+            }));
+            // The server creates for the client every NPC, item and door it no longer remembers sending.
+            Assert.That(cache.NpcUpdateCache, Is.Empty);
+        }
+
+        [Test]
+        public async Task TakeOver_ShouldMakeTheClientAskAgainForEveryPlayerItSees()
+        {
+            FakeMind oldMind = new();
+            FakeMind newMind = new();
+            HarnessClient client = InWorld(oldMind.Link, 1);
+            WorldDoubles.Inventory((TestPlayer) client.Player);
+            RecordingPacketLib.Install(client);
+            WorldDoubles.ObjectCache((TestPlayer) client.Player);
+            client.OnPerceived(Position(objectId: 30, sessionId: 4));
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.CreatePlayerRequest(4)])));
+
+            client.TakeOver(newMind.Link);
+            client.OnPerceived(Position(objectId: 30, sessionId: 4));
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.CreatePlayerRequest(4), ClientPackets1127.CreatePlayerRequest(4)])));
+            await Close(newMind);
+        }
+
+        [Test]
         public void TakeOver_ShouldBeRefusedWithAReason_OnceTheOldMindIsLost()
         {
             FakeMind oldMind = new();
@@ -481,6 +534,11 @@ namespace DOL.GS.Tests
             return client;
         }
 
+        private static PlayerPositionPercept Position(int objectId, int sessionId)
+        {
+            return new(296715, 642621, 4848, 191, 0, sessionId, objectId, 202, 0, 0, 1158, 1, 0, false, 100, false, 100, 100);
+        }
+
         // The packets queued for the client's next tick, in order.
         private static ClientPacket[] Inbound(HarnessClient client)
         {
@@ -501,6 +559,28 @@ namespace DOL.GS.Tests
         }
 
         // Stands in for a Mind's WebSocket and remembers what was sent.
+        // A packet library that records which of its calls the server made, in order, and sends nothing.
+        public class RecordingPacketLib : DispatchProxy
+        {
+            private readonly List<string> _names = [];
+
+            public IReadOnlyList<string> Names => _names;
+
+            public static RecordingPacketLib Install(HarnessClient client)
+            {
+                IPacketLib proxy = Create<IPacketLib, RecordingPacketLib>();
+                client.Out = proxy;
+                return (RecordingPacketLib) proxy;
+            }
+
+            protected override object Invoke(MethodInfo targetMethod, object[] args)
+            {
+                _names.Add(targetMethod.Name);
+                Type type = targetMethod.ReturnType;
+                return type.IsValueType && type != typeof(void) ? Activator.CreateInstance(type) : null;
+            }
+        }
+
         private sealed class FakeMind
         {
             private readonly List<ServerMessage> _sent = [];

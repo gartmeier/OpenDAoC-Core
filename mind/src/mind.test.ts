@@ -130,7 +130,7 @@ test("a snippet is aborted after two minutes unless the call says otherwise", as
   expect(text).toContain("Aborted by its timeout of 2 min after 120 s.");
 });
 
-test("a call's timeout is clamped to between 0.1 and 60 minutes", async () => {
+test("a call's timeout is clamped to between 0.1 and 25 minutes, under the 30 an MCP call gets", async () => {
   const t = new TestMind();
   const short = t.mind.executeCode({ code: WAIT_FOR_EVER, timeout: 0.01 });
   await settle();
@@ -139,8 +139,8 @@ test("a call's timeout is clamped to between 0.1 and 60 minutes", async () => {
 
   const long = t.mind.executeCode({ code: WAIT_FOR_EVER, timeout: 600 });
   await settle();
-  await t.clock.advance(3_600_000);
-  expect((await long).text).toContain("Aborted by its timeout of 60 min after 3600 s.");
+  await t.clock.advance(1_500_000);
+  expect((await long).text).toContain("Aborted by its timeout of 25 min after 1500 s.");
 });
 
 test("a stop said next to the Agent aborts the snippet running, in any case", async () => {

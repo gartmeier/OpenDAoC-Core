@@ -1,20 +1,21 @@
 # Fighting
 
-Learned by the hand-written Grind of milestones 4 and 4b, which took a Guardian from level 1 to 5.
+Learned by the hand-written Grind of milestones 4 and 4b, which took a Guardian from level 1 to 5, and by Dalta, the first coding agent, which did the same.
 
 ## Picking a Mob
 
 A Mob is an NPC of no realm (`realm === "None"`) that isn't peaceful. Its level against yours is its con colour: grey and green are well below you, blue is a level or so below, yellow is your level, orange and red above.
 
-- At level 1, with a training sword and no armour, a yellow level 1 sand crab killed Greeen in 12 s. Blue Mobs were safe but wore him down to about 30% health a fight.
-- Once he had some armour, yellow Mobs were fine too, and there are more of them to fight.
+- **With the gear you start with, fight only blue Mobs, one level below yours.** At level 1, yellow level 1 Mobs killed Greeen in 12 s and Dalta 3 times. Blue ones were safe but wore Greeen down to about 30% health a fight.
+- Grey Mobs give no experience and no coins: at level 4, level 1 Mobs gave Dalta nothing.
+- Once Greeen had some armour, yellow Mobs were fine too, and there are more of them to fight.
 - Mobs of the same level aren't equal: at level 4 to 5 a mudman killed Greeen 208 times, mostly the same one, because after each death he ran back and attacked it again. If a Mob keeps killing you, leave it alone.
 
 ```ts
 const level = agent.self.level;
 const position = agent.self.position;
 const mobs = agent.surroundings.npcs
-  .filter((npc) => npc.realm === "None" && !npc.peaceful && npc.healthPercent > 0 && npc.level >= level - 1 && npc.level <= level)
+  .filter((npc) => npc.realm === "None" && !npc.peaceful && npc.healthPercent > 0 && npc.level === level - 1)
   .map((npc) => ({ npc, away: position ? Math.hypot(npc.position.x - position.x, npc.position.y - position.y) : Infinity }))
   .sort((a, b) => a.away - b.away);
 return mobs.slice(0, 5).map(({ npc, away }) => `#${npc.objectId} ${npc.name} level ${npc.level}, ${Math.round(away)} away`);

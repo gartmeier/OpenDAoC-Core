@@ -38,9 +38,9 @@ In scope:
 
 Every result has the console output, the result as JSON (or the error), a short summary of your Self, what's near you and what you carry, and the chat and game messages since your last call.
 
-- **Timeout:** 2 minutes unless you pass `timeout` in minutes, at most 60.
+- **Timeout:** 2 minutes unless you pass `timeout` in minutes, at most 25. Claude Code gives up on a tool call after 30 minutes, and you'd lose the result of a longer one.
 - **One at a time:** a new call aborts the snippet still running, and so do its timeout and a Human saying `stop` next to you. Aborting leaves you standing with attack off. Whatever an aborted snippet awaits never comes back.
-- **Start short.** Try a new idea in a snippet of a few seconds. Run it for a minute once it works. Give a long run, say a grind of 30 minutes, only to code you've seen working, and read its result before the next.
+- **Start short.** Try a new idea in a snippet of a few seconds. Run it for a minute once it works. Give a long run, say a grind of 20 minutes, only to code you've seen working, and read its result before the next.
 - **Don't run anything outside `execute_code`** that plays, such as a `bun` script in the background: the Mind's connection is your Character's, and a second one takes it over.
 
 ## The API

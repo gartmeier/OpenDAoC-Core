@@ -16,7 +16,7 @@ The Wiki in `agents/wiki` is written by `/agent wiki <realm> <folder>` on the se
 
 While it runs:
 
-- Each `execute_code` call runs a snippet: one at a time, aborting any still running, for 2 minutes unless the call says otherwise (at most 60). It returns the snippet's console output and result or error, a summary of the Agent's Self, Surroundings and Inventory, and the chat since the last call.
+- Each `execute_code` call runs a snippet: one at a time, aborting any still running, for 2 minutes unless the call says otherwise (at most 25, since Claude Code gives up on an MCP call after 30). It returns the snippet's console output and result or error, a summary of the Agent's Self, Surroundings and Inventory, and the chat since the last call.
 - A Human saying `stop` next to the Agent aborts the running snippet, and the Agent stands still with attack off.
 - The Journal goes to `journal/` in the Agent's folder, one file per session: every Percept, every Primitive and every snippet with how it ended.
 - When Claude Code exits, the Mind stops the snippet and quits the Character through the normal quit path. If the connection ends while the session goes on, the next call logs the Character in again.

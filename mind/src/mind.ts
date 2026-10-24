@@ -40,7 +40,8 @@ export interface ExecuteCodeRequest {
 
 export const DEFAULT_TIMEOUT_MINUTES = 2;
 export const MIN_TIMEOUT_MINUTES = 0.1;
-export const MAX_TIMEOUT_MINUTES = 60;
+// Claude Code gives up on an MCP call after 30 minutes, whatever `MCP_TOOL_TIMEOUT` says, and a snippet still running then is lost to it.
+export const MAX_TIMEOUT_MINUTES = 25;
 
 /** How many of the chat and game messages since the last call a result lists, newest last. */
 export const CHAT_LISTED = 50;

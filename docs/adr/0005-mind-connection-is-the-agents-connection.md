@@ -10,3 +10,4 @@ An Agent is online exactly while its Mind is connected, the way a Human is onlin
 
 - Restarting a Mind is a logout and login, or a link death if it crashed.
 - The Character can't be online as an Agent without a running Mind for longer than the link-death window.
+- A Mind that takes over knows nothing the old one was told. So the Harness has the server tell the client again what it tells one entering the world, and forgets which objects and players the server sent it, so that they're sent anew. A real client never needs this, but nothing reaches the Mind except through the server's own calls (ADR 0001).
