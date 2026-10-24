@@ -3,6 +3,7 @@ import { kill } from "../../../mind/src/tactics/kill.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { train } from "../../../mind/src/tactics/train.ts";
+import { describe, fight } from "./fight.ts";
 
 /** Spends spec points on Blades. */
 async function trainBlades(agent: Agent): Promise<void> {
@@ -13,16 +14,33 @@ async function trainBlades(agent: Agent): Promise<void> {
   if (target > blades) await train(agent, "Blades", target);
 }
 
-/** Kills blue and yellow Mobs nearest first until `goal` level, resting between fights. */
-export async function grind(agent: Agent, goal: number, log: string[] = [], knownLevel = 0, spots: { x: number; y: number; z: number }[] = [], minutes = 25, band: [number, number] = [-1, -1]): Promise<Outcome> {
+export interface GrindOptions {
+  /** Stop at this level. */
+  goal: number;
+  log?: string[];
+  /** After another Mind takes over the connection, Self stays at level 0 until the next level up. */
+  knownLevel?: number;
+  /** Where to roam when nothing is in view. */
+  spots?: { x: number; y: number; z: number }[];
+  minutes?: number;
+  /** Mob levels to fight, relative to mine. */
+  band?: [number, number];
+  /** Rest to full when health drops below this percent. */
+  restBelow?: number;
+  /** Stop once money reaches this many copper. */
+  money?: number;
+}
+
+/** Kills Mobs in a level band nearest first until `goal` level, resting between fights. */
+export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spots = [], minutes = 25, band = [-1, -1], restBelow = 90, money = Infinity }: GrindOptions): Promise<Outcome> {
   const deadline = Date.now() + minutes * 60_000;
-  // After another Mind takes over the connection, Self stays at level 0 until the next level up.
   const levelOf = () => Math.max(agent.self.level, knownLevel);
   const avoid = new Map<number, number>();
   let spot = 0;
 
   while (levelOf() < goal) {
     if (Date.now() > deadline) return failed("outOfTime");
+    if (agent.inventory.money >= money) return failed("enoughMoney");
     if (agent.self.dead) {
       const alive = await agent.sendAndWait({ name: "command", text: "/release" }, () => !agent.self.dead, 30_000);
       log.push(alive ? "died, released" : "died, still dead");
@@ -40,7 +58,7 @@ export async function grind(agent: Agent, goal: number, log: string[] = [], know
       continue;
     }
 
-    if (agent.self.healthPercent < 90) {
+    if (agent.self.healthPercent < restBelow) {
       await rest(agent, 100);
       continue;
     }
@@ -64,8 +82,11 @@ export async function grind(agent: Agent, goal: number, log: string[] = [], know
       continue;
     }
 
-    const r = await kill(agent, mob.objectId);
-    log.push(`${mob.name} L${mob.level}: ${r.ok ? "ok" : r.reason} (lvl ${levelOf()}, hp ${agent.self.healthPercent}%)`);
+    const xpBefore = agent.self.level * 1000 + agent.self.levelPermill;
+    const stats = await fight(agent, mob.objectId);
+    const r = stats.outcome;
+    const gained = agent.self.level * 1000 + agent.self.levelPermill - xpBefore;
+    log.push(`${mob.name} L${mob.level}: ${describe(stats)} +${gained}‰ (lvl ${levelOf()}, hp ${agent.self.healthPercent}%, end ${agent.self.endurancePercent}%)`);
     if (!r.ok) avoid.set(mob.objectId, (avoid.get(mob.objectId) ?? 0) + 1);
   }
 
