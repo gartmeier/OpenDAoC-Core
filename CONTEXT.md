@@ -17,6 +17,21 @@ _Avoid_: toon, avatar
 An NPC a Character can fight.
 _Avoid_: monster, creature, enemy
 
+**Bindstone**:
+A fixed place in the world where a Character can bind, making it the Character's Bind point.
+
+**Bind point**:
+Where a Character comes back to life when it releases after dying.
+_Avoid_: bindpoint, bind spot
+
+**Style**:
+A special melee attack a Character learns as one of its weapon specs rises. Many Styles can only be used right after something else happens, such as a parry, an attack from the side or another Style.
+_Avoid_: skill, special attack
+
+**Spell**:
+Magic a Character casts from one of its spell lines, such as a bolt, a heal or a buff.
+_Avoid_: skill
+
 **Navmesh**:
 A zone's static map of where a Character can walk, built from the game client's zone data; it says nothing about what changes, such as whether a door is open or where NPCs are.
 _Avoid_: pathing grid, nav data
@@ -33,6 +48,9 @@ _Avoid_: player (when contrasting with Agents)
 
 **Possession**:
 A Human logging into an Agent's Account; the Agent is not playing while possessed.
+
+**Takeover**:
+A new Mind for an Agent that's already online taking over its connection from the old Mind; the Character never leaves the world.
 
 **Harness**:
 The part of an Agent that lives inside the server and stands in for the game client, including everything a client does on its own, such as keeping the connection alive.
