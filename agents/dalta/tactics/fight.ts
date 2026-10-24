@@ -13,17 +13,20 @@ export interface FightStats {
 }
 
 /**
- * Kills the Mob with `kill`, using Styles: answers each parry with Return Blade, and keeps Shining Blade queued
+ * Kills the Mob with `kill`, using Styles: answers each parry with Return Blade, and keeps the best filler Style queued
  * while endurance is above `fillerEndurance` percent (it's the backup when Return Blade comes up).
  * The server forgets a queued Style after each swing, so it queues again after each one.
  */
-export async function fight(agent: Agent, mobId: number, fillerEndurance = 50): Promise<FightStats> {
+export async function fight(agent: Agent, mobId: number, fillerEndurance = 25): Promise<FightStats> {
   const started = Date.now();
   const hpBefore = agent.self.healthPercent;
   const stats: FightStats = { outcome: { ok: true }, seconds: 0, hpLost: 0, performed: {}, failed: {}, fatigued: 0, parries: 0 };
   const has = (name: string) => agent.self.skills.some((s) => s.page === "Styles" && s.name === name);
   const reactive = has("Return Blade") ? "Return Blade" : undefined;
-  const filler = has("Shining Blade") ? "Shining Blade" : undefined;
+  // The filler is the Style that needs nothing to open and hits hardest: Taunting Blade (116) beats Shining Blade (8) at Blades 6.
+  const filler = agent.self.skills
+    .filter((s) => s.page === "Styles" && s.details?.opening === "Offensive" && s.details.openingResult === "Any")
+    .sort((a, b) => (b.details!.openingDamage ?? 0) - (a.details!.openingDamage ?? 0))[0]?.name;
 
   let fighting = true;
   const killing = kill(agent, mobId).finally(() => { fighting = false; });
@@ -61,6 +64,8 @@ export async function fight(agent: Agent, mobId: number, fillerEndurance = 50): 
   }
 
   stats.outcome = await killing;
+  // A Style queued as the Mob dies turns attack on again with no target, and then the next NPC I target (a guard, a merchant) gets swung at.
+  if (!agent.stopped) await agent.send({ name: "attack", on: false });
   stats.seconds = Math.round((Date.now() - started) / 1000);
   stats.hpLost = hpBefore - agent.self.healthPercent;
   return stats;
