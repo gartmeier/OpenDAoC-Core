@@ -129,3 +129,18 @@ Acceptance: Dalta carries on, as the same Agent with its Lessons and Tactics, in
   - **The real skills packet** writes, for each Style, its opening requirement and an index for its spec.
 - The takeover papercut from milestone 5 (a Mind that takes over started with empty beliefs) was already fixed: the server now tells a taking-over Mind what it tells one entering the world.
 - **Milestone ladder:** 1 login and logout → 2 Mind connection → 3 movement → 3b terrain and pathing → 4 hand-written grind → 4b inventory and gear → 5 a coding agent plays (all done) → **6 Styles (this spec)** → Spells when a Magician plays, and other Primitives, Percepts and Learnings as the coding agent turns out to need them.
+
+## Comments
+
+**2026-10-24 (agent):** Implemented, not yet tested in game. Where it differs from or adds to the spec above:
+
+- **The capture is still to come.** No 1.127 capture has a skill packet (0xBB) or a Style detail request yet, so both builders follow what `UseSkillHandler` and `DetailDisplayHandler` read, and their tests read them back as the handlers do. Once the Human has recorded the capture, add golden-byte tests and correct the builders. Three things to look for:
+  - the skill packet's type byte (the Harness sends 1, for an index counted after the specializations) and its parameter (0x0000 here);
+  - whether the client examines a Style as kind 6 (100 plus its index, answered with a text window, which is what `examineStyle` sends) or kind 25 (its internal ID, answered with delve info, which isn't projected as a Percept yet);
+  - what the client writes in the detail request's extra ID for a Style (the item one here).
+- **The field is `style`, not `name`:** `useStyle { style, line? }` and `examineStyle { style, line? }`. `name` is already the Primitive's discriminator.
+- **The list is the one the Harness was last sent:** it keeps the entries of the last `skills` Percept and looks the Style up there.
+- **The skill packet's position is where the server has the Character,** with its speed and heading, so the server sees no move. Its flags carry the target-in-view bits exactly while something is targeted, as the position updates do.
+- **Two refusals beyond the spec:** before the server has sent a skill list, every Style is unknown; and a Style past the 255th entry is refused, because the server's packet stops there and the client never got its icon.
+- **A Style of a spec the packet has no index for has no `line`,** since the client couldn't name it. No Hibernian spec is like that.
+- **The Learning hasn't been run in a fight.** Its snippets typecheck and its message texts are the server's, but no Agent has used a Style yet. Dalta's run is the test.

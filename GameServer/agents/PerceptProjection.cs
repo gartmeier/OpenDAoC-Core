@@ -491,13 +491,14 @@ namespace DOL.GS.Agents
             return new SkillsPercept(SkillEntries(player.GetAllUsableSkills(updateInternalCache)));
         }
 
-        // Each skill as the packet lists it: a style with the specialization level it needs, anything else with its own level.
+        // Each skill as the packet lists it: a style with the specialization level it needs and its specialization, which the packet carries as an index (none for 0), anything else with its own level.
         public static SkillEntry[] SkillEntries(IEnumerable<(Skill Skill, Skill Related)> skills)
         {
             return skills.Select(static entry => new SkillEntry(
                 Encoded(entry.Skill.Name),
                 entry.Skill is Style style ? style.SpecLevelRequirement : entry.Skill.Level,
-                (SkillPage) entry.Skill.SkillType)).ToArray();
+                (SkillPage) entry.Skill.SkillType,
+                entry.Skill is Style lined && GlobalConstants.GetSpecToInternalIndex(lined.Spec) != 0 ? Encoded(lined.Spec) : null)).ToArray();
         }
 
         // Mirrors `PacketLib168.SendPlayerDied`, which no later library overrides.

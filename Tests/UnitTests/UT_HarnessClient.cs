@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
 using DOL.GS.Agents;
@@ -351,6 +352,106 @@ namespace DOL.GS.Tests
                 ClientPackets1127.Target(0x1F0B),
                 ClientPackets1127.InteractRequest(296516, 641415, 0x0101, 0x1F0B),
                 ClientPackets1127.PickUpRequest()])));
+            await Close(mind);
+        }
+
+        // Specializations first, then abilities and styles, as the server lists them. A Blademaster's two Slams are in Blunt and Shields.
+        private static SkillsPercept BlademasterSkills()
+        {
+            return new([
+                new("Blades", 5, SkillPage.Specialization),
+                new("Blunt", 8, SkillPage.Specialization),
+                new("Shields", 8, SkillPage.Specialization),
+                new("Sprint", 1, SkillPage.Abilities),
+                new("Shining Blade", 2, SkillPage.Styles, "Blades"),
+                new("Slam", 8, SkillPage.Styles, "Blunt"),
+                new("Slam", 5, SkillPage.Styles, "Shields")]);
+        }
+
+        // The index counts from Sprint, the first entry after the specializations, as the skill handler reads it.
+        [Test]
+        public async Task StylePrimitives_ShouldQueueTheStylesIndexInTheSkillListLastSent_TheFirstMatchUnlessALineIsGiven()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(BlademasterSkills());
+
+            Assert.That(client.Dispatch(new UseStylePrimitive("Shining Blade"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new UseStylePrimitive("Slam"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new UseStylePrimitive("Slam", "Shields"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new ExamineStylePrimitive("Slam", "Shields"), mind.Link), Is.Null);
+
+            Vector3 at = new(296516, 641415, 4848);
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
+                ClientPackets1127.UseSkill(at, 0, 0, 0, 1),
+                ClientPackets1127.UseSkill(at, 0, 0, 0, 2),
+                ClientPackets1127.UseSkill(at, 0, 0, 0, 3),
+                ClientPackets1127.ExamineStyle(3)])));
+            await Close(mind);
+        }
+
+        // The server reads whether the target is in view from the skill packet too, and the Harness claims it always is, as in its position updates.
+        [Test]
+        public async Task UseStyle_ShouldClaimTheTargetIsInView_WhileSomethingIsTargeted()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(BlademasterSkills());
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+
+            client.Dispatch(new UseStylePrimitive("Shining Blade"), mind.Link);
+
+            Assert.That(Wire(Inbound(client)[1..]), Is.EqualTo(Wire([ClientPackets1127.UseSkill(new(296516, 641415, 4848), 0, 0, 0xA000, 1)])));
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task UseStyle_ShouldFollowTheSkillList_WhenTheServerSendsANewOne()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(BlademasterSkills());
+            client.OnPerceived(new SkillsPercept([
+                new("Blades", 6, SkillPage.Specialization),
+                new("Sprint", 1, SkillPage.Abilities),
+                new("Shining Blade", 2, SkillPage.Styles, "Blades"),
+                new("Taunting Blade", 6, SkillPage.Styles, "Blades")]));
+
+            client.Dispatch(new UseStylePrimitive("Taunting Blade"), mind.Link);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.UseSkill(new(296516, 641415, 4848), 0, 0, 0, 2)])));
+            await Close(mind);
+        }
+
+        private static IEnumerable<TestCaseData> StylesTheCharacterDoesntHave()
+        {
+            yield return new TestCaseData(new UseStylePrimitive("Taunting Blade"), "Greeen has no Style \"Taunting Blade\".");
+            yield return new TestCaseData(new UseStylePrimitive("Slam", "Blades"), "Greeen has no Style \"Slam\" in Blades.");
+            yield return new TestCaseData(new ExamineStylePrimitive("Taunting Blade"), "Greeen has no Style \"Taunting Blade\".");
+            // Only styles match, never a specialization or an ability of that name.
+            yield return new TestCaseData(new UseStylePrimitive("Blades"), "Greeen has no Style \"Blades\".");
+            yield return new TestCaseData(new UseStylePrimitive("Sprint"), "Greeen has no Style \"Sprint\".");
+        }
+
+        [TestCaseSource(nameof(StylesTheCharacterDoesntHave))]
+        public async Task StylePrimitives_ShouldBeRefusedWithAReason_ForAStyleTheCharacterDoesntHave(Primitive primitive, string reason)
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(BlademasterSkills());
+
+            Assert.That(client.Dispatch(primitive, mind.Link), Is.EqualTo(reason));
+            Assert.That(Inbound(client), Is.Empty);
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task UseStyle_ShouldBeRefusedWithAReason_BeforeTheServerSentASkillList()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            Assert.That(client.Dispatch(new UseStylePrimitive("Shining Blade"), mind.Link), Is.EqualTo("Greeen has no Style \"Shining Blade\"."));
             await Close(mind);
         }
 

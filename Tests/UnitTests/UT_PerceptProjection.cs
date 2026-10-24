@@ -788,15 +788,25 @@ namespace DOL.GS.Tests
         }
 
         [Test]
-        public void SkillEntries_ShouldListEachSkillWithItsLevelAndPage()
+        public void SkillEntries_ShouldListEachSkillWithItsLevelAndPage_AndAStylesLine()
         {
             Specialization blades = new("Blades", "Blades", 0) { Level = 3 };
             Ability sprint = new("Sprint", "Sprint", "", 0, 0, 1, 0);
-            Style shiningBlade = new(new DbStyle { Name = "Shining Blade", SpecLevelRequirement = 2 }, null);
+            Style shiningBlade = new(new DbStyle { Name = "Shining Blade", SpecKeyName = "Blades", SpecLevelRequirement = 2 }, null);
 
             SkillEntry[] entries = PerceptProjection.SkillEntries([(blades, blades), (sprint, sprint), (shiningBlade, blades)]);
 
-            Assert.That(entries, Is.EqualTo(new SkillEntry[] { new("Blades", 3, SkillPage.Specialization), new("Sprint", 1, SkillPage.Abilities), new("Shining Blade", 2, SkillPage.Styles) }));
+            Assert.That(entries, Is.EqualTo(new SkillEntry[] { new("Blades", 3, SkillPage.Specialization), new("Sprint", 1, SkillPage.Abilities), new("Shining Blade", 2, SkillPage.Styles, "Blades") }));
+        }
+
+        [Test]
+        public void SkillEntries_ShouldGiveAStyleNoLine_WhenThePacketHasNoIndexForItsSpec()
+        {
+            Style style = new(new DbStyle { Name = "Odd Style", SpecKeyName = "No Such Spec", SpecLevelRequirement = 1 }, null);
+
+            SkillEntry[] entries = PerceptProjection.SkillEntries([(style, style)]);
+
+            Assert.That(entries, Is.EqualTo(new SkillEntry[] { new("Odd Style", 1, SkillPage.Styles) }));
         }
 
         [Test]

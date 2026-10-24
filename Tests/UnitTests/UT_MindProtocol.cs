@@ -105,6 +105,22 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Read_ShouldReadTheStylePrimitives_WithOrWithoutALine()
+        {
+            Assert.That(Read("""{"type":"primitive","id":25,"primitive":{"name":"useStyle","style":"Shining Blade"}}"""), Is.EqualTo(new PrimitiveMessage(25, new UseStylePrimitive("Shining Blade"))));
+            Assert.That(Read("""{"type":"primitive","id":26,"primitive":{"name":"useStyle","style":"Slam","line":"Shields"}}"""), Is.EqualTo(new PrimitiveMessage(26, new UseStylePrimitive("Slam", "Shields"))));
+            Assert.That(Read("""{"type":"primitive","id":27,"primitive":{"name":"examineStyle","style":"Slam","line":"Blunt"}}"""), Is.EqualTo(new PrimitiveMessage(27, new ExamineStylePrimitive("Slam", "Blunt"))));
+        }
+
+        [Test]
+        public void Write_ShouldWriteASkillsPercept_WithAStylesLineAndNoneForAnythingElse()
+        {
+            string json = Write(new PerceptMessage(13, 2400, new SkillsPercept([new("Blades", 5, SkillPage.Specialization), new("Shining Blade", 2, SkillPage.Styles, "Blades")])));
+
+            Assert.That(json, Does.EndWith("""{"kind":"skills","skills":[{"name":"Blades","level":5,"page":"Specialization"},{"name":"Shining Blade","level":2,"page":"Styles","line":"Blades"}]}}"""));
+        }
+
+        [Test]
         public void Write_ShouldWriteAnInventoryPercept_WithItsWindowAsANameAndEmptySlotsWithoutAnItem()
         {
             InventoryItem falcata = new("falcata", 2, 22, 34, 1, 2, 2, 19, 25, 50, 100, 85, 0, 0, 445, 7, 0, []);
@@ -129,6 +145,7 @@ namespace DOL.GS.Tests
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"target"}}""", "objectId")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"attack"}}""", "on")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"command"}}""", "text")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"useStyle","line":"Blades"}}""", "style")]
         public void Read_ShouldSayWhy_ForAPrimitiveWithoutItsField(string json, string field)
         {
             Assert.That(MindProtocol.Read(Encoding.UTF8.GetBytes(json), out string error), Is.Null);

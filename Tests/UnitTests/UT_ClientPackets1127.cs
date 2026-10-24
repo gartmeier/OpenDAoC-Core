@@ -315,6 +315,35 @@ namespace DOL.GS.Tests
             Assert.That(packet.ReadShortLowEndian(), Is.EqualTo(0x1234));
         }
 
+        // No capture has a style used yet: until one does, the skill packet is checked against what `UseSkillHandler` reads, in its order.
+        [Test]
+        public void UseSkill_ShouldCarryThePositionFlagsAndIndexAsTheHandlerReadsThem()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.UseSkill(new Vector3(296516, 641415, 4848), 191, 0x09DF, 0xA000, 2));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.UseSkill));
+            Assert.That(packet.ReadFloatLowEndian(), Is.EqualTo(296516));
+            Assert.That(packet.ReadFloatLowEndian(), Is.EqualTo(641415));
+            Assert.That(packet.ReadFloatLowEndian(), Is.EqualTo(4848));
+            Assert.That(packet.ReadFloatLowEndian(), Is.EqualTo(191));
+            Assert.That(packet.ReadShort(), Is.EqualTo(0x09DF));
+            Assert.That(packet.ReadShort(), Is.EqualTo(0xA000));
+            Assert.That(packet.ReadByte(), Is.EqualTo(2), "the index after the specializations");
+            Assert.That(packet.ReadByte(), Is.Not.Zero, "the type, which says the index counts from after the specializations");
+        }
+
+        // As above, against what `DetailDisplayHandler` reads: a style is kind 6, numbered 100 plus its place after the specializations.
+        [Test]
+        public void ExamineStyle_ShouldAskForTheStyleAsTheHandlerReadsIt()
+        {
+            GSPacketIn packet = Loaded(ClientPackets1127.ExamineStyle(2));
+
+            Assert.That(packet.Code, Is.EqualTo((ushort) eClientPackets.DetailRequest));
+            Assert.That(packet.ReadShort(), Is.EqualTo(6));
+            packet.ReadInt();
+            Assert.That(packet.ReadShort(), Is.EqualTo(102));
+        }
+
         // Every move in the capture, equipping and unequipping, rearranging the backpack and dropping an item on the ground (slot 1). The client always sent a count of 0.
         [Test]
         public void MoveItem_ShouldMatchCapture()

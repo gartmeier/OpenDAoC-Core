@@ -49,6 +49,8 @@ namespace DOL.GS.Agents
         // What the client has selected, 0 for nothing, and whether it's in attack mode.
         private ushort _targetId;
         private bool _attacking;
+        // The skill list the server last sent, which the client's icons stand for and the server reads their indexes against.
+        private SkillEntry[] _skills = [];
         private AgentTrace _trace;
         private bool _mindLost;
 
@@ -218,8 +220,24 @@ namespace DOL.GS.Agents
                 }
             }
 
+            int styleIndex = 0;
+
             switch (primitive)
             {
+                case UseStylePrimitive useStyle:
+                {
+                    if (StyleIndex(useStyle.Style, useStyle.Line, out styleIndex) is string reason)
+                        return reason;
+
+                    break;
+                }
+                case ExamineStylePrimitive examine:
+                {
+                    if (StyleIndex(examine.Style, examine.Line, out styleIndex) is string reason)
+                        return reason;
+
+                    break;
+                }
                 case TargetPrimitive target:
                 {
                     if (target.ObjectId is < 0 or > MAX_OBJECT_ID)
@@ -314,6 +332,9 @@ namespace DOL.GS.Agents
                 TalkToPrimitive talkTo => ClientPackets1127.InteractRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) talkTo.ObjectId),
                 BuyPrimitive buy => ClientPackets1127.BuyRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) buy.Index, (byte) buy.Count),
                 SellPrimitive sell => ClientPackets1127.SellRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) sell.Slot),
+                // Where the server has the Character, so the position it takes from the packet moves it nowhere.
+                UseStylePrimitive => ClientPackets1127.UseSkill(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) styleIndex),
+                ExamineStylePrimitive => ClientPackets1127.ExamineStyle((ushort) styleIndex),
                 _ => null
             };
 
@@ -335,6 +356,30 @@ namespace DOL.GS.Agents
         {
             return index is < 0 or > ushort.MaxValue ? $"An index is 0 to {ushort.MaxValue}, not {index}." : null;
         }
+
+        // The style's index as the skill and detail handlers read it: its place in the skill list the server last sent, counting from the first entry after the specializations.
+        // Only styles match. Without `line`, the first of that name does, as a Human clicks the first icon they see.
+        private string StyleIndex(string name, string line, out int index)
+        {
+            int found = Array.FindIndex(_skills, skill => skill.Page is SkillPage.Styles && skill.Name == name && (line == null || skill.Line == line));
+            index = 0;
+
+            if (found < 0)
+                return line == null ? $"{Player.Name} has no Style \"{name}\"." : $"{Player.Name} has no Style \"{name}\" in {line}.";
+
+            // The server's skills packet stops at the 255th entry, so the client never got an icon for one past it.
+            if (found >= byte.MaxValue)
+                return $"\"{name}\" is past the first {byte.MaxValue} skills the server sends a client.";
+
+            index = found - Math.Max(0, Array.FindIndex(_skills, static skill => skill.Page is not SkillPage.Specialization));
+            return null;
+        }
+
+        // The skill packet's target in view bits (see `UseSkillHandler`).
+        private const ushort SKILL_TARGET_IN_VIEW = 0xA000;
+
+        // The skill packet's flags: the target in view exactly while something is selected, as in the position updates (see `ActionFlags`), and never strafing.
+        private ushort SkillFlags => _targetId == 0 ? (ushort) 0 : SKILL_TARGET_IN_VIEW;
 
         // The server picks up and talks to what the client targets, so a click on the object selects it first, unless it's selected already.
         private string TargetFirst(int objectId)
@@ -365,6 +410,11 @@ namespace DOL.GS.Agents
 
             switch (percept)
             {
+                case SkillsPercept skills:
+                {
+                    _skills = skills.Skills;
+                    break;
+                }
                 case MaxSpeedPercept maxSpeed:
                 {
                     if (_movement.OnMaxSpeed(maxSpeed, GameLoop.GameLoopTime))

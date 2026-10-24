@@ -125,6 +125,8 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(TalkToPrimitive), "talkTo")]
     [JsonDerivedType(typeof(BuyPrimitive), "buy")]
     [JsonDerivedType(typeof(SellPrimitive), "sell")]
+    [JsonDerivedType(typeof(UseStylePrimitive), "useStyle")]
+    [JsonDerivedType(typeof(ExamineStylePrimitive), "examineStyle")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -187,6 +189,17 @@ namespace DOL.GS.Agents
 
     // Sells the item in slot `Slot` to the merchant the client targets. The server needs the merchant within 256 units.
     public sealed record SellPrimitive([property: JsonRequired] int Slot) : Primitive;
+
+    // Uses the style named `Style` on the next swing, as a click on its icon does. `Line` is its specialization, as in `skills`: without it, the first style of that name in the skill list.
+    // The Harness refuses a style the server's last `skills` didn't list. Whether it's performed, and why not, the server says in `message` Percepts.
+    public sealed record UseStylePrimitive(
+        [property: JsonRequired] string Style,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null) : Primitive;
+
+    // Asks for the details of the style, named as for `useStyle`, as a shift-click on its icon does: what it needs, what it does and what it costs. They come as an `examined` Percept.
+    public sealed record ExamineStylePrimitive(
+        [property: JsonRequired] string Style,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null) : Primitive;
 
     /// <summary>
     /// One thing the Harness tells the Mind: only what the 1.127 packet would tell a real client (ADR 0001).
@@ -406,7 +419,12 @@ namespace DOL.GS.Agents
     public sealed record SkillsPercept(SkillEntry[] Skills) : Percept;
 
     // One skill. `Level` is a specialization's trained level, an ability's or a spell's level, or the specialization level a style needs. `Page` is the skill page it's on.
-    public sealed record SkillEntry(string Name, int Level, SkillPage Page);
+    // `Line` is a style's specialization, which the packet names by an index the client knows. Anything else has none.
+    public sealed record SkillEntry(
+        string Name,
+        int Level,
+        SkillPage Page,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null);
 
     // The pages of the client's skill window, as the packet numbers them.
     public enum SkillPage

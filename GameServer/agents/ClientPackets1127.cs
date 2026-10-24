@@ -203,6 +203,9 @@ namespace DOL.GS.Agents
         // What the client writes after the kind of thing to describe, in every detail request for an item. Unknown, and the server doesn't read it for items.
         private const uint ITEM_DETAIL_EXTRA = 0x1A000000;
 
+        // The skill packet's type for an index counted from the first entry after the specializations, as for a style. Any value above 0 says so: 1 until a capture shows the client's.
+        private const byte SKILL_AFTER_SPECIALIZATIONS = 1;
+
         // Moves the item in client slot `from` to client slot `to`, as dragging it does: the ground is 1, equipment slots are 10-37 and backpack slots 40-79.
         // `count` is how many of a stack to move, 0 for all of it, which is all the captured client sent. Read by `PlayerMoveItemRequestHandler`: the session ID, which it doesn't use, the destination, the source and the count.
         public static ClientPacket MoveItem(ushort sessionId, ushort from, ushort to, ushort count)
@@ -226,6 +229,32 @@ namespace DOL.GS.Agents
         public static ClientPacket ExamineMerchantItem(ushort index)
         {
             return DetailRequest(4, index);
+        }
+
+        // Asks for the details of the style at `index` in the skill list, counting from the first entry after the specializations, as a shift-click on its icon does.
+        // Not captured yet: it's as `DetailDisplayHandler` reads it, which numbers a style 100 plus its index, with the extra ID an item's request carries.
+        // The handler also has a newer kind, 25, by the style's internal ID, answered with delve info instead of a text window. The capture will show which the 1.127 client sends.
+        public static ClientPacket ExamineStyle(ushort index)
+        {
+            return DetailRequest(6, (ushort) (100 + index));
+        }
+
+        // Uses the skill at `index` in the skill list, counting from the first entry after the specializations, as a click on its icon does. A style waits for the next swing.
+        // Not captured yet: it's as `UseSkillHandler` reads it from a 1.124+ client. First where the client is, its speed and heading, which the server takes as a position update,
+        // then `flags`, whose strafing (0x4000), target in view (0xA000) and ground target in view (0x1000) bits it takes too, the index, and a type above 0, which says where the index counts from.
+        public static ClientPacket UseSkill(Vector3 position, float speed, ushort heading, ushort flags, byte index)
+        {
+            byte[] data = new byte[22];
+            Span<byte> span = data;
+            BinaryPrimitives.WriteSingleLittleEndian(span[0..], position.X);
+            BinaryPrimitives.WriteSingleLittleEndian(span[4..], position.Y);
+            BinaryPrimitives.WriteSingleLittleEndian(span[8..], position.Z);
+            BinaryPrimitives.WriteSingleLittleEndian(span[12..], speed);
+            BinaryPrimitives.WriteUInt16BigEndian(span[16..], heading);
+            BinaryPrimitives.WriteUInt16BigEndian(span[18..], flags);
+            data[20] = index;
+            data[21] = SKILL_AFTER_SPECIALIZATIONS;
+            return new((byte) eClientPackets.UseSkill, NO_PARAMETER, data);
         }
 
         // Picks up the object the client has targeted, which the server reads instead of anything in the packet: the captured client sent a single 0.
