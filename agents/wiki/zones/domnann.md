@@ -30,7 +30,7 @@ Zone 181 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | nosy cniogcrag | 11–13 | 5 | X:429644 Y:408658 Z:4392; X:430237 Y:412738 Z:4485; X:431535 Y:410313 Z:4425; X:431914 Y:408014 Z:4322; X:444702 Y:430309 Z:4350 |
 | stalking sylvanshade | 11–13 | 11 | X:397153 Y:418861 Z:4607; X:398198 Y:430861 Z:4537; X:399721 Y:429519 Z:4504; X:400048 Y:426245 Z:4535; X:403106 Y:425213 Z:4429; and 6 more |
 | hungry shriller | 12–13 | 16 | X:410717 Y:405535 Z:4610; X:433643 Y:408752 Z:4402; X:448488 Y:438147 Z:4438; X:449834 Y:440403 Z:4482; X:450410 Y:440507 Z:4442; and 11 more |
-| matted vines | 12–13 | 3 | X:415650 Y:404218 Z:4516; X:434582 Y:405838 Z:4577; X:435289 Y:409412 Z:4280 |
+| matted vines | 12–14 | 3 | X:415650 Y:404218 Z:4516; X:434582 Y:405838 Z:4577; X:435289 Y:409412 Z:4280 |
 | sneezer | 12–14 | 7 | X:397859 Y:404609 Z:4664; X:406883 Y:404086 Z:4665; X:417984 Y:408257 Z:4378; X:433747 Y:415428 Z:4504; X:434513 Y:414619 Z:4504; and 2 more |
 | patient shrouder | 13–15 | 29 | X:442304 Y:428341 Z:4351; X:442864 Y:421985 Z:4280; X:443237 Y:419827 Z:4325; X:443624 Y:425108 Z:4280; X:444594 Y:426402 Z:4308; and 24 more |
 | spiky botonid | 13–18 | 35 | X:397356 Y:402823 Z:4664; X:404716 Y:400695 Z:4664; X:429730 Y:397761 Z:4903; X:431491 Y:397912 Z:5266; X:433187 Y:401135 Z:4469; and 30 more |
@@ -62,7 +62,7 @@ Zone 181 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | Anthony | Advisor to the King | 59 | X:422864 Y:444362 Z:5952 |
 | Aresso Cinire | Enchanter | 51 | X:421506 Y:443680 Z:6458 |
 | Arnya | Name Registrar | 50 | X:423254 Y:444763 Z:5952 |
-| Aurnia | Blademaster Trainer | 50 | X:424641 Y:446097 Z:5977 |
+| Aurnia | Blademaster Trainer | 41 | X:424641 Y:446097 Z:5977 |
 | Berandil | Dye Merchant, [merchant](../merchants/berandil-domnann.md) | 50 | X:425190 Y:442915 Z:5952 |
 | Byrania | Merchant, [merchant](../merchants/byrania-domnann.md) | 55 | X:425107 Y:404978 Z:4463 |
 | Canenyo Norndis | Armor Merchant, [merchant](../merchants/canenyo-norndis-domnann.md) | 50 | X:426994 Y:404150 Z:4602 |
@@ -88,12 +88,12 @@ Zone 181 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | Filidh Carra |  | 50 | X:426899 Y:404578 Z:4610 |
 | Filidh Kendu |  | 54 | X:423181 Y:444408 Z:6020 |
 | Gearoid |  | 40 | X:422848 Y:444505 Z:5973 |
-| Guardian |  | 55 | X:422146 Y:445988 Z:5952 |
+| Guardian |  | 52 | X:422146 Y:445988 Z:5952 |
 | Guardian |  | 55 | X:423314 Y:415952 Z:4484 |
-| Guardian |  | 52 | X:423035 Y:402884 Z:4466 |
-| Guardian |  | 50 | X:425549 Y:444627 Z:5952 |
-| Guardian |  | 52 | X:425619 Y:402309 Z:4561 |
-| Guardian |  | 53 | X:427121 Y:402832 Z:4408 |
+| Guardian |  | 53 | X:425619 Y:402309 Z:4561 |
+| Guardian |  | 55 | X:423035 Y:402884 Z:4466 |
+| Guardian |  | 52 | X:427121 Y:402832 Z:4408 |
+| Guardian |  | 53 | X:425549 Y:444627 Z:5952 |
 | Guardian Belno |  | 50 | X:426026 Y:405827 Z:4434 |
 | Guardian Cilanya |  | 50 | X:423254 Y:415542 Z:4426 |
 | Guardian Diryna |  | 51 | X:419861 Y:432221 Z:4658 |
@@ -130,7 +130,7 @@ Zone 181 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | Loral | Naturalist Trainer | 50 | X:422947 Y:445925 Z:5952 |
 | Lughaidh MacKiernan |  | 50 | X:424781 Y:444089 Z:5952 |
 | Macawld | Ranger Trainer | 50 | X:421419 Y:443140 Z:5977 |
-| Macilen Polden | Merchant, [merchant](../merchants/macilen-polden-domnann.md) | 50 | X:420784 Y:445082 Z:5967 |
+| Macilen Polden | Merchant, [merchant](../merchants/macilen-polden-domnann.md) | 51 | X:420784 Y:445082 Z:5967 |
 | Mairsil | Alchemists Master | 70 | X:422066 Y:446793 Z:6444 |
 | Maraharna | Armor Merchant, [merchant](../merchants/maraharna-domnann.md) | 50 | X:427023 Y:404595 Z:4507 |
 | Maranene Cuille | Dye Merchant, [merchant](../merchants/maranene-cuille-domnann.md) | 50 | X:426858 Y:404209 Z:4610 |
@@ -157,8 +157,8 @@ Zone 181 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | Sean McCrean | Champion Trainer | 55 | X:422077 Y:447040 Z:5976 |
 | Searlait | Guardian Trainer | 50 | X:424708 Y:445176 Z:5952 |
 | Serenda | Hero Trainer | 50 | X:421838 Y:443207 Z:5977 |
-| Seriea | Healer | 50 | X:421344 Y:444441 Z:5952 |
 | Seriea | Healer | 50 | X:423203 Y:443229 Z:5952 |
+| Seriea | Healer | 50 | X:421344 Y:444441 Z:5952 |
 | Sevaen | Merchant, [merchant](../merchants/sevaen-domnann.md) | 50 | X:421009 Y:445175 Z:5967 |
 | Siobiaha | Vault Keeper | 50 | X:425174 Y:405787 Z:4530 |
 | Syrana | Weapon Merchant, [merchant](../merchants/syrana-domnann.md) | 50 | X:424551 Y:442677 Z:5967 |
@@ -172,3 +172,8 @@ Zone 181 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | Yna Lliaallgh | Eldritch Trainer | 51 | X:421265 Y:443531 Z:5977 |
 | Yori | Warden Trainer | 50 | X:421735 Y:443823 Z:5977 |
 | Ziyer | Merchant, [merchant](../merchants/ziyer-domnann.md) | 47 | X:420940 Y:445114 Z:5967 |
+
+## Bindstones
+
+- X:423065 Y:443120 Z:5952
+- X:425900 Y:404226 Z:4474

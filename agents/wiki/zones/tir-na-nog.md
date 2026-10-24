@@ -28,8 +28,8 @@ Zone 209 in region 201, in Hibernia. Positions are global, as `/gloc` gives them
 | Banyell | Armor Merchant, [merchant](../merchants/banyell-tir-na-nog.md) | 40 | X:27819 Y:33617 Z:6877 |
 | Baran | Merchant, [merchant](../merchants/baran-tir-na-nog.md) | 52 | X:29735 Y:32754 Z:7912 |
 | Bard | Hastener | 50 | X:34030 Y:34648 Z:8098 |
-| Bard | Hastener | 50 | X:34617 Y:35063 Z:8098 |
 | Bard | Hastener | 50 | X:34435 Y:36185 Z:8095 |
+| Bard | Hastener | 50 | X:34617 Y:35063 Z:8098 |
 | Bard Daylin | Hastener | 50 | X:30629 Y:32092 Z:7915 |
 | Bard Eltonos | Hastener | 50 | X:21926 Y:34934 Z:6220 |
 | Bard Medrend | Hastener | 50 | X:30906 Y:36270 Z:7636 |
@@ -88,17 +88,17 @@ Zone 209 in region 201, in Hibernia. Positions are global, as `/gloc` gives them
 | Geryn | Merchant, [merchant](../merchants/geryn-tir-na-nog.md) | 12 | X:32060 Y:33369 Z:8001 |
 | Giorny | Account Vault Keeper | 75 | X:33468 Y:32323 Z:8000 |
 | Grainne | Merchant, [merchant](../merchants/grainne-tir-na-nog.md) | 1 | X:33516 Y:37331 Z:8024 |
+| Guardian |  | 40 | X:26378 Y:33681 Z:6774 |
 | Guardian |  | 50 | X:26842 Y:33688 Z:6772 |
-| Guardian |  | 50 | X:26378 Y:33681 Z:6774 |
-| Guardian |  | 50 | X:27256 Y:27830 Z:7478 |
-| Guardian |  | 40 | X:25988 Y:31405 Z:6991 |
-| Guardian |  | 42 | X:30604 Y:31743 Z:7916 |
-| Guardian |  | 42 | X:29838 Y:28281 Z:7704 |
-| Guardian |  | 50 | X:23782 Y:35479 Z:6445 |
-| Guardian |  | 40 | X:30590 Y:30932 Z:7912 |
-| Guardian |  | 40 | X:24344 Y:35315 Z:6453 |
-| Guardian |  | 50 | X:31111 Y:33101 Z:7929 |
-| Guardian |  | 40 | X:30441 Y:32152 Z:7921 |
+| Guardian |  | 42 | X:27256 Y:27830 Z:7478 |
+| Guardian |  | 50 | X:30604 Y:31743 Z:7916 |
+| Guardian |  | 42 | X:23782 Y:35479 Z:6445 |
+| Guardian |  | 50 | X:25988 Y:31405 Z:6991 |
+| Guardian |  | 50 | X:29838 Y:28281 Z:7704 |
+| Guardian |  | 42 | X:30590 Y:30932 Z:7912 |
+| Guardian |  | 42 | X:24344 Y:35315 Z:6453 |
+| Guardian |  | 40 | X:31111 Y:33101 Z:7929 |
+| Guardian |  | 50 | X:30441 Y:32152 Z:7921 |
 | Guardian Brighid |  | 40 | X:26412 Y:34201 Z:6771 |
 | Guardian Daire |  | 40 | X:30233 Y:34776 Z:7711 |
 | Guardian Sima |  | 40 | X:30663 Y:34941 Z:7711 |
@@ -157,29 +157,29 @@ Zone 209 in region 201, in Hibernia. Positions are global, as `/gloc` gives them
 | Sadhbh | Enchanter | 36 | X:24793 Y:34867 Z:6527 |
 | Saffa | Merchant, [merchant](../merchants/saffa-tir-na-nog.md) | 40 | X:30067 Y:33998 Z:7928 |
 | Selia | Bard Trainer | 40 | X:32128 Y:37106 Z:8067 |
-| Sentinel |  | 53 | X:25105 Y:31574 Z:7010 |
-| Sentinel |  | 50 | X:33345 Y:31825 Z:8000 |
-| Sentinel |  | 51 | X:24251 Y:29332 Z:7187 |
-| Sentinel |  | 50 | X:27334 Y:32912 Z:6856 |
+| Sentinel |  | 50 | X:24251 Y:29332 Z:7187 |
+| Sentinel |  | 52 | X:25105 Y:31574 Z:7010 |
+| Sentinel |  | 51 | X:34005 Y:31880 Z:8047 |
 | Sentinel |  | 52 | X:31931 Y:34334 Z:7767 |
-| Sentinel |  | 55 | X:34005 Y:31880 Z:8047 |
-| Sentinel |  | 50 | X:22034 Y:34792 Z:6220 |
-| Sentinel |  | 52 | X:31075 Y:30489 Z:7751 |
-| Sentinel |  | 52 | X:24435 Y:35092 Z:6464 |
-| Sentinel |  | 50 | X:23526 Y:34208 Z:6477 |
-| Sentinel |  | 55 | X:30297 Y:36001 Z:7620 |
-| Sentinel |  | 51 | X:32425 Y:32171 Z:7996 |
-| Sentinel |  | 51 | X:22031 Y:34409 Z:6228 |
+| Sentinel |  | 53 | X:33345 Y:31825 Z:8000 |
+| Sentinel |  | 52 | X:27334 Y:32912 Z:6856 |
+| Sentinel |  | 51 | X:22034 Y:34792 Z:6220 |
+| Sentinel |  | 50 | X:31075 Y:30489 Z:7751 |
+| Sentinel |  | 55 | X:24435 Y:35092 Z:6464 |
+| Sentinel |  | 50 | X:22031 Y:34409 Z:6228 |
+| Sentinel |  | 53 | X:32425 Y:32171 Z:7996 |
+| Sentinel |  | 50 | X:29751 Y:33673 Z:7907 |
 | Sentinel |  | 52 | X:23932 Y:29575 Z:7187 |
-| Sentinel |  | 53 | X:30116 Y:28502 Z:7704 |
-| Sentinel |  | 51 | X:29751 Y:33673 Z:7907 |
-| Sentinel |  | 51 | X:33995 Y:32239 Z:8048 |
+| Sentinel |  | 55 | X:30116 Y:28502 Z:7704 |
+| Sentinel |  | 53 | X:30708 Y:35982 Z:7620 |
+| Sentinel |  | 51 | X:30297 Y:36001 Z:7620 |
+| Sentinel |  | 50 | X:33995 Y:32239 Z:8048 |
+| Sentinel |  | 55 | X:30772 Y:36019 Z:7620 |
+| Sentinel |  | 51 | X:23526 Y:34208 Z:6477 |
 | Sentinel |  | 50 | X:28391 Y:35567 Z:7313 |
-| Sentinel |  | 51 | X:30772 Y:36019 Z:7620 |
-| Sentinel |  | 52 | X:30708 Y:35982 Z:7620 |
-| Sentinel |  | 52 | X:31535 Y:33190 Z:7995 |
-| Sentinel |  | 51 | X:23995 Y:33855 Z:6488 |
-| Sentinel |  | 52 | X:27690 Y:33821 Z:6873 |
+| Sentinel |  | 51 | X:27690 Y:33821 Z:6873 |
+| Sentinel |  | 50 | X:23995 Y:33855 Z:6488 |
+| Sentinel |  | 50 | X:31535 Y:33190 Z:7995 |
 | Sentinel Kynon |  | 50 | X:26529 Y:33571 Z:6779 |
 | Sentinel Liadin |  | 55 | X:32426 Y:31956 Z:7996 |
 | Sentinel Llacheu |  | 53 | X:33089 Y:32360 Z:8000 |
@@ -203,5 +203,9 @@ Zone 209 in region 201, in Hibernia. Positions are global, as `/gloc` gives them
 | Vaughn | Armor Merchant, [merchant](../merchants/vaughn-tir-na-nog.md) | 36 | X:30818 Y:33972 Z:7948 |
 | Waljan | Healer | 35 | X:30447 Y:35095 Z:7711 |
 | druid |  | 40 | X:33859 Y:35693 Z:8047 |
-| druid |  | 40 | X:34236 Y:35687 Z:8047 |
 | druid |  | 41 | X:34032 Y:35380 Z:8047 |
+| druid |  | 40 | X:34236 Y:35687 Z:8047 |
+
+## Bindstones
+
+None in this zone.

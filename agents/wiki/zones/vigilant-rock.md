@@ -9,6 +9,7 @@ Zone 186 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | cniogcrag vexer | 25–30 | 26 | X:383845 Y:343693 Z:6172; X:389044 Y:347972 Z:3551; X:390955 Y:344630 Z:3594; X:391979 Y:343457 Z:4038; X:399052 Y:339184 Z:5730; and 21 more |
 | flying manta | 25–29 | 25 | X:381807 Y:352345 Z:4115; X:384250 Y:347626 Z:3788; X:388251 Y:353834 Z:3529; X:393654 Y:353104 Z:3519; X:398561 Y:350964 Z:3480; and 20 more |
 | weed mass | 25–28 | 22 | X:383388 Y:351869 Z:3502; X:388914 Y:343024 Z:4933; X:392303 Y:344166 Z:4002; X:394317 Y:350965 Z:3488; X:399539 Y:351086 Z:3401; and 17 more |
+| arbordon | 26 | 1 | X:386015 Y:360270 Z:3328 |
 | bugbear forager | 27–31 | 32 | X:381460 Y:321736 Z:7080; X:384802 Y:341353 Z:7988; X:390885 Y:339485 Z:8158; X:397896 Y:344725 Z:4429; X:404119 Y:341393 Z:4271; and 27 more |
 | ixthiar clipper | 28–30 | 16 | X:384545 Y:343575 Z:6507; X:397939 Y:345548 Z:4088; X:401371 Y:345088 Z:3692; X:403280 Y:346447 Z:2873; X:409333 Y:347837 Z:3139; and 11 more |
 | strapper vine | 28–33 | 42 | X:397426 Y:333936 Z:4510; X:402142 Y:353399 Z:4868; X:409380 Y:342144 Z:2890; X:414676 Y:340101 Z:3136; X:420647 Y:337139 Z:3078; and 37 more |
@@ -18,7 +19,6 @@ Zone 186 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | mantid defender | 29–34 | 36 | X:382259 Y:340453 Z:7967; X:383947 Y:341085 Z:8161; X:386997 Y:323959 Z:8174; X:388166 Y:324825 Z:8028; X:409824 Y:349241 Z:3643; and 31 more |
 | young tree dervish | 29–33 | 24 | X:381634 Y:325566 Z:6480; X:383460 Y:331278 Z:6980; X:389890 Y:335853 Z:5658; X:398847 Y:331278 Z:3668; X:411189 Y:339430 Z:2864; and 19 more |
 | Whirl | 31 | 1 | X:412328 Y:344160 Z:3058 |
-| arbordon | 31 | 1 | X:386015 Y:360270 Z:3328 |
 | twisted sylvan | 32–39 | 25 | X:387652 Y:328370 Z:6250; X:390541 Y:327715 Z:6464; X:392118 Y:309366 Z:6346; X:394895 Y:311815 Z:6338; X:404379 Y:330994 Z:2980; and 20 more |
 | watchful tree dervish | 33–39 | 48 | X:386908 Y:335828 Z:6073; X:404487 Y:329575 Z:2939; X:414141 Y:334035 Z:3077; X:420017 Y:347852 Z:3611; X:437145 Y:349787 Z:3860; and 43 more |
 | twisted treecutter | 34–41 | 35 | X:390170 Y:319124 Z:6441; X:392107 Y:307349 Z:6388; X:394478 Y:321362 Z:6296; X:395340 Y:325321 Z:6351; X:399406 Y:317044 Z:6139; and 30 more |
@@ -43,7 +43,7 @@ Zone 186 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | Lysanus | 40 | 1 | X:423168 Y:343510 Z:5047 |
 | Tuliros | 40 | 1 | X:395893 Y:312552 Z:6375 |
 | tidal anglator | 40–43 | 6 | X:427434 Y:327977 Z:3278; X:427597 Y:327212 Z:3201; X:427817 Y:327385 Z:3111; X:428140 Y:325574 Z:3198; X:429432 Y:325609 Z:3066; and 1 more |
-| Screak | 42 | 1 | X:425031 Y:311510 Z:3490 |
+| Screak | 41 | 1 | X:425031 Y:311510 Z:3490 |
 | beach shrouder | 43–48 | 36 | X:402587 Y:296186 Z:3364; X:409565 Y:299416 Z:3350; X:431186 Y:334649 Z:3369; X:435976 Y:339687 Z:3482; X:439399 Y:334168 Z:3089; and 31 more |
 | stilter | 43–51 | 34 | X:386686 Y:301424 Z:7590; X:393053 Y:300491 Z:7317; X:402069 Y:312989 Z:7490; X:403134 Y:308787 Z:6840; X:406527 Y:316020 Z:6163; and 29 more |
 | ravaging marine shriller | 44–47 | 13 | X:423068 Y:308175 Z:3509; X:424555 Y:309810 Z:3418; X:429488 Y:333001 Z:3343; X:430558 Y:332644 Z:3189; X:431263 Y:333161 Z:3229; and 8 more |
@@ -83,7 +83,7 @@ Zone 186 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | Finndith | Weapon Merchant, [merchant](../merchants/finndith-vigilant-rock.md) | 50 | X:428908 Y:319158 Z:3457 |
 | Guardian |  | 43 | X:429968 Y:319070 Z:3619 |
 | Guardian |  | 44 | X:428609 Y:319182 Z:3416 |
-| Guardian |  | 40 | X:429247 Y:317290 Z:3505 |
+| Guardian |  | 42 | X:429247 Y:317290 Z:3505 |
 | Ileene | Weapon Merchant, [merchant](../merchants/ileene-vigilant-rock.md) | 50 | X:429283 Y:318241 Z:3458 |
 | Irinida | Weapon Merchant, [merchant](../merchants/irinida-vigilant-rock.md) | 50 | X:429082 Y:318349 Z:3457 |
 | Iryne | Vault Keeper | 50 | X:428882 Y:318527 Z:3457 |
@@ -106,3 +106,7 @@ Zone 186 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | Tyrlano | Valewalker Trainer | 50 | X:430344 Y:317823 Z:3473 |
 | Vikta | Smith | 50 | X:429308 Y:319836 Z:3458 |
 | Zrrazk | Stable Master, [merchant](../merchants/zrrazk-vigilant-rock.md) | 50 | X:427797 Y:316775 Z:3411 |
+
+## Bindstones
+
+- X:428412 Y:320815 Z:3498

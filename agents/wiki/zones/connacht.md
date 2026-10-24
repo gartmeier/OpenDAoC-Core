@@ -12,7 +12,7 @@ Zone 207 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | large frog | 1 | 95 | X:334985 Y:469345 Z:5250; X:336535 Y:479345 Z:5245; X:339486 Y:474873 Z:5222; X:343920 Y:472616 Z:5394; X:347170 Y:474563 Z:5961; and 90 more |
 | skeletal pawn | 1–2 | 64 | X:331623 Y:461957 Z:6128; X:336513 Y:473686 Z:5449; X:344875 Y:474471 Z:5450; X:346415 Y:470790 Z:6481; X:348386 Y:473878 Z:6694; and 59 more |
 | bodachan sabhaill | 2–4 | 19 | X:320701 Y:464529 Z:5454; X:324327 Y:465517 Z:5337; X:325288 Y:464931 Z:5359; X:328690 Y:466506 Z:5325; X:330786 Y:466901 Z:5252; and 14 more |
-| feccan | 3–4 | 56 | X:319013 Y:452642 Z:5736; X:335961 Y:468645 Z:5200; X:337734 Y:478720 Z:5325; X:343194 Y:474482 Z:5310; X:347802 Y:474525 Z:6487; and 51 more |
+| feccan | 2–4 | 56 | X:319013 Y:452642 Z:5736; X:335961 Y:468645 Z:5200; X:337734 Y:478720 Z:5325; X:343194 Y:474482 Z:5310; X:347802 Y:474525 Z:6487; and 51 more |
 | mudman | 3–4 | 95 | X:288913 Y:457729 Z:5388; X:307976 Y:456348 Z:4754; X:339913 Y:457932 Z:4865; X:345040 Y:462368 Z:4878; X:348972 Y:476960 Z:6581; and 90 more |
 | skeletal minion | 3–4 | 36 | X:320468 Y:457244 Z:6684; X:322451 Y:464838 Z:5424; X:326236 Y:469122 Z:5200; X:335016 Y:469469 Z:5252; X:336887 Y:469143 Z:5203; and 31 more |
 | Irewood Seedling | 4 | 1 | X:342705 Y:467066 Z:5181 |
@@ -27,9 +27,9 @@ Zone 207 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | orchard nipper | 5–6 | 10 | X:329012 Y:451544 Z:5200; X:330348 Y:453744 Z:5130; X:331131 Y:453265 Z:5157; X:332029 Y:453168 Z:5129; X:333202 Y:456732 Z:5058; and 5 more |
 | rowdy | 5–8 | 31 | X:308081 Y:459792 Z:5125; X:322335 Y:470905 Z:6366; X:324726 Y:455705 Z:6261; X:326615 Y:471471 Z:5712; X:330858 Y:444621 Z:5236; and 26 more |
 | wild crouch | 5–6 | 21 | X:298407 Y:475198 Z:5047; X:299791 Y:475315 Z:4923; X:301203 Y:473015 Z:5261; X:303805 Y:473706 Z:4912; X:305040 Y:475688 Z:5200; and 16 more |
+| Lucan | 6 | 1 | X:326854 Y:459336 Z:6608 |
 | Windaille | 6 | 1 | X:320712 Y:438741 Z:5686 |
 | water beetle | 6–8 | 40 | X:334151 Y:452096 Z:4902; X:335609 Y:450990 Z:4675; X:338464 Y:456322 Z:4675; X:341378 Y:457754 Z:4895; X:345537 Y:460306 Z:4675; and 35 more |
-| Lucan | 7 | 1 | X:326854 Y:459336 Z:6608 |
 | cluricaun trip | 7–9 | 12 | X:316304 Y:458846 Z:6557; X:316599 Y:459101 Z:6700; X:319233 Y:458901 Z:6723; X:319630 Y:458427 Z:6643; X:320097 Y:458839 Z:6653; and 7 more |
 | curmudgeon crab-catcher | 7 | 5 | X:339248 Y:458284 Z:4849; X:339919 Y:459097 Z:4852; X:340279 Y:458719 Z:4851; X:340486 Y:458341 Z:4874; X:340486 Y:459475 Z:4848 |
 | lough wolf | 7–9 | 16 | X:305128 Y:457158 Z:5001; X:306330 Y:457593 Z:4771; X:310754 Y:459280 Z:6283; X:313334 Y:460002 Z:6398; X:329019 Y:443559 Z:5674; and 11 more |
@@ -38,6 +38,7 @@ Zone 207 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | spraggonoll | 7–9 | 47 | X:312729 Y:450367 Z:4732; X:315856 Y:461050 Z:6508; X:321520 Y:463281 Z:5506; X:322708 Y:463826 Z:5482; X:325021 Y:463532 Z:5461; and 42 more |
 | wind ghoul | 7 | 59 | X:290348 Y:458975 Z:5874; X:318943 Y:450786 Z:5688; X:320822 Y:450944 Z:5701; X:323950 Y:452330 Z:5429; X:331949 Y:437121 Z:5212; and 54 more |
 | lunantishee | 8–9 | 13 | X:289446 Y:467037 Z:5218; X:293404 Y:470911 Z:5563; X:298490 Y:459548 Z:7040; X:302969 Y:467081 Z:5815; X:312664 Y:445693 Z:5609; and 8 more |
+| curmudgeon harvester | 9–10 | 5 | X:339536 Y:458381 Z:4848; X:339926 Y:458553 Z:4848; X:340297 Y:458908 Z:4851; X:340505 Y:457972 Z:4906; X:340675 Y:458719 Z:4864 |
 | large eirebug | 9–11 | 28 | X:292796 Y:466781 Z:6167; X:294083 Y:469095 Z:6166; X:302188 Y:454134 Z:6449; X:304575 Y:436461 Z:6298; X:314407 Y:441992 Z:5514; and 23 more |
 | moss sheerie | 9–12 | 9 | X:301973 Y:456242 Z:6560; X:303980 Y:456620 Z:5535; X:305150 Y:458234 Z:4930; X:312232 Y:441081 Z:6054; X:313064 Y:440091 Z:5818; and 4 more |
 | wild lucradan | 9–10 | 39 | X:287820 Y:467417 Z:5200; X:299022 Y:473276 Z:5650; X:300580 Y:466190 Z:6596; X:310054 Y:463588 Z:5342; X:315498 Y:462225 Z:6310; and 34 more |
@@ -45,7 +46,6 @@ Zone 207 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | grumoz demon | 10–11 | 4 | X:324627 Y:434019 Z:6352; X:324678 Y:433548 Z:6330; X:325452 Y:435682 Z:6283; X:327584 Y:433777 Z:6225 |
 | anger sprite | 11–13 | 77 | X:289223 Y:456019 Z:5405; X:304479 Y:437216 Z:6297; X:306515 Y:436562 Z:6525; X:315683 Y:433929 Z:5043; X:326325 Y:431549 Z:6208; and 72 more |
 | changeling | 11 | 4 | X:290501 Y:456569 Z:5902; X:292411 Y:458413 Z:6630; X:315688 Y:432469 Z:5113; X:321812 Y:432704 Z:6089 |
-| curmudgeon harvester | 11 | 5 | X:339536 Y:458381 Z:4848; X:339926 Y:458553 Z:4848; X:340297 Y:458908 Z:4851; X:340505 Y:457972 Z:4906; X:340675 Y:458719 Z:4864 |
 | ghostly siabra | 11–12 | 35 | X:296469 Y:464200 Z:7126; X:296946 Y:464858 Z:7064; X:310063 Y:452209 Z:4712; X:311062 Y:452977 Z:4734; X:311941 Y:452425 Z:4712; and 30 more |
 | Bailey | 12 | 1 | X:339357 Y:455904 Z:4675 |
 | fishing bear forager | 13–14 | 55 | X:290215 Y:459672 Z:5818; X:310647 Y:437434 Z:5870; X:311477 Y:437657 Z:5819; X:327367 Y:438706 Z:6162; X:335431 Y:442620 Z:4675; and 50 more |
@@ -104,8 +104,8 @@ Zone 207 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Briac | Weapon Merchant, [merchant](../merchants/briac-connacht.md) | 35 | X:338200 Y:445434 Z:5056 |
 | Caoimhe | Naturalist Trainer | 40 | X:340875 Y:467043 Z:5200 |
 | Carsten | Stable Master, [merchant](../merchants/carsten-connacht.md) | 30 | X:311960 Y:470002 Z:5200 |
-| Celtic Guardian |  | 255 | X:333594 Y:418009 Z:5189 |
 | Celtic Guardian |  | 255 | X:332731 Y:417984 Z:5181 |
+| Celtic Guardian |  | 255 | X:333594 Y:418009 Z:5189 |
 | Celtic Guardian |  | 255 | X:334290 Y:418577 Z:5262 |
 | Celtic Guardian |  | 255 | X:332454 Y:419883 Z:5178 |
 | Champion |  | 255 | X:333650 Y:418662 Z:5184 |
@@ -155,14 +155,14 @@ Zone 207 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Keara |  | 24 | X:341608 Y:469376 Z:5407 |
 | Keep Sentinel |  | 255 | X:335307 Y:421447 Z:5170 |
 | Keep Sentinel |  | 255 | X:335545 Y:420531 Z:5696 |
-| Keep Sentinel |  | 255 | X:332658 Y:420430 Z:5696 |
 | Keep Sentinel |  | 255 | X:333864 Y:419793 Z:5184 |
+| Keep Sentinel |  | 255 | X:332658 Y:420430 Z:5696 |
 | Keep Sentinel |  | 255 | X:333834 Y:421892 Z:5696 |
 | Keep Sentinel |  | 90 | X:334892 Y:419822 Z:5696 |
 | Keep Sentinel |  | 255 | X:334303 Y:419051 Z:5696 |
 | Keep Sentinel |  | 90 | X:333291 Y:421166 Z:5696 |
-| Keep Sentinel |  | 90 | X:334545 Y:421167 Z:5864 |
 | Keep Sentinel |  | 255 | X:334749 Y:420891 Z:5184 |
+| Keep Sentinel |  | 90 | X:334545 Y:421167 Z:5864 |
 | Keep Sentinel |  | 255 | X:334797 Y:421872 Z:5183 |
 | Kelteen | Atlas Logistics | 59 | X:334215 Y:421276 Z:5180 |
 | Kiana |  | 25 | X:341768 Y:469674 Z:5218 |
@@ -190,16 +190,16 @@ Zone 207 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Master Ranger |  | 255 | X:334350 Y:418873 Z:5696 |
 | Master Ranger |  | 255 | X:332528 Y:420263 Z:5696 |
 | Master Ranger |  | 255 | X:333857 Y:422081 Z:5696 |
-| Master Ranger |  | 255 | X:332444 Y:420488 Z:5696 |
 | Master Ranger |  | 255 | X:332521 Y:420627 Z:5696 |
-| Master Ranger |  | 255 | X:334463 Y:418934 Z:5696 |
+| Master Ranger |  | 255 | X:332444 Y:420488 Z:5696 |
 | Master Ranger |  | 255 | X:333039 Y:419579 Z:5864 |
-| Master Ranger |  | 255 | X:332791 Y:419541 Z:5184 |
+| Master Ranger |  | 255 | X:334463 Y:418934 Z:5696 |
 | Master Ranger |  | 255 | X:333139 Y:419498 Z:5864 |
 | Master Ranger |  | 255 | X:335533 Y:420749 Z:5696 |
-| Master Ranger |  | 255 | X:335657 Y:420678 Z:5696 |
+| Master Ranger |  | 255 | X:332791 Y:419541 Z:5184 |
 | Master Ranger |  | 255 | X:334049 Y:419040 Z:5696 |
 | Master Ranger |  | 255 | X:334106 Y:418940 Z:5696 |
+| Master Ranger |  | 255 | X:335657 Y:420678 Z:5696 |
 | Melro | Healer | 35 | X:312960 Y:469894 Z:5200 |
 | Mercenary Iuskedaro |  | 50 | X:341517 Y:469131 Z:5216 |
 | Naois |  | 17 | X:310283 Y:470672 Z:5200 |
@@ -211,24 +211,24 @@ Zone 207 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Rey | Bone Collector | 59 | X:334866 Y:420749 Z:5184 |
 | Rhona | Weapon Merchant, [merchant](../merchants/rhona-connacht.md) | 35 | X:339939 Y:468989 Z:5200 |
 | Riber | Poison Merchant, [merchant](../merchants/riber-connacht.md) | 38 | X:334704 Y:419739 Z:5187 |
-| Sentinel |  | 50 | X:338884 Y:470105 Z:5200 |
+| Sentinel |  | 53 | X:338884 Y:470105 Z:5200 |
 | Sentinel |  | 50 | X:334451 Y:421734 Z:5696 |
 | Sentinel |  | 50 | X:332937 Y:420464 Z:5184 |
+| Sentinel |  | 50 | X:335039 Y:419701 Z:5696 |
 | Sentinel |  | 53 | X:339314 Y:445392 Z:6169 |
-| Sentinel |  | 53 | X:335039 Y:419701 Z:5696 |
-| Sentinel |  | 53 | X:342282 Y:468165 Z:5152 |
-| Sentinel |  | 50 | X:310496 Y:470486 Z:5200 |
+| Sentinel |  | 50 | X:342282 Y:468165 Z:5152 |
+| Sentinel |  | 53 | X:310496 Y:470486 Z:5200 |
 | Sentinel |  | 53 | X:334325 Y:421994 Z:5191 |
-| Sentinel |  | 50 | X:311478 Y:469870 Z:5200 |
-| Sentinel |  | 53 | X:339603 Y:467176 Z:5200 |
-| Sentinel |  | 50 | X:335507 Y:420971 Z:5184 |
+| Sentinel |  | 53 | X:311478 Y:469870 Z:5200 |
+| Sentinel |  | 50 | X:339603 Y:467176 Z:5200 |
 | Sentinel |  | 50 | X:289339 Y:475719 Z:5200 |
-| Sentinel |  | 53 | X:339236 Y:445172 Z:5096 |
+| Sentinel |  | 50 | X:335507 Y:420971 Z:5184 |
 | Sentinel |  | 53 | X:333905 Y:421588 Z:5184 |
-| Sentinel |  | 50 | X:339078 Y:445454 Z:5092 |
-| Sentinel |  | 51 | X:333145 Y:421270 Z:5696 |
+| Sentinel |  | 53 | X:339078 Y:445454 Z:5092 |
+| Sentinel |  | 52 | X:333145 Y:421270 Z:5696 |
+| Sentinel |  | 53 | X:339236 Y:445172 Z:5096 |
 | Sentinel |  | 50 | X:288975 Y:475394 Z:5200 |
-| Sentinel |  | 53 | X:335232 Y:420321 Z:5205 |
+| Sentinel |  | 50 | X:335232 Y:420321 Z:5205 |
 | Sentinel Andreasa |  | 40 | X:339339 Y:445348 Z:6170 |
 | Sentinel Moya |  | 51 | X:340792 Y:468189 Z:5200 |
 | Sentinel Rhiona |  | 50 | X:289388 Y:475553 Z:5200 |
@@ -253,3 +253,10 @@ Zone 207 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | puppy |  | 15 | X:310369 Y:470543 Z:5200 |
 | puppy |  | 15 | X:309863 Y:470925 Z:5200 |
 | puppy |  | 15 | X:310242 Y:470744 Z:5200 |
+
+## Bindstones
+
+- X:313218 Y:469162 Z:5200
+- X:333220 Y:420510 Z:5184
+- X:338784 Y:444567 Z:5075
+- X:339693 Y:467083 Z:5205

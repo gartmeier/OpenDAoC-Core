@@ -38,3 +38,7 @@ Zone 219 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Seosaimhin | Vault Banker | 55 | X:493823 Y:620289 Z:2967 |
 | Toireasa | Vault Banker | 50 | X:493924 Y:618252 Z:2964 |
 | horse |  | 51 | X:494776 Y:617978 Z:2952 |
+
+## Bindstones
+
+None in this zone.

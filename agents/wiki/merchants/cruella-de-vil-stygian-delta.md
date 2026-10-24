@@ -1,6 +1,6 @@
 # Cruella de Vil
 
-Pet Merchant, a merchant in [Stygian Delta](../zones/stygian-delta-81.md), at X:330748 Y:452599 Z:8112. The index is what `buy` takes.
+Pet Merchant, a merchant in [Stygian Delta](../zones/stygian-delta.md), at X:330748 Y:452599 Z:8112. The index is what `buy` takes.
 
 ## Page 1
 

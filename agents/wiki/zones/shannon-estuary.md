@@ -53,10 +53,10 @@ Zone 202 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | merman | 24–35 | 76 | X:318563 Y:637724 Z:4598; X:325688 Y:631187 Z:4598; X:336317 Y:641390 Z:4699; X:339531 Y:645213 Z:4658; X:343295 Y:643021 Z:4758; and 71 more |
 | walking rock | 24 | 9 | X:335251 Y:615223 Z:5439; X:336381 Y:615753 Z:5419; X:337326 Y:616916 Z:5362; X:338166 Y:616577 Z:5201; X:338425 Y:616883 Z:5109; and 4 more |
 | ire wolf | 25–27 | 56 | X:290572 Y:667302 Z:4543; X:293142 Y:670153 Z:6038; X:334990 Y:666995 Z:6209; X:343051 Y:665676 Z:5237; X:345589 Y:668639 Z:4880; and 51 more |
-| lugradan | 25–28 | 4 | X:295239 Y:618495 Z:7350; X:304363 Y:622358 Z:5343; X:324904 Y:615202 Z:7796; X:325516 Y:615300 Z:8204 |
 | spraggonix | 25–26 | 13 | X:303708 Y:651255 Z:4804; X:304946 Y:650702 Z:4760; X:305572 Y:650841 Z:4789; X:327964 Y:618051 Z:8571; X:335450 Y:616308 Z:5623; and 8 more |
 | Kirwyn | 26 | 1 | X:296967 Y:653996 Z:5306 |
 | eriu waylayer | 26–27 | 53 | X:309633 Y:657561 Z:5154; X:314905 Y:655766 Z:5137; X:317734 Y:662457 Z:5301; X:319935 Y:659425 Z:5333; X:323417 Y:676471 Z:5276; and 48 more |
+| lugradan | 26–29 | 4 | X:295239 Y:618495 Z:7350; X:304363 Y:622358 Z:5343; X:324904 Y:615202 Z:7796; X:325516 Y:615300 Z:8204 |
 | Muir | 27 | 1 | X:339905 Y:645352 Z:4734 |
 | far liath | 31–32 | 5 | X:291225 Y:671919 Z:6242; X:291848 Y:672585 Z:6290; X:291877 Y:671584 Z:6232; X:291901 Y:671950 Z:6279; X:292170 Y:672246 Z:6286 |
 | spraggonix elder | 31–33 | 9 | X:303718 Y:650850 Z:4780; X:304302 Y:649469 Z:4752; X:304697 Y:650152 Z:4752; X:305216 Y:650277 Z:4755; X:305745 Y:650086 Z:4755; and 4 more |
@@ -101,16 +101,16 @@ Zone 202 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Evie |  | 16 | X:294542 Y:653169 Z:4693 |
 | Eyslk | Enchanter Trainer | 50 | X:296920 Y:641476 Z:4865 |
 | Fallon | Weapon Merchant, [merchant](../merchants/fallon-shannon-estuary.md) | 35 | X:325827 Y:678043 Z:5052 |
-| Filidh Mairtin |  | 35 | X:315657 Y:676015 Z:5194 |
+| Filidh Mairtin |  | 37 | X:315657 Y:676015 Z:5194 |
 | Gavina | Shield Merchant, [merchant](../merchants/gavina-shannon-estuary.md) | 33 | X:297082 Y:641559 Z:4870 |
 | Ghearic Chauclon | Vault Keeper | 40 | X:309735 Y:645009 Z:4848 |
 | Glyn | Weapon Merchant, [merchant](../merchants/glyn-shannon-estuary.md) | 37 | X:295746 Y:641251 Z:4871 |
-| Guardian |  | 43 | X:295856 Y:642418 Z:4848 |
-| Guardian |  | 42 | X:313906 Y:636796 Z:4824 |
-| Guardian |  | 44 | X:297489 Y:642919 Z:4848 |
-| Guardian |  | 44 | X:309717 Y:645313 Z:4848 |
-| Guardian |  | 42 | X:325948 Y:678180 Z:5054 |
-| Guardian |  | 44 | X:295196 Y:641452 Z:4848 |
+| Guardian |  | 44 | X:295856 Y:642418 Z:4848 |
+| Guardian |  | 43 | X:313906 Y:636796 Z:4824 |
+| Guardian |  | 40 | X:297489 Y:642919 Z:4848 |
+| Guardian |  | 42 | X:309717 Y:645313 Z:4848 |
+| Guardian |  | 40 | X:325948 Y:678180 Z:5054 |
+| Guardian |  | 43 | X:295196 Y:641452 Z:4848 |
 | Harper Cadwr |  | 38 | X:297164 Y:643294 Z:4854 |
 | Iacob |  | 22 | X:309373 Y:645650 Z:4848 |
 | Izold | Weapon Merchant, [merchant](../merchants/izold-shannon-estuary.md) | 35 | X:325671 Y:677802 Z:5052 |
@@ -133,14 +133,14 @@ Zone 202 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Rooney | Nightshade Trainer | 45 | X:309446 Y:645379 Z:4909 |
 | Sarff | Smith | 35 | X:296039 Y:641279 Z:4872 |
 | Searlas | Hero Trainer | 50 | X:294825 Y:641462 Z:4865 |
-| Sentinel |  | 53 | X:309502 Y:645684 Z:4849 |
-| Sentinel |  | 53 | X:296026 Y:642395 Z:4848 |
-| Sentinel |  | 53 | X:325468 Y:677740 Z:5056 |
-| Sentinel |  | 52 | X:298433 Y:641254 Z:4848 |
-| Sentinel |  | 51 | X:325543 Y:678188 Z:5058 |
-| Sentinel |  | 55 | X:313334 Y:636941 Z:4845 |
+| Sentinel |  | 51 | X:309502 Y:645684 Z:4849 |
+| Sentinel |  | 52 | X:296026 Y:642395 Z:4848 |
+| Sentinel |  | 52 | X:325468 Y:677740 Z:5056 |
+| Sentinel |  | 55 | X:298433 Y:641254 Z:4848 |
+| Sentinel |  | 55 | X:325543 Y:678188 Z:5058 |
+| Sentinel |  | 52 | X:313334 Y:636941 Z:4845 |
 | Sentinel |  | 55 | X:326276 Y:677494 Z:5035 |
-| Sentinel |  | 50 | X:295827 Y:642272 Z:4848 |
+| Sentinel |  | 53 | X:295827 Y:642272 Z:4848 |
 | Sentinel Glynis |  | 33 | X:294730 Y:641960 Z:4848 |
 | Sentinel Grania |  | 42 | X:314041 Y:636746 Z:4849 |
 | Sile | Ranger Trainer | 50 | X:295183 Y:641118 Z:4848 |
@@ -155,3 +155,7 @@ Zone 202 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Wynda | Shield Merchant, [merchant](../merchants/wynda-shannon-estuary.md) | 35 | X:325775 Y:677890 Z:5051 |
 | Yann | Weapon Merchant, [merchant](../merchants/yann-shannon-estuary.md) | 38 | X:325686 Y:677866 Z:5053 |
 | horse |  | 51 | X:294224 Y:641242 Z:4854 |
+
+## Bindstones
+
+- X:295973 Y:642328 Z:4851

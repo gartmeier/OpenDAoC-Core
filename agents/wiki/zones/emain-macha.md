@@ -6,26 +6,26 @@ Zone 214 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 
 | Mob | Levels | How many | Spawn points |
 |---|---|---|---|
+| alp luachra | 29–31 | 8 | X:462285 Y:345819 Z:5158; X:462383 Y:346353 Z:5293; X:463013 Y:346619 Z:5162; X:463572 Y:345955 Z:4957; X:463959 Y:346241 Z:4978; and 3 more |
 | amadan touched | 29–34 | 7 | X:434989 Y:308627 Z:5996; X:435002 Y:306088 Z:6280; X:439928 Y:320400 Z:4676; X:440843 Y:319849 Z:4099; X:455696 Y:300151 Z:4217; and 2 more |
-| roan stepper | 29–32 | 2 | X:463244 Y:339101 Z:3894; X:465455 Y:339904 Z:3902 |
-| squabbler | 29 | 2 | X:458477 Y:344417 Z:4454; X:462819 Y:347350 Z:5167 |
-| alp luachra | 30–31 | 8 | X:462285 Y:345819 Z:5158; X:462383 Y:346353 Z:5293; X:463013 Y:346619 Z:5162; X:463572 Y:345955 Z:4957; X:463959 Y:346241 Z:4978; and 3 more |
-| cliff beetle | 31–37 | 8 | X:433903 Y:307861 Z:5854; X:435958 Y:309839 Z:6212; X:437312 Y:305160 Z:4851; X:440747 Y:298173 Z:3816; X:456192 Y:297176 Z:4115; and 3 more |
+| squabbler | 29–30 | 2 | X:458477 Y:344417 Z:4454; X:462819 Y:347350 Z:5167 |
+| cliff beetle | 31–36 | 8 | X:433903 Y:307861 Z:5854; X:435958 Y:309839 Z:6212; X:437312 Y:305160 Z:4851; X:440747 Y:298173 Z:3816; X:456192 Y:297176 Z:4115; and 3 more |
 | luch hunter | 31–34 | 8 | X:434811 Y:303518 Z:5935; X:437001 Y:319307 Z:4542; X:437340 Y:302286 Z:4914; X:439621 Y:297288 Z:4180; X:460308 Y:299599 Z:3514; and 3 more |
 | rage wolf | 31–32 | 8 | X:437545 Y:308327 Z:4509; X:438481 Y:306494 Z:3698; X:440202 Y:321869 Z:4555; X:440986 Y:319061 Z:3845; X:454097 Y:301537 Z:4148; and 3 more |
 | torcan | 31 | 3 | X:432366 Y:332013 Z:5513; X:433270 Y:334298 Z:5894; X:433913 Y:335492 Z:6355 |
 | graugach | 32–33 | 5 | X:463011 Y:339781 Z:3810; X:463571 Y:338748 Z:3896; X:463900 Y:340885 Z:3811; X:465217 Y:339391 Z:3929; X:466479 Y:339537 Z:3975 |
+| roan stepper | 32 | 2 | X:463244 Y:339101 Z:3894; X:465455 Y:339904 Z:3902 |
 | boogie man | 34 | 6 | X:431073 Y:331662 Z:5780; X:431645 Y:332947 Z:5301; X:432190 Y:331799 Z:5535; X:432278 Y:332535 Z:5373; X:433408 Y:332067 Z:5923; and 1 more |
 | faeghoul | 34–36 | 10 | X:470004 Y:332908 Z:3791; X:470455 Y:333025 Z:3808; X:470652 Y:333145 Z:3813; X:471629 Y:332871 Z:3808; X:472611 Y:332601 Z:3808; and 5 more |
 | torc | 34–37 | 18 | X:456149 Y:303451 Z:4063; X:457767 Y:302945 Z:4243; X:463049 Y:338790 Z:3849; X:466518 Y:305453 Z:3911; X:472329 Y:308210 Z:2846; and 13 more |
 | hillock changeling | 35–37 | 3 | X:467113 Y:334329 Z:3619; X:468810 Y:331740 Z:3643; X:469254 Y:333174 Z:3693 |
 | juvenile megafelid | 35–38 | 4 | X:469253 Y:312991 Z:2904; X:470828 Y:308269 Z:2985; X:471038 Y:313784 Z:2874; X:474573 Y:329697 Z:3558 |
-| black badger | 37–40 | 2 | X:467181 Y:328027 Z:3550; X:471498 Y:326230 Z:3846 |
+| black badger | 36–39 | 2 | X:467181 Y:328027 Z:3550; X:471498 Y:326230 Z:3846 |
 | phaeghoul | 37–39 | 16 | X:476849 Y:331155 Z:3923; X:477170 Y:330478 Z:4026; X:477667 Y:330945 Z:4117; X:478031 Y:331079 Z:4190; X:478589 Y:330312 Z:4359; and 11 more |
 | grovewood | 38–40 | 15 | X:476210 Y:334922 Z:4114; X:476758 Y:334261 Z:4154; X:477234 Y:334505 Z:4468; X:477675 Y:333769 Z:4439; X:478439 Y:333703 Z:4840; and 10 more |
 | bean sidhe | 39–41 | 26 | X:427987 Y:331378 Z:5474; X:428792 Y:330481 Z:5317; X:469233 Y:331464 Z:3757; X:470712 Y:331776 Z:3808; X:475020 Y:309285 Z:2792; and 21 more |
-| corpan side | 39–40 | 3 | X:473036 Y:326986 Z:3737; X:473959 Y:326578 Z:3879; X:474526 Y:327750 Z:3712 |
 | bananach | 40–41 | 12 | X:470615 Y:330693 Z:3808; X:470684 Y:331428 Z:3808; X:471346 Y:331666 Z:3808; X:471593 Y:332058 Z:3808; X:471948 Y:331290 Z:3808; and 7 more |
+| corpan side | 40–41 | 3 | X:473036 Y:326986 Z:3737; X:473959 Y:326578 Z:3879; X:474526 Y:327750 Z:3712 |
 | curmudgeon scrapper | 40–43 | 7 | X:471199 Y:312658 Z:2792; X:471846 Y:312288 Z:2792; X:472322 Y:313008 Z:2792; X:472480 Y:312153 Z:2792; X:472854 Y:312699 Z:2792; and 2 more |
 | fallen midgard invader | 40 | 15 | X:471829 Y:314992 Z:3082; X:472958 Y:315728 Z:3305; X:473323 Y:315216 Z:3298; X:473787 Y:314787 Z:3385; X:474418 Y:315837 Z:3859; and 10 more |
 | white boar | 40–41 | 3 | X:424966 Y:331465 Z:5333; X:425664 Y:334717 Z:5663; X:429243 Y:332333 Z:5754 |
@@ -51,7 +51,7 @@ Zone 214 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 
 | NPC | Role | Level | Position |
 |---|---|---|---|
-| Arwen | Merchant | 52 | X:426705 Y:319395 Z:4728 |
+| Aidan | Merchant | 52 | X:426705 Y:319395 Z:4728 |
 | Champion Commander |  | 52 | X:426320 Y:318434 Z:4728 |
 | Champion Commander |  | 52 | X:427658 Y:318687 Z:4728 |
 | Champion Commander |  | 52 | X:427700 Y:318273 Z:4728 |
@@ -63,16 +63,16 @@ Zone 214 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Gothi of Odin |  | 100 | X:473901 Y:295467 Z:3871 |
 | Gothi of Odin |  | 100 | X:474513 Y:295465 Z:3871 |
 | Guardian |  | 52 | X:425342 Y:318861 Z:5944 |
-| Guardian |  | 52 | X:426118 Y:318202 Z:4728 |
 | Guardian |  | 52 | X:425076 Y:318624 Z:5944 |
+| Guardian |  | 52 | X:426118 Y:318202 Z:4728 |
 | Guardian |  | 52 | X:425148 Y:319060 Z:5144 |
-| Guardian |  | 52 | X:425119 Y:318493 Z:5144 |
 | Guardian |  | 52 | X:426100 Y:318708 Z:4728 |
+| Guardian |  | 52 | X:425119 Y:318493 Z:5144 |
 | Guardian |  | 52 | X:425333 Y:318595 Z:5944 |
-| Guardian |  | 52 | X:427556 Y:318178 Z:4728 |
 | Guardian |  | 52 | X:425163 Y:318723 Z:4776 |
-| Guardian |  | 52 | X:425086 Y:318891 Z:5944 |
+| Guardian |  | 52 | X:427556 Y:318178 Z:4728 |
 | Guardian |  | 52 | X:427391 Y:318256 Z:4728 |
+| Guardian |  | 52 | X:425086 Y:318891 Z:5944 |
 | Guardian |  | 52 | X:427453 Y:318668 Z:4728 |
 | Guardian |  | 52 | X:427527 Y:318752 Z:4728 |
 | Guardian |  | 52 | X:425502 Y:318743 Z:5144 |
@@ -107,9 +107,9 @@ Zone 214 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Knight Commander |  | 255 | X:473507 Y:344395 Z:3624 |
 | Knight Commander |  | 255 | X:474963 Y:342888 Z:4080 |
 | Knight Commander |  | 255 | X:472787 Y:343337 Z:3351 |
-| Knight Commander |  | 255 | X:475645 Y:341871 Z:4080 |
 | Knight Commander |  | 255 | X:477859 Y:340845 Z:3489 |
 | Knight Commander |  | 255 | X:476281 Y:339959 Z:3319 |
+| Knight Commander |  | 255 | X:475645 Y:341871 Z:4080 |
 | Knight Commander |  | 255 | X:474917 Y:345449 Z:4695 |
 | Knight Commander |  | 255 | X:477993 Y:345207 Z:4554 |
 | Knight Commander |  | 255 | X:476030 Y:345064 Z:4210 |
@@ -123,13 +123,13 @@ Zone 214 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Master Elementalist |  | 100 | X:475750 Y:343554 Z:4103 |
 | Master Elementalist |  | 100 | X:475755 Y:342837 Z:4103 |
 | Master Visur |  | 100 | X:475766 Y:343201 Z:4103 |
-| Master Wizard |  | 255 | X:475872 Y:342417 Z:4498 |
 | Master Wizard |  | 255 | X:475320 Y:342531 Z:4080 |
+| Master Wizard |  | 255 | X:475872 Y:342417 Z:4498 |
 | Master Wizard |  | 255 | X:476414 Y:344252 Z:4482 |
+| Master Wizard |  | 255 | X:476652 Y:344014 Z:4482 |
 | Master Wizard |  | 255 | X:474697 Y:343405 Z:4466 |
 | Master Wizard |  | 255 | X:475811 Y:344566 Z:4498 |
 | Master Wizard |  | 255 | X:474912 Y:343068 Z:4466 |
-| Master Wizard |  | 255 | X:476652 Y:344014 Z:4482 |
 | Master Wizard |  | 255 | X:476003 Y:344673 Z:4498 |
 | Master Wizard |  | 255 | X:476208 Y:344586 Z:4498 |
 | Master Wizard |  | 255 | X:475084 Y:343717 Z:4482 |
@@ -138,8 +138,8 @@ Zone 214 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Master Wizard |  | 255 | X:475679 Y:342301 Z:4498 |
 | Master Wizard |  | 255 | X:475638 Y:344272 Z:4482 |
 | Master Wizard |  | 255 | X:475197 Y:342802 Z:4482 |
-| Master of Runes |  | 255 | X:473116 Y:294962 Z:4104 |
 | Master of Runes |  | 255 | X:474921 Y:295528 Z:4104 |
+| Master of Runes |  | 255 | X:473116 Y:294962 Z:4104 |
 | Master of Runes |  | 255 | X:473444 Y:296004 Z:4152 |
 | Master of Runes |  | 255 | X:473361 Y:295956 Z:4152 |
 | Master of Runes |  | 255 | X:473120 Y:295394 Z:4104 |
@@ -157,8 +157,8 @@ Zone 214 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Master of Runes |  | 255 | X:473815 Y:293822 Z:4120 |
 | Master of Runes |  | 255 | X:474535 Y:295953 Z:4104 |
 | Master of Runes |  | 255 | X:473475 Y:294158 Z:4120 |
-| Master of Runes |  | 255 | X:475175 Y:295139 Z:4120 |
 | Master of Runes |  | 255 | X:474653 Y:295869 Z:4104 |
+| Master of Runes |  | 255 | X:475175 Y:295139 Z:4120 |
 | Master of Runes |  | 255 | X:473638 Y:293901 Z:4120 |
 | Ranger |  | 52 | X:425099 Y:317669 Z:5144 |
 | Ranger |  | 52 | X:427092 Y:317711 Z:5144 |
@@ -174,11 +174,11 @@ Zone 214 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Viking Huscarl |  | 255 | X:471312 Y:294920 Z:4216 |
 | Viking Huscarl |  | 255 | X:471948 Y:297399 Z:3455 |
 | Viking Huscarl |  | 255 | X:475308 Y:296532 Z:3750 |
-| Viking Huscarl |  | 255 | X:473542 Y:295675 Z:3848 |
 | Viking Huscarl |  | 255 | X:472180 Y:295255 Z:3821 |
+| Viking Huscarl |  | 255 | X:473542 Y:295675 Z:3848 |
 | Viking Huscarl |  | 255 | X:473193 Y:293355 Z:4079 |
-| Viking Huscarl |  | 255 | X:473488 Y:294872 Z:3848 |
 | Viking Huscarl |  | 255 | X:472142 Y:293804 Z:4316 |
+| Viking Huscarl |  | 255 | X:473488 Y:294872 Z:3848 |
 | Viking Huscarl |  | 255 | X:475030 Y:298142 Z:3416 |
 | Viking Huscarl |  | 255 | X:473526 Y:297153 Z:3848 |
 | Viking Huscarl |  | 255 | X:474297 Y:294544 Z:3848 |
@@ -193,9 +193,13 @@ Zone 214 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Viking Huscarl |  | 255 | X:476539 Y:294893 Z:4000 |
 | Viking Huscarl |  | 255 | X:476540 Y:296343 Z:3483 |
 | Viking Huscarl |  | 255 | X:472623 Y:296660 Z:3808 |
-| Viking Huscarl |  | 255 | X:471301 Y:295731 Z:3720 |
 | Viking Huscarl |  | 255 | X:473610 Y:296119 Z:3848 |
+| Viking Huscarl |  | 255 | X:471301 Y:295731 Z:3720 |
 | Viking Huscarl |  | 255 | X:471467 Y:296552 Z:3431 |
-| Viking Huscarl |  | 255 | X:476035 Y:297267 Z:3440 |
 | Viking Huscarl |  | 255 | X:476022 Y:295015 Z:3822 |
+| Viking Huscarl |  | 255 | X:476035 Y:297267 Z:3440 |
 | Viking Huscarl |  | 255 | X:474929 Y:293364 Z:4103 |
+
+## Bindstones
+
+None in this zone.

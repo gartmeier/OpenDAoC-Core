@@ -100,3 +100,5 @@ Acceptance: an Agent in Ardagh finds Ardagh's Bindstone on the Silvermine Mts. p
 - **Bind areas are read from the database rows** the regions load theirs from, as a region's own areas aren't public. Areas added with `/addbind` are saved there too.
 - **The index says zone pages list Bindstones,** so an Agent that starts at the index knows to look.
 - **The Learning's snippet uses Ardagh's database position.** Check it against the regenerated Silvermine Mts. page.
+
+**2026-10-24 (agent):** Regenerated Hibernia's Wiki on the new build. 13 zones have Bindstones and 28 say there are none. Ardagh's is on the Silvermine Mts. page at X:351830 Y:554515 Z:5109, as the Learning's snippet has it, and no Albion bind area from region 200 appears. Overlapping pairs merged, such as Lough Derg's 344788 and 344872 into 344830. The diff also changes Mob and guard levels, which the server rolls at each spawn, and renames the Stygian Delta pages, as only one zone of that name is Hibernia's this time. The manual run in Ardagh is still to do.

@@ -24,12 +24,12 @@ Zone 225 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Laney | Vault Banker | 50 | X:616046 Y:619336 Z:3042 |
 | Llagit | Vault Banker | 50 | X:615549 Y:619968 Z:3020 |
 | Lyrist | Hastener | 30 | X:627078 Y:642430 Z:3008 |
-| Lyrist | Hastener | 30 | X:614913 Y:620000 Z:3008 |
 | Lyrist | Hastener | 30 | X:595147 Y:626660 Z:3008 |
+| Lyrist | Hastener | 30 | X:614913 Y:620000 Z:3008 |
 | Lyrist | Hastener | 30 | X:632276 Y:625252 Z:3048 |
-| Lyrist | Hastener | 30 | X:619553 Y:626247 Z:3045 |
-| Lyrist | Hastener | 30 | X:632694 Y:630939 Z:3048 |
 | Lyrist | Hastener | 30 | X:594458 Y:630308 Z:3008 |
+| Lyrist | Hastener | 30 | X:632694 Y:630939 Z:3048 |
+| Lyrist | Hastener | 30 | X:619553 Y:626247 Z:3045 |
 | Maedry | Vault Banker | 50 | X:615606 Y:619112 Z:3021 |
 | Market Explorer |  | 50 | X:614868 Y:620091 Z:3008 |
 | Market Explorer |  | 50 | X:615036 Y:619990 Z:3008 |
@@ -46,7 +46,11 @@ Zone 225 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Tyrcyn | Merchant, [merchant](../merchants/tyrcyn-aberillan.md) | 50 | X:615900 Y:618924 Z:3021 |
 | Vuryn | Merchant, [merchant](../merchants/vuryn-aberillan.md) | 54 | X:617048 Y:619015 Z:3024 |
 | horse |  | 51 | X:615587 Y:618817 Z:3008 |
-| horse |  | 51 | X:615127 Y:618765 Z:3008 |
 | horse |  | 51 | X:615207 Y:618920 Z:3008 |
+| horse |  | 51 | X:615127 Y:618765 Z:3008 |
 | horse |  | 51 | X:617517 Y:594486 Z:3132 |
 | horse |  | 51 | X:615036 Y:618757 Z:3008 |
+
+## Bindstones
+
+None in this zone.

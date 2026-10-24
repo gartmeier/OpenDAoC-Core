@@ -23,19 +23,23 @@ Zone 234 in region 234, in Hibernia. Positions are global, as `/gloc` gives them
 | NPC | Role | Level | Position |
 |---|---|---|---|
 | Champion |  | 255 | X:542339 Y:550577 Z:8640 |
-| Champion |  | 255 | X:542092 Y:551473 Z:8640 |
 | Champion |  | 255 | X:543116 Y:549318 Z:8640 |
 | Champion |  | 255 | X:542574 Y:550091 Z:8640 |
+| Champion |  | 255 | X:542092 Y:551473 Z:8640 |
 | Elven Summoner |  | 255 | X:542555 Y:550364 Z:8640 |
 | Hastener |  | 255 | X:542479 Y:550041 Z:8640 |
 | Master Eldritch |  | 255 | X:542447 Y:550036 Z:8643 |
-| Master Eldritch |  | 255 | X:542224 Y:550521 Z:8643 |
 | Master Eldritch |  | 255 | X:542054 Y:548600 Z:8643 |
+| Master Eldritch |  | 255 | X:542224 Y:550521 Z:8643 |
 | Master Eldritch |  | 255 | X:540872 Y:551131 Z:8643 |
-| Master Nightshade |  | 255 | X:542803 Y:549767 Z:8640 |
 | Master Nightshade |  | 255 | X:542296 Y:550993 Z:8640 |
+| Master Nightshade |  | 255 | X:542803 Y:549767 Z:8640 |
 | Master Ranger |  | 255 | X:541008 Y:548156 Z:8643 |
-| Master Ranger |  | 255 | X:539854 Y:550623 Z:8643 |
-| Master Ranger |  | 255 | X:541920 Y:551589 Z:8643 |
 | Master Ranger |  | 255 | X:543078 Y:549107 Z:8643 |
+| Master Ranger |  | 255 | X:541920 Y:551589 Z:8643 |
+| Master Ranger |  | 255 | X:539854 Y:550623 Z:8643 |
 | Scryer Idora |  | 50 | X:558081 Y:573988 Z:8640 |
+
+## Bindstones
+
+None in this zone.

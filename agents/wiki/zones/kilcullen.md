@@ -28,8 +28,8 @@ Zone 218 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Jeniver | Weaponsmiths Master | 65 | X:620163 Y:560452 Z:3053 |
 | Kohar | Stable Master, [merchant](../merchants/kohar-kilcullen.md) | 50 | X:618730 Y:561412 Z:3032 |
 | Lyrist | Hastener | 30 | X:603221 Y:566553 Z:3264 |
-| Lyrist | Hastener | 30 | X:612688 Y:561782 Z:3128 |
 | Lyrist | Hastener | 30 | X:621012 Y:561296 Z:3032 |
+| Lyrist | Hastener | 30 | X:612688 Y:561782 Z:3128 |
 | Maher | Vault Banker | 50 | X:619087 Y:560950 Z:3047 |
 | Maola | Vault Banker | 51 | X:619130 Y:561848 Z:3047 |
 | Market Explorer |  | 50 | X:618534 Y:561596 Z:3032 |
@@ -41,3 +41,7 @@ Zone 218 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Yrudoc | Fletchers Master | 65 | X:620039 Y:560455 Z:3053 |
 | horse |  | 51 | X:620709 Y:561905 Z:3048 |
 | horse |  | 51 | X:620467 Y:561899 Z:3032 |
+
+## Bindstones
+
+None in this zone.

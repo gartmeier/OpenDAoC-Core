@@ -13,8 +13,8 @@ Zone 273 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 |---|---|---|---|
 | Addirgo | Fletchers Master | 72 | X:494440 Y:685875 Z:2982 |
 | Alchemist apprentice | Merchant, [merchant](../merchants/alchemist-apprentice-moycullen.md) | 50 | X:495142 Y:686512 Z:2972 |
-| Apprentice Taxidermist |  | 38 | X:495106 Y:686961 Z:2960 |
 | Apprentice Taxidermist |  | 39 | X:494646 Y:686100 Z:2983 |
+| Apprentice Taxidermist |  | 38 | X:495106 Y:686961 Z:2960 |
 | Caregh |  | 31 | X:494216 Y:686731 Z:2991 |
 | Coremora | Merchant | 50 | X:495097 Y:687066 Z:2960 |
 | Daelodin | Vault Banker | 50 | X:493511 Y:687252 Z:2975 |
@@ -45,3 +45,7 @@ Zone 273 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | horse |  | 51 | X:494862 Y:687332 Z:2960 |
 | horse |  | 51 | X:495567 Y:687076 Z:2960 |
 | horse |  | 51 | X:494701 Y:687329 Z:2960 |
+
+## Bindstones
+
+None in this zone.

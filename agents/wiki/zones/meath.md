@@ -30,11 +30,11 @@ Zone 213 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Jeriradia | Weaponsmiths Master | 69 | X:563022 Y:560363 Z:3008 |
 | Kineth | Consignment Banker | 52 | X:563888 Y:560206 Z:3021 |
 | Lyrist | Hastener | 30 | X:557136 Y:528063 Z:3017 |
-| Lyrist | Hastener | 32 | X:564309 Y:559610 Z:3008 |
 | Lyrist | Hastener | 30 | X:560065 Y:553372 Z:3008 |
+| Lyrist | Hastener | 32 | X:564309 Y:559610 Z:3008 |
 | Market Explorer |  | 50 | X:564690 Y:559644 Z:3008 |
-| Market Explorer |  | 50 | X:555118 Y:526103 Z:3012 |
 | Market Explorer |  | 50 | X:554930 Y:526613 Z:3018 |
+| Market Explorer |  | 50 | X:555118 Y:526103 Z:3012 |
 | Miriella | Vault Banker | 50 | X:563816 Y:559310 Z:3021 |
 | Molloy | Vault Banker | 50 | X:562887 Y:560592 Z:3023 |
 | Ormor | Armorsmiths Master | 70 | X:562839 Y:559285 Z:3025 |
@@ -48,3 +48,7 @@ Zone 213 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | horse |  | 51 | X:563815 Y:560663 Z:3008 |
 | horse |  | 51 | X:564527 Y:560749 Z:3008 |
 | horse |  | 51 | X:564045 Y:560667 Z:3008 |
+
+## Bindstones
+
+None in this zone.

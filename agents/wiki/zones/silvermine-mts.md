@@ -42,7 +42,7 @@ Zone 201 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | deamhan creig | 17–18 | 15 | X:365888 Y:605156 Z:7634; X:366859 Y:605823 Z:7057; X:368038 Y:604790 Z:6249; X:368280 Y:606003 Z:7167; X:369160 Y:605980 Z:7378; and 10 more |
 | Ciandra | 18 | 1 | X:334279 Y:576438 Z:5233 |
 | Sapper | 18 | 1 | X:340896 Y:603473 Z:6840 |
-| fishing bear | 18–19 | 12 | X:354580 Y:577023 Z:4627; X:354679 Y:575491 Z:4672; X:355452 Y:576268 Z:4672; X:355632 Y:576689 Z:4672; X:356504 Y:576397 Z:4672; and 7 more |
+| fishing bear | 18–20 | 12 | X:354580 Y:577023 Z:4627; X:354679 Y:575491 Z:4672; X:355452 Y:576268 Z:4672; X:355632 Y:576689 Z:4672; X:356504 Y:576397 Z:4672; and 7 more |
 | hill hound | 18–20 | 24 | X:357509 Y:596274 Z:5934; X:359135 Y:598877 Z:5638; X:362783 Y:590629 Z:7541; X:366948 Y:581540 Z:7288; X:370173 Y:578419 Z:6792; and 19 more |
 | rock sheerie | 18–21 | 9 | X:361582 Y:585323 Z:5976; X:362121 Y:583491 Z:6209; X:362392 Y:583968 Z:6542; X:362841 Y:584286 Z:6907; X:363174 Y:583045 Z:6469; and 4 more |
 | stone sheerie | 19–22 | 27 | X:357084 Y:592984 Z:4932; X:357726 Y:593268 Z:5278; X:359395 Y:590229 Z:5165; X:362360 Y:581503 Z:4818; X:366649 Y:579427 Z:6206; and 22 more |
@@ -113,10 +113,10 @@ Zone 201 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Glurcynia | Forester Trainer | 50 | X:340819 Y:593647 Z:5464 |
 | Gormghlaith |  | 20 | X:341224 Y:593868 Z:5464 |
 | Gralon | Healer | 39 | X:341833 Y:592161 Z:5473 |
-| Guardian |  | 44 | X:351249 Y:556051 Z:5128 |
-| Guardian |  | 42 | X:349650 Y:552024 Z:5125 |
+| Guardian |  | 43 | X:351249 Y:556051 Z:5128 |
+| Guardian |  | 44 | X:349650 Y:552024 Z:5125 |
 | Guardian |  | 52 | X:328070 Y:603862 Z:5112 |
-| Guardian |  | 44 | X:350692 Y:552750 Z:5112 |
+| Guardian |  | 40 | X:350692 Y:552750 Z:5112 |
 | Guardian |  | 40 | X:328241 Y:603966 Z:5112 |
 | Iain | Armor Merchant, [merchant](../merchants/iain-silvermine-mts.md) | 35 | X:341789 Y:591831 Z:5473 |
 | Iaine | Weapon Merchant, [merchant](../merchants/iaine-silvermine-mts.md) | 38 | X:351921 Y:552929 Z:5088 |
@@ -148,15 +148,15 @@ Zone 201 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Roise | Armor Merchant, [merchant](../merchants/roise-silvermine-mts.md) | 38 | X:350912 Y:552561 Z:5127 |
 | Seana | Weapon Merchant, [merchant](../merchants/seana-silvermine-mts.md) | 35 | X:352313 Y:554039 Z:5094 |
 | Sentinel |  | 52 | X:342918 Y:592582 Z:5594 |
-| Sentinel |  | 54 | X:343176 Y:592410 Z:5456 |
-| Sentinel |  | 50 | X:348436 Y:553063 Z:5077 |
-| Sentinel |  | 50 | X:352892 Y:552424 Z:5080 |
+| Sentinel |  | 54 | X:348436 Y:553063 Z:5077 |
+| Sentinel |  | 52 | X:343176 Y:592410 Z:5456 |
+| Sentinel |  | 52 | X:352892 Y:552424 Z:5080 |
+| Sentinel |  | 50 | X:341800 Y:590884 Z:5601 |
 | Sentinel |  | 52 | X:340117 Y:572826 Z:4953 |
-| Sentinel |  | 54 | X:341800 Y:590884 Z:5601 |
 | Sentinel |  | 52 | X:350381 Y:551545 Z:5118 |
 | Sentinel |  | 52 | X:352004 Y:554470 Z:5103 |
-| Sentinel |  | 50 | X:343117 Y:591486 Z:5456 |
-| Sentinel |  | 50 | X:342508 Y:594818 Z:5448 |
+| Sentinel |  | 54 | X:343117 Y:591486 Z:5456 |
+| Sentinel |  | 54 | X:342508 Y:594818 Z:5448 |
 | Sentinel Beacan |  | 55 | X:342946 Y:592777 Z:5456 |
 | Sentinel Doireann |  | 50 | X:340057 Y:573142 Z:4938 |
 | Sentinel Eimile |  | 50 | X:352350 Y:553241 Z:5088 |
@@ -174,3 +174,8 @@ Zone 201 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Ysbail | Weapon Merchant, [merchant](../merchants/ysbail-silvermine-mts.md) | 37 | X:352085 Y:552559 Z:5105 |
 | horse |  | 51 | X:342242 Y:593221 Z:5456 |
 | horse |  | 51 | X:350380 Y:552446 Z:5114 |
+
+## Bindstones
+
+- X:343396 Y:591429 Z:5456
+- X:351830 Y:554515 Z:5109

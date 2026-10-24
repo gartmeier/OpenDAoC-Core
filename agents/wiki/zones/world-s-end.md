@@ -28,15 +28,15 @@ Zone 185 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | skelk | 54 | 16 | X:348709 Y:243671 Z:5497; X:351342 Y:242354 Z:3706; X:353764 Y:239337 Z:3631; X:358504 Y:239636 Z:3632; X:362910 Y:239447 Z:3517; and 11 more |
 | treant antico | 55–59 | 10 | X:378178 Y:249314 Z:3833; X:378490 Y:248134 Z:3585; X:378735 Y:248002 Z:3598; X:379465 Y:248744 Z:3593; X:379880 Y:248615 Z:3553; and 5 more |
 | ancient treant | 56–66 | 32 | X:370373 Y:238113 Z:3627; X:374415 Y:246102 Z:4817; X:377739 Y:241174 Z:3529; X:381578 Y:237337 Z:3424; X:384575 Y:255538 Z:4018; and 27 more |
-| arboreal ochtapas | 57–64 | 15 | X:392436 Y:246445 Z:4361; X:398021 Y:257234 Z:4639; X:400321 Y:254953 Z:4226; X:400902 Y:257723 Z:4119; X:402901 Y:258542 Z:3805; and 10 more |
+| arboreal ochtapas | 57–65 | 15 | X:392436 Y:246445 Z:4361; X:398021 Y:257234 Z:4639; X:400321 Y:254953 Z:4226; X:400902 Y:257723 Z:4119; X:402901 Y:258542 Z:3805; and 10 more |
+| arboreal octonid | 57–64 | 9 | X:393619 Y:238885 Z:4471; X:397020 Y:238256 Z:4568; X:398474 Y:240741 Z:4203; X:399744 Y:240924 Z:4260; X:400363 Y:242765 Z:4139; and 4 more |
 | Archilus | 58 | 1 | X:394935 Y:269327 Z:3512 |
-| arboreal octonid | 58–62 | 9 | X:393619 Y:238885 Z:4471; X:397020 Y:238256 Z:4568; X:398474 Y:240741 Z:4203; X:399744 Y:240924 Z:4260; X:400363 Y:242765 Z:4139; and 4 more |
 | rencan beast | 59–61 | 31 | X:366497 Y:243599 Z:5080; X:368213 Y:242456 Z:5363; X:375672 Y:253360 Z:5128; X:395721 Y:253666 Z:4604; X:397214 Y:253687 Z:4333; and 26 more |
 | Balere | 65 | 1 | X:387625 Y:239667 Z:4764 |
 | Elro the Ancient | 65 | 1 | X:353016 Y:260457 Z:4908 |
 | Kontar the Corrupt | 65 | 1 | X:367892 Y:270043 Z:3416 |
 | elder octonid | 65 | 12 | X:384220 Y:242924 Z:3272; X:386030 Y:243565 Z:4503; X:387188 Y:241010 Z:4590; X:389395 Y:237696 Z:4460; X:392072 Y:260005 Z:5685; and 7 more |
-| Zytka | 68 | 1 | X:387356 Y:266838 Z:3416 |
+| Zytka | 69 | 1 | X:387356 Y:266838 Z:3416 |
 | Mollunero | 75 | 1 | X:381822 Y:268541 Z:3403 |
 
 ## NPCs
@@ -49,3 +49,7 @@ Zone 185 in region 181, in Hibernia. Positions are global, as `/gloc` gives them
 | Krrikk | Armor Merchant, [merchant](../merchants/krrikk-world-s-end.md) | 50 | X:367150 Y:262654 Z:3472 |
 | Krrzk | Dye Merchant, [merchant](../merchants/krrzk-world-s-end.md) | 40 | X:367100 Y:261631 Z:3472 |
 | Xizxx | Weapon Merchant, [merchant](../merchants/xizxx-world-s-end.md) | 44 | X:368187 Y:262603 Z:3472 |
+
+## Bindstones
+
+None in this zone.

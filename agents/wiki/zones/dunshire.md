@@ -43,3 +43,7 @@ Zone 215 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Yirbryn |  | 60 | X:494538 Y:556129 Z:2960 |
 | horse |  | 51 | X:494701 Y:556257 Z:2960 |
 | horse |  | 51 | X:494862 Y:556260 Z:2960 |
+
+## Bindstones
+
+None in this zone.

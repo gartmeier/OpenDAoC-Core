@@ -11,7 +11,7 @@ Zone 224 in region 224, in Hibernia. Positions are global, as `/gloc` gives them
 | lair worm | 31–35 | 47 | X:27533 Y:32318 Z:13782; X:28443 Y:32082 Z:13946; X:29749 Y:34115 Z:12732; X:32737 Y:30324 Z:14731; X:34300 Y:30776 Z:14731; and 42 more |
 | ursine thrall | 33–36 | 23 | X:28636 Y:32221 Z:16119; X:31385 Y:33621 Z:13964; X:31825 Y:33227 Z:13964; X:32036 Y:32306 Z:13933; X:34851 Y:27072 Z:14789; and 18 more |
 | Scurry | 34 | 1 | X:32901 Y:29518 Z:14736 |
-| rock golem | 35–36 | 6 | X:31071 Y:32623 Z:14487; X:32669 Y:32626 Z:14466; X:33161 Y:31977 Z:14482; X:33163 Y:32295 Z:14482; X:33403 Y:32286 Z:14479; and 1 more |
+| rock golem | 35–37 | 6 | X:31071 Y:32623 Z:14487; X:32669 Y:32626 Z:14466; X:33161 Y:31977 Z:14482; X:33163 Y:32295 Z:14482; X:33403 Y:32286 Z:14479; and 1 more |
 | Helminth | 36 | 1 | X:28905 Y:34697 Z:12573 |
 | troglodyte | 36–37 | 37 | X:27376 Y:32355 Z:13823; X:28312 Y:31670 Z:14050; X:29250 Y:33196 Z:12729; X:29841 Y:33802 Z:16398; X:30478 Y:34570 Z:16397; and 32 more |
 | ursine dweller | 36–40 | 15 | X:30173 Y:34356 Z:14665; X:30828 Y:35410 Z:14208; X:31442 Y:33912 Z:13967; X:32210 Y:32777 Z:13973; X:32940 Y:31633 Z:14438; and 10 more |
@@ -23,8 +23,8 @@ Zone 224 in region 224, in Hibernia. Positions are global, as `/gloc` gives them
 | earth golem | 39–42 | 48 | X:29634 Y:31930 Z:15498; X:33221 Y:29394 Z:15297; X:33813 Y:27850 Z:15550; X:34759 Y:29646 Z:15301; X:35108 Y:29629 Z:15301; and 43 more |
 | ursine sorcerer | 39 | 6 | X:29061 Y:33405 Z:14684; X:29944 Y:31546 Z:16394; X:30337 Y:32439 Z:16361; X:31057 Y:31596 Z:14256; X:31700 Y:35841 Z:14246; and 1 more |
 | Driff Tinel | 40 | 1 | X:34682 Y:26687 Z:14782 |
+| merucha | 40–43 | 5 | X:30075 Y:31522 Z:13969; X:30081 Y:31188 Z:13971; X:30215 Y:31343 Z:13963; X:30327 Y:31181 Z:13968; X:30330 Y:31520 Z:13967 |
 | rocky golem | 40–42 | 9 | X:30114 Y:32643 Z:13980; X:30125 Y:32643 Z:13021; X:30884 Y:32134 Z:14492; X:34171 Y:30377 Z:14748; X:34173 Y:30381 Z:15310; and 4 more |
-| merucha | 41–45 | 5 | X:30075 Y:31522 Z:13969; X:30081 Y:31188 Z:13971; X:30215 Y:31343 Z:13963; X:30327 Y:31181 Z:13968; X:30330 Y:31520 Z:13967 |
 | Ceracor | 42 | 1 | X:34178 Y:28247 Z:15548 |
 | Thorg | 42 | 1 | X:29300 Y:34716 Z:14536 |
 | Hursk the Alchemist | 43 | 1 | X:30561 Y:34189 Z:12747 |
@@ -38,3 +38,7 @@ Zone 224 in region 224, in Hibernia. Positions are global, as `/gloc` gives them
 | NPC | Role | Level | Position |
 |---|---|---|---|
 | Hervelina the hermit |  | 34 | X:32304 Y:32128 Z:16378 |
+
+## Bindstones
+
+None in this zone.

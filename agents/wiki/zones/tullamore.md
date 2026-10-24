@@ -27,11 +27,11 @@ Zone 272 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Hibernia Decorator | Merchant, [merchant](../merchants/hibernia-decorator-tullamore.md) | 40 | X:560357 Y:692871 Z:3036 |
 | Laemyr | Merchant, [merchant](../merchants/laemyr-tullamore.md) | 53 | X:559517 Y:692409 Z:3059 |
 | Ledry | Vault Banker | 50 | X:560561 Y:692022 Z:3047 |
-| Lyrist | Hastener | 30 | X:558636 Y:692368 Z:3033 |
 | Lyrist | Hastener | 30 | X:535689 Y:710585 Z:3212 |
 | Lyrist | Hastener | 32 | X:576427 Y:697625 Z:3264 |
-| Lyrist | Hastener | 31 | X:585584 Y:667565 Z:3008 |
 | Lyrist | Hastener | 30 | X:566960 Y:692854 Z:3132 |
+| Lyrist | Hastener | 31 | X:585584 Y:667565 Z:3008 |
+| Lyrist | Hastener | 30 | X:558636 Y:692368 Z:3033 |
 | Mabryn | Weaponsmiths Master | 65 | X:559580 Y:691711 Z:3053 |
 | Market Explorer |  | 50 | X:561170 Y:692656 Z:3032 |
 | Mawn | Vault Banker | 50 | X:560283 Y:692623 Z:3047 |
@@ -47,3 +47,7 @@ Zone 272 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Viran |  | 50 | X:560711 Y:692541 Z:3034 |
 | horse |  | 51 | X:558989 Y:691667 Z:3048 |
 | horse |  | 51 | X:559202 Y:691656 Z:3033 |
+
+## Bindstones
+
+None in this zone.

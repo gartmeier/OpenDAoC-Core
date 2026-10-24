@@ -29,9 +29,9 @@ Zone 274 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Lyrist | Hastener | 32 | X:621487 Y:683401 Z:3128 |
 | Lyrist | Hastener | 30 | X:593282 Y:667971 Z:3008 |
 | Lyrist | Hastener | 31 | X:614791 Y:667547 Z:3144 |
-| Lyrist | Hastener | 30 | X:619358 Y:666617 Z:3528 |
-| Lyrist | Hastener | 30 | X:612688 Y:692854 Z:3128 |
 | Lyrist | Hastener | 30 | X:630190 Y:686223 Z:3048 |
+| Lyrist | Hastener | 30 | X:612688 Y:692854 Z:3128 |
+| Lyrist | Hastener | 30 | X:619358 Y:666617 Z:3528 |
 | Market Explorer |  | 50 | X:618519 Y:692641 Z:3032 |
 | Moyrek | Fletchers Master | 65 | X:620039 Y:691527 Z:3053 |
 | Noramon | Vault Banker | 50 | X:619194 Y:692989 Z:3047 |
@@ -49,3 +49,7 @@ Zone 274 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Xaher | Vault Banker | 50 | X:619087 Y:692022 Z:3047 |
 | horse |  | 51 | X:620467 Y:692971 Z:3032 |
 | horse |  | 51 | X:620709 Y:692977 Z:3048 |
+
+## Bindstones
+
+None in this zone.

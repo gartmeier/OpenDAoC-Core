@@ -25,9 +25,9 @@ Zone 217 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Hibernia Decorator | Merchant, [merchant](../merchants/hibernia-decorator-torrylin.md) | 40 | X:565092 Y:618960 Z:3023 |
 | Hiolair | Vault Banker | 52 | X:565454 Y:618399 Z:3023 |
 | Legwyn | Merchant, [merchant](../merchants/legwyn-torrylin.md) | 50 | X:567360 Y:619671 Z:3004 |
-| Lyrist | Hastener | 30 | X:566972 Y:619674 Z:3008 |
-| Lyrist | Hastener | 30 | X:572424 Y:632358 Z:3144 |
 | Lyrist | Hastener | 30 | X:578786 Y:641875 Z:3041 |
+| Lyrist | Hastener | 30 | X:572424 Y:632358 Z:3144 |
+| Lyrist | Hastener | 30 | X:566972 Y:619674 Z:3008 |
 | Macelroy | Vault Banker | 50 | X:565549 Y:618457 Z:3023 |
 | Makenna | Stable Master, [merchant](../merchants/makenna-torrylin.md) | 54 | X:566700 Y:620353 Z:3008 |
 | Malvina | Vault Banker | 50 | X:564986 Y:619094 Z:3023 |
@@ -42,6 +42,10 @@ Zone 217 in region 202, in Hibernia. Positions are global, as `/gloc` gives them
 | Vevila | Vault Banker | 50 | X:564936 Y:619148 Z:3023 |
 | Woerith | Fletchers Master | 65 | X:566551 Y:618703 Z:3029 |
 | Zericien | Tailors Master | 65 | X:566163 Y:618320 Z:3026 |
-| horse |  | 51 | X:565902 Y:620035 Z:3008 |
 | horse |  | 51 | X:566078 Y:620189 Z:3008 |
 | horse |  | 51 | X:566626 Y:620345 Z:3008 |
+| horse |  | 51 | X:565902 Y:620035 Z:3008 |
+
+## Bindstones
+
+None in this zone.

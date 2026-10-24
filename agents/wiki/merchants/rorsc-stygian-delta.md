@@ -1,6 +1,6 @@
 # Rorsc
 
-Potion Merchant, a merchant in [Stygian Delta](../zones/stygian-delta-81.md), at X:330506 Y:451994 Z:8112. The index is what `buy` takes.
+Potion Merchant, a merchant in [Stygian Delta](../zones/stygian-delta.md), at X:330506 Y:451994 Z:8112. The index is what `buy` takes.
 
 ## Page 1
 

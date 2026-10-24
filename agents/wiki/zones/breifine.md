@@ -27,14 +27,14 @@ Zone 212 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | fomorian gehk | 48 | 110 | X:389053 Y:361164 Z:4182; X:397846 Y:383009 Z:3966; X:421408 Y:373144 Z:3419; X:426900 Y:386377 Z:4328; X:439787 Y:411104 Z:4560; and 105 more |
 | fomorian cyclen | 49 | 47 | X:388619 Y:400624 Z:3857; X:390966 Y:400543 Z:3544; X:430113 Y:413032 Z:4585; X:431618 Y:413841 Z:4986; X:436323 Y:377523 Z:3485; and 42 more |
 | fomorian wolfbeast | 49–50 | 41 | X:388538 Y:401269 Z:3993; X:390893 Y:403138 Z:3625; X:394457 Y:358549 Z:4941; X:425129 Y:375257 Z:3900; X:426278 Y:376095 Z:3833; and 36 more |
+| far dorocha | 50–55 | 11 | X:412682 Y:361766 Z:2888; X:413143 Y:362632 Z:2888; X:413546 Y:361621 Z:2913; X:414172 Y:362151 Z:2888; X:414842 Y:362115 Z:2888; and 6 more |
 | spectral manslayer | 50–53 | 47 | X:418424 Y:358569 Z:4818; X:441904 Y:400747 Z:4967; X:442896 Y:399762 Z:5284; X:443897 Y:401367 Z:5507; X:444615 Y:397856 Z:5416; and 42 more |
-| far dorocha | 51–55 | 11 | X:412682 Y:361766 Z:2888; X:413143 Y:362632 Z:2888; X:413546 Y:361621 Z:2913; X:414172 Y:362151 Z:2888; X:414842 Y:362115 Z:2888; and 6 more |
 | Necht | 55 | 1 | X:442649 Y:400221 Z:5196 |
 | cruach demon | 58 | 21 | X:404708 Y:384866 Z:2600; X:405692 Y:385716 Z:2600; X:406436 Y:383112 Z:2600; X:406962 Y:382972 Z:2600; X:407573 Y:384876 Z:2600; and 16 more |
 | finliath | 58–60 | 28 | X:437277 Y:381568 Z:3684; X:437890 Y:382800 Z:3745; X:438597 Y:381755 Z:3771; X:439188 Y:382498 Z:3791; X:439797 Y:381006 Z:3810; and 23 more |
 | Idol of Crom Cruiach | 60 | 1 | X:406550 Y:384189 Z:2600 |
 | fomorian gleener | 60 | 29 | X:444350 Y:377936 Z:6188; X:445459 Y:376857 Z:6350; X:446399 Y:371875 Z:6353; X:447155 Y:371403 Z:6448; X:447972 Y:371010 Z:6745; and 24 more |
-| grand pooka | 61 | 1 | X:431670 Y:381484 Z:2328 |
+| grand pooka | 62 | 1 | X:431670 Y:381484 Z:2328 |
 | Conann | 63 | 1 | X:446755 Y:370156 Z:6430 |
 | Notned | 64 | 1 | X:438871 Y:381802 Z:3771 |
 | Ror | 64 | 1 | X:438461 Y:382357 Z:3771 |
@@ -56,9 +56,9 @@ Zone 212 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Champion Commander |  | 52 | X:430804 Y:403599 Z:4952 |
 | Champion Commander |  | 59 | X:435832 Y:368487 Z:4037 |
 | Champion Commander |  | 52 | X:397465 Y:399355 Z:4328 |
-| Chieftain Bolg |  | 70 | X:402928 Y:366183 Z:6008 |
-| Chieftain Da Behnn |  | 63 | X:433289 Y:403584 Z:6168 |
-| Chieftess Crimthain |  | 70 | X:438339 Y:368001 Z:5306 |
+| Chieftain Crimthain |  | 70 | X:438339 Y:368001 Z:5306 |
+| Chieftess Bolg |  | 70 | X:402928 Y:366183 Z:6008 |
+| Chieftess Da Behnn |  | 63 | X:433289 Y:403584 Z:6168 |
 | Chieftess Ged |  | 63 | X:396405 Y:399742 Z:5544 |
 | Guardian |  | 59 | X:435953 Y:368381 Z:4082 |
 | Guardian |  | 52 | X:398696 Y:399627 Z:4328 |
@@ -66,66 +66,66 @@ Zone 212 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Guardian |  | 59 | X:438048 Y:368013 Z:4503 |
 | Guardian |  | 52 | X:397263 Y:399700 Z:4328 |
 | Guardian |  | 59 | X:437079 Y:368077 Z:4088 |
-| Guardian |  | 59 | X:438323 Y:367715 Z:4503 |
-| Guardian |  | 52 | X:430927 Y:404155 Z:4952 |
 | Guardian |  | 52 | X:397663 Y:399705 Z:4328 |
+| Guardian |  | 52 | X:430927 Y:404155 Z:4952 |
+| Guardian |  | 59 | X:438323 Y:367715 Z:4503 |
 | Guardian |  | 52 | X:433187 Y:403754 Z:6168 |
 | Guardian |  | 59 | X:435970 Y:367981 Z:4088 |
 | Guardian |  | 52 | X:430944 Y:403933 Z:4952 |
 | Guardian |  | 52 | X:398631 Y:399264 Z:4328 |
 | Guardian |  | 59 | X:437621 Y:367995 Z:4136 |
 | Guardian |  | 59 | X:438201 Y:368103 Z:5304 |
+| Guardian |  | 59 | X:403150 Y:366096 Z:5208 |
 | Guardian |  | 52 | X:396307 Y:399538 Z:4744 |
 | Guardian |  | 59 | X:402623 Y:366136 Z:5208 |
-| Guardian |  | 59 | X:403150 Y:366096 Z:5208 |
 | Guardian |  | 52 | X:396541 Y:399860 Z:5544 |
-| Guardian |  | 52 | X:396248 Y:399599 Z:5544 |
+| Guardian |  | 59 | X:402775 Y:366087 Z:6008 |
 | Guardian |  | 52 | X:397719 Y:399121 Z:4328 |
 | Guardian |  | 59 | X:437032 Y:368628 Z:4088 |
-| Guardian |  | 59 | X:402775 Y:366087 Z:6008 |
-| Guardian |  | 52 | X:433307 Y:403590 Z:5000 |
-| Guardian |  | 59 | X:402964 Y:367057 Z:4792 |
+| Guardian |  | 52 | X:396248 Y:399599 Z:5544 |
 | Guardian |  | 59 | X:438368 Y:368196 Z:4503 |
-| Guardian |  | 59 | X:403037 Y:366057 Z:6008 |
-| Guardian |  | 59 | X:402944 Y:366173 Z:4840 |
+| Guardian |  | 59 | X:402964 Y:367057 Z:4792 |
 | Guardian |  | 59 | X:403104 Y:366309 Z:6008 |
+| Guardian |  | 52 | X:433307 Y:403590 Z:5000 |
+| Guardian |  | 59 | X:403037 Y:366057 Z:6008 |
 | Guardian |  | 52 | X:396501 Y:399556 Z:5544 |
 | Guardian |  | 59 | X:403073 Y:368471 Z:4792 |
+| Guardian |  | 59 | X:402944 Y:366173 Z:4840 |
+| Guardian |  | 52 | X:433473 Y:403711 Z:6168 |
 | Guardian |  | 59 | X:437476 Y:368654 Z:4088 |
 | Guardian |  | 59 | X:403543 Y:367496 Z:4792 |
-| Guardian |  | 52 | X:433473 Y:403711 Z:6168 |
-| Guardian |  | 52 | X:433346 Y:403260 Z:5368 |
 | Guardian |  | 52 | X:397256 Y:399085 Z:4328 |
+| Guardian |  | 52 | X:433021 Y:403576 Z:5368 |
+| Guardian |  | 52 | X:433346 Y:403260 Z:5368 |
+| Guardian |  | 59 | X:403315 Y:368470 Z:4792 |
 | Guardian |  | 52 | X:396355 Y:400071 Z:4744 |
 | Guardian |  | 59 | X:402811 Y:366338 Z:6008 |
-| Guardian |  | 52 | X:433021 Y:403576 Z:5368 |
-| Guardian |  | 59 | X:403315 Y:368470 Z:4792 |
-| Guardian |  | 52 | X:398625 Y:399716 Z:4328 |
 | Guardian |  | 52 | X:398704 Y:399349 Z:4328 |
+| Guardian |  | 52 | X:398625 Y:399716 Z:4328 |
 | Guardian |  | 52 | X:398700 Y:399193 Z:4328 |
-| Guardian |  | 52 | X:433397 Y:403800 Z:5368 |
 | Guardian |  | 59 | X:402939 Y:366465 Z:5208 |
-| Guardian |  | 59 | X:402941 Y:368359 Z:4792 |
+| Guardian |  | 52 | X:433397 Y:403800 Z:5368 |
 | Guardian |  | 59 | X:438217 Y:367887 Z:5304 |
 | Guardian |  | 59 | X:402950 Y:367478 Z:4792 |
+| Guardian |  | 59 | X:402941 Y:368359 Z:4792 |
 | Guardian |  | 59 | X:403553 Y:367031 Z:4792 |
+| Guardian |  | 52 | X:433144 Y:403480 Z:6168 |
 | Guardian |  | 59 | X:436038 Y:368047 Z:4088 |
 | Guardian |  | 59 | X:438308 Y:367994 Z:4135 |
-| Guardian |  | 52 | X:433144 Y:403480 Z:6168 |
 | Guardian |  | 59 | X:435947 Y:368563 Z:4080 |
 | Guardian |  | 52 | X:398698 Y:399783 Z:4328 |
 | Guardian |  | 52 | X:432408 Y:403591 Z:4952 |
 | Guardian |  | 59 | X:436086 Y:368487 Z:4088 |
-| Guardian |  | 59 | X:402866 Y:368491 Z:4792 |
 | Guardian |  | 59 | X:435971 Y:368113 Z:4088 |
 | Guardian |  | 59 | X:438481 Y:367887 Z:5304 |
+| Guardian |  | 59 | X:402866 Y:368491 Z:4792 |
 | Guardian |  | 59 | X:438486 Y:368106 Z:5304 |
-| Guardian |  | 52 | X:432017 Y:404230 Z:4952 |
-| Guardian |  | 59 | X:403526 Y:368482 Z:4792 |
 | Guardian |  | 52 | X:430963 Y:403525 Z:4952 |
 | Guardian |  | 52 | X:396679 Y:399751 Z:4744 |
-| Guardian |  | 52 | X:396272 Y:399901 Z:5544 |
+| Guardian |  | 59 | X:403526 Y:368482 Z:4792 |
 | Guardian |  | 59 | X:403429 Y:368358 Z:4792 |
+| Guardian |  | 52 | X:396272 Y:399901 Z:5544 |
+| Guardian |  | 52 | X:432017 Y:404230 Z:4952 |
 | Hastener |  | 100 | X:386763 Y:377253 Z:3608 |
 | Hastener |  | 1 | X:398554 Y:399651 Z:4328 |
 | Hastener |  | 1 | X:436117 Y:368104 Z:4088 |
@@ -138,8 +138,8 @@ Zone 212 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Ranger |  | 52 | X:433395 Y:402525 Z:5368 |
 | Ranger |  | 52 | X:431412 Y:402537 Z:5368 |
 | Ranger |  | 52 | X:398400 Y:400002 Z:4752 |
-| Ranger |  | 52 | X:398345 Y:400367 Z:4784 |
 | Ranger |  | 59 | X:403201 Y:368216 Z:5208 |
+| Ranger |  | 52 | X:398345 Y:400367 Z:4784 |
 | Ranger |  | 59 | X:436212 Y:368254 Z:4520 |
 | Ranger |  | 59 | X:437097 Y:369177 Z:4512 |
 | Ranger |  | 52 | X:397094 Y:400921 Z:4752 |
@@ -158,7 +158,11 @@ Zone 212 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Ranger |  | 52 | X:432220 Y:404754 Z:5376 |
 | Ranger |  | 59 | X:403994 Y:368065 Z:5208 |
 | Ranger |  | 52 | X:396722 Y:398632 Z:4784 |
-| Ranger |  | 52 | X:397477 Y:398567 Z:4752 |
 | Ranger |  | 59 | X:436340 Y:368931 Z:4504 |
+| Ranger |  | 52 | X:397477 Y:398567 Z:4752 |
 | Ranger |  | 59 | X:401895 Y:366081 Z:5208 |
 | Ranger |  | 59 | X:404110 Y:367266 Z:5216 |
+
+## Bindstones
+
+None in this zone.

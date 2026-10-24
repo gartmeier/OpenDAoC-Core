@@ -76,29 +76,29 @@ Zone 210 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Guardian |  | 76 | X:400552 Y:465609 Z:3080 |
 | Guardian |  | 59 | X:415139 Y:442467 Z:2888 |
 | Guardian |  | 76 | X:401797 Y:464102 Z:2888 |
-| Guardian |  | 76 | X:400312 Y:465968 Z:2888 |
 | Guardian |  | 59 | X:414502 Y:441678 Z:2888 |
+| Guardian |  | 76 | X:400312 Y:465968 Z:2888 |
 | Guardian |  | 76 | X:401818 Y:464192 Z:2888 |
 | Guardian |  | 76 | X:401284 Y:465094 Z:2888 |
-| Guardian |  | 59 | X:416049 Y:443182 Z:4104 |
 | Guardian |  | 76 | X:401208 Y:465029 Z:2888 |
+| Guardian |  | 59 | X:416049 Y:443182 Z:4104 |
 | Guardian |  | 59 | X:414743 Y:442843 Z:2888 |
 | Guardian |  | 76 | X:400671 Y:465731 Z:3080 |
 | Guardian |  | 59 | X:414037 Y:442106 Z:2888 |
 | Guardian |  | 59 | X:414527 Y:441784 Z:2888 |
-| Guardian |  | 76 | X:402114 Y:464396 Z:2888 |
-| Guardian |  | 59 | X:414169 Y:442120 Z:2888 |
 | Guardian |  | 59 | X:415453 Y:442795 Z:2888 |
+| Guardian |  | 59 | X:414169 Y:442120 Z:2888 |
+| Guardian |  | 76 | X:402114 Y:464396 Z:2888 |
 | Guardian |  | 59 | X:415073 Y:443182 Z:2888 |
 | Guardian |  | 59 | X:415901 Y:443399 Z:4104 |
 | Guardian |  | 76 | X:402092 Y:464485 Z:2888 |
 | Guardian |  | 59 | X:415919 Y:443172 Z:3304 |
 | Guardian |  | 76 | X:400455 Y:465643 Z:3720 |
 | Guardian |  | 76 | X:401903 Y:464212 Z:2888 |
-| Guardian |  | 59 | X:416355 Y:443196 Z:3304 |
 | Guardian |  | 59 | X:414388 Y:441807 Z:2888 |
-| Guardian |  | 59 | X:416099 Y:443358 Z:2936 |
+| Guardian |  | 59 | X:416355 Y:443196 Z:3304 |
 | Guardian |  | 59 | X:416021 Y:443587 Z:3304 |
+| Guardian |  | 59 | X:416099 Y:443358 Z:2936 |
 | Guardian |  | 76 | X:400560 Y:465525 Z:3720 |
 | Hastener |  | 1 | X:414517 Y:441903 Z:2888 |
 | Hastener |  | 1 | X:397762 Y:437106 Z:1792 |
@@ -116,9 +116,13 @@ Zone 210 in region 200, in Hibernia. Positions are global, as `/gloc` gives them
 | Ranger |  | 76 | X:400640 Y:466973 Z:3320 |
 | Ranger |  | 76 | X:400970 Y:464023 Z:3320 |
 | Ranger |  | 59 | X:415519 Y:441290 Z:3304 |
-| Ranger |  | 76 | X:399903 Y:466432 Z:3256 |
 | Ranger |  | 59 | X:415437 Y:444188 Z:3304 |
+| Ranger |  | 76 | X:399903 Y:466432 Z:3256 |
 | Ranger |  | 59 | X:414041 Y:442799 Z:3303 |
 | Ranger |  | 59 | X:416509 Y:442152 Z:3312 |
 | Scathaig Sentinel |  | 66 | X:401953 Y:464351 Z:2888 |
 | nGed Sentinel |  | 66 | X:402193 Y:463725 Z:2854 |
+
+## Bindstones
+
+None in this zone.

@@ -26,3 +26,7 @@ Zone 335 in region 335, in Hibernia. Positions are global, as `/gloc` gives them
 | Llala | Arrow Merchant, [merchant](../merchants/llala-hibernia-event.md) | 35 | X:52226 Y:40604 Z:4672 |
 | Lonrah | Smith | 35 | X:52950 Y:40449 Z:4672 |
 | Riber | Poison Merchant, [merchant](../merchants/riber-hibernia-event.md) | 38 | X:52022 Y:40431 Z:4672 |
+
+## Bindstones
+
+None in this zone.
