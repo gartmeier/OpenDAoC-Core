@@ -22,6 +22,9 @@ namespace DOL.GS.Tests
                 new WikiWare(1, "falcata", 2, 18, 28, "SlashingWeapon", 225),
                 new WikiWare(30, "rawhide jerkin", 2, 4, 0, "Leather", 120),
             ]),
+        ],
+        [
+            new WikiBindArea(295943, 642344, 4848, 750),
         ]);
 
         private static readonly WikiZone SHANNON_ESTUARY = new(203, 200, "Shannon Estuary",
@@ -33,7 +36,7 @@ namespace DOL.GS.Tests
         private static IReadOnlyDictionary<string, string> Pages() => Wiki.Pages("Hibernia", [SHANNON_ESTUARY, LOUGH_DERG]);
 
         [Test]
-        public void ZonePage_ShouldListMobsByName_LowestLevelFirst_ThenOtherNpcs()
+        public void ZonePage_ShouldListMobsByName_LowestLevelFirst_ThenOtherNpcs_ThenBindstones()
         {
             Assert.That(Pages()["zones/lough-derg.md"], Is.EqualTo(
                 """
@@ -55,6 +58,10 @@ namespace DOL.GS.Tests
                 | Allistar | Blademaster Trainer | 50 | X:295500 Y:641500 Z:4848 |
                 | Eira | Blades, [merchant](../merchants/eira-lough-derg.md) | 20 | X:294899 Y:641231 Z:4848 |
 
+                ## Bindstones
+
+                - X:295943 Y:642344 Z:4848
+
                 """.ReplaceLineEndings("\n")));
         }
 
@@ -65,7 +72,7 @@ namespace DOL.GS.Tests
                 """
                 # Hibernia
 
-                The realm's zones, those with the lowest Mobs first. Each zone's page lists its Mobs and other NPCs, and each merchant's page what it sells.
+                The realm's zones, those with the lowest Mobs first. Each zone's page lists its Mobs, other NPCs and Bindstones, and each merchant's page what it sells.
 
                 | Zone | Mob levels | Merchants |
                 |---|---|---|
@@ -111,6 +118,27 @@ namespace DOL.GS.Tests
             string page = Wiki.Pages("Hibernia", [new WikiZone(202, 200, "Shannon Estuary", crabs)])["zones/shannon-estuary.md"];
 
             Assert.That(page, Does.Contain("| sand crab | 1 | 12 | X:290000 Y:640000 Z:4700; X:290200 Y:640000 Z:4700; X:290500 Y:640000 Z:4700; X:290800 Y:640000 Z:4700; X:291100 Y:640000 Z:4700; and 7 more |"));
+        }
+
+        [Test]
+        public void ZonePage_ShouldSaySo_WhenTheZoneHasNoBindstone()
+        {
+            Assert.That(Pages()["zones/shannon-estuary.md"], Does.EndWith("## Bindstones\n\nNone in this zone.\n"));
+        }
+
+        [Test]
+        public void ZonePage_ShouldMergeBindAreasThatOverlap_AndListBindstonesWestToEast()
+        {
+            WikiZone zone = new(202, 200, "Lough Derg", [new WikiNpc("rat", "", 1, true, 7, 8, 9)],
+            [
+                new WikiBindArea(339685, 467146, 5211, 750),
+                new WikiBindArea(313218, 469162, 5200, 750),
+                new WikiBindArea(339702, 467021, 5200, 750),
+            ]);
+
+            string page = Wiki.Pages("Hibernia", [zone])["zones/lough-derg.md"];
+
+            Assert.That(page, Does.EndWith("- X:313218 Y:469162 Z:5200\n- X:339693 Y:467083 Z:5205\n"));
         }
 
         [Test]

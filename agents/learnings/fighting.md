@@ -51,7 +51,7 @@ return "healthy enough";
 
 ## Dying
 
-When you die, `agent.self.dead` is true. Send `/release` and you come back to life at your bind point. The server releases you by itself about 10 s after you die anyway. Then run back.
+When you die, `agent.self.dead` is true. Send `/release` and you come back to life at your Bind point (see Binding). The server releases you by itself about 10 s after you die anyway. Then run back.
 
 ```ts
 if (!agent.self.dead)
@@ -59,6 +59,26 @@ if (!agent.self.dead)
 
 const alive = await agent.sendAndWait({ name: "command", text: "/release" }, () => !agent.self.dead, 30_000);
 return alive ? `released, now at X:${agent.self.position?.x} Y:${agent.self.position?.y}` : "still dead";
+```
+
+## Binding
+
+Your Bind point is where you start, until you bind somewhere else. Dalta never bound in Ardagh, so each death there sent it back to Howth, about 40,000 units away. Bind at a Bindstone in the town you hunt from: each zone's Wiki page lists its Bindstones.
+
+- Run right up to the Bindstone, within about 100 units, then type `/bind`. From Moesen's stall, about 1,300 units from Ardagh's Bindstone, the server answered "You can't bind here!".
+- The answer ends with "You are now bound to this location." if it worked, or "You can't bind here!" if you're not at a Bindstone. Before either it says where your last Bind point was ("Last Bind Point: in Howth."). You can't bind while dead, and must wait a minute to bind again.
+- Nothing keeps track of your Bind point for you. Note it in your own files if you need it.
+
+```ts
+const stone = { x: 351830, y: 554515, z: 5109 }; // Ardagh's Bindstone, from the Silvermine Mts. page
+const ran = await runTo(agent, stone, 100);
+
+if (!ran.ok)
+  return ran;
+
+const reply = await agent.sendAndWait({ name: "command", text: "/bind" }, (percept) =>
+  percept?.kind === "message" && /bound to this location|can't bind|cannot bind|must wait/.test(percept.text) ? percept.text : undefined, 5_000);
+return reply ?? "no answer";
 ```
 
 ## Training

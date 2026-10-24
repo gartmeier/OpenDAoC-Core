@@ -8,8 +8,11 @@ using DOL.Database;
 
 namespace DOL.GS.Agents
 {
-    /// <summary>A zone of the realm, with every NPC that spawns in it.</summary>
-    public sealed record WikiZone(ushort Id, ushort RegionId, string Name, IReadOnlyList<WikiNpc> Npcs);
+    /// <summary>A zone of the realm, with every NPC that spawns in it and the bind areas its Characters can use.</summary>
+    public sealed record WikiZone(ushort Id, ushort RegionId, string Name, IReadOnlyList<WikiNpc> Npcs, IReadOnlyList<WikiBindArea> BindAreas = null);
+
+    /// <summary>Where the server lets a Character bind: anywhere within the radius of the point. Bind areas that overlap are one Bindstone.</summary>
+    public sealed record WikiBindArea(int X, int Y, int Z, int Radius);
 
     /// <summary>
     /// One spawned NPC, where it spawns. A Mob is one a Character can fight. A merchant has wares, and anyone else has none.
@@ -80,10 +83,14 @@ namespace DOL.GS.Agents
         /// The realm's zones as the server has loaded them, each with the NPCs that spawn in it.
         /// Pets and NPCs a client can't target or name are left out, as a Human wouldn't see them. A Mob is an NPC of no realm that isn't peaceful, and not a merchant.
         /// A dungeon region with no realm NPCs in it belongs to no realm, so it's left out.
+        /// Bind areas are read from the database rows the regions load theirs from, and only those of no realm or the realm's own, as only those let its Characters bind.
         /// </summary>
         public static List<WikiZone> FromWorld(eRealm realm)
         {
             List<WikiZone> zones = [];
+            ILookup<int, DbBindPoint> bindAreas = GameServer.Database.SelectAllObjects<DbBindPoint>()
+                .Where(area => area.Realm == 0 || area.Realm == (int) realm)
+                .ToLookup(static area => area.Region);
 
             foreach (Region region in WorldMgr.GetAllRegions())
             {
@@ -116,8 +123,16 @@ namespace DOL.GS.Agents
                     list.Add(new WikiNpc(npc.Name, npc.GuildName ?? "", npc.Level, mob, spawn.X, spawn.Y, spawn.Z, wares));
                 }
 
+                Dictionary<Zone, List<WikiBindArea>> zoneBindAreas = realmZones.ToDictionary(static zone => zone, static _ => new List<WikiBindArea>());
+
+                foreach (DbBindPoint area in bindAreas[region.ID])
+                {
+                    if (region.GetZone(area.X, area.Y) is Zone zone && zoneBindAreas.TryGetValue(zone, out List<WikiBindArea> list))
+                        list.Add(new WikiBindArea(area.X, area.Y, area.Z, area.Radius));
+                }
+
                 foreach ((Zone zone, List<WikiNpc> list) in npcs)
-                    zones.Add(new WikiZone(zone.ID, region.ID, zone.Description, list));
+                    zones.Add(new WikiZone(zone.ID, region.ID, zone.Description, list, zoneBindAreas[zone]));
             }
 
             return zones;
@@ -163,7 +178,7 @@ namespace DOL.GS.Agents
         {
             StringBuilder page = new();
             page.Append($"# {realm}\n\n");
-            page.Append("The realm's zones, those with the lowest Mobs first. Each zone's page lists its Mobs and other NPCs, and each merchant's page what it sells.\n\n");
+            page.Append("The realm's zones, those with the lowest Mobs first. Each zone's page lists its Mobs, other NPCs and Bindstones, and each merchant's page what it sells.\n\n");
             page.Append("| Zone | Mob levels | Merchants |\n|---|---|---|\n");
 
             foreach (WikiZone zone in zones)
@@ -217,7 +232,46 @@ namespace DOL.GS.Agents
                 page.Append($"| {npc.Name} | {role} | {npc.Level} | {At(npc)} |\n");
             }
 
+            page.Append("\n## Bindstones\n\n");
+
+            if (zone.BindAreas is not { Count: > 0 })
+                page.Append("None in this zone.\n");
+            else
+            {
+                foreach ((int x, int y, int z) in Bindstones(zone.BindAreas))
+                    page.Append($"- {At(x, y, z)}\n");
+            }
+
             return page.ToString();
+        }
+
+        // One per Bindstone, west to east. The database may have several bind areas for one; those that overlap, even through others, are one, at their average position.
+        private static IEnumerable<(int X, int Y, int Z)> Bindstones(IEnumerable<WikiBindArea> areas)
+        {
+            List<List<WikiBindArea>> bindstones = [];
+
+            foreach (WikiBindArea area in areas)
+            {
+                List<List<WikiBindArea>> overlapping = bindstones.Where(bindstone => bindstone.Any(other => Overlap(area, other))).ToList();
+                List<WikiBindArea> merged = [area, .. overlapping.SelectMany(static bindstone => bindstone)];
+                bindstones.RemoveAll(overlapping.Contains);
+                bindstones.Add(merged);
+            }
+
+            return bindstones
+                .Select(static bindstone => (X: (int) bindstone.Average(static area => (long) area.X), Y: (int) bindstone.Average(static area => (long) area.Y), Z: (int) bindstone.Average(static area => (long) area.Z)))
+                .OrderBy(static bindstone => bindstone.X)
+                .ThenBy(static bindstone => bindstone.Y);
+
+            // A bind area is a sphere, as the server checks height too.
+            static bool Overlap(WikiBindArea a, WikiBindArea b)
+            {
+                long dx = a.X - b.X;
+                long dy = a.Y - b.Y;
+                long dz = a.Z - b.Z;
+                long reach = a.Radius + b.Radius;
+                return dx * dx + dy * dy + dz * dz < reach * reach;
+            }
         }
 
         private static string Levels(IEnumerable<WikiNpc> mobs)
@@ -239,7 +293,9 @@ namespace DOL.GS.Agents
             return $"{string.Join("; ", spread.Select(At))}; and {sorted.Count - SPAWN_POINTS_LISTED} more";
         }
 
-        private static string At(WikiNpc npc) => $"X:{npc.X} Y:{npc.Y} Z:{npc.Z}";
+        private static string At(WikiNpc npc) => At(npc.X, npc.Y, npc.Z);
+
+        private static string At(int x, int y, int z) => $"X:{x} Y:{y} Z:{z}";
 
         // `Lough Derg` becomes `lough-derg`.
         private static string Slug(string name)
