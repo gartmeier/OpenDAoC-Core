@@ -1,6 +1,6 @@
 # Milestone 5: A coding agent plays
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -171,3 +171,19 @@ Acceptance: from a fresh level 1 Character, with the Human only nudging it on wh
 - **The Wiki lists at most 5 spawn points of a Mob,** spread from west to east, with how many more there are. Zone pages were up to 47 KB with all of them. It also leaves out zones with no NPCs, and tells apart zones and merchants of the same name. The index sorts zones by their lowest Mob, with each zone's merchants, and merchant pages have each item's speed.
 - **The Wiki's tests run on plain records,** the pages a function of zones and NPCs, not on world doubles. Reading those records from the loaded world (which NPCs are Mobs, the pet and untargetable filters, the realm fallback) is untested, and was checked only by generating Hibernia's Wiki: 41 zones and 429 merchants. The Wiki is checked in.
 - **The template's settings** add the shared folder and the Mind as directories Claude Code may read, and a 62-minute MCP tool timeout so a 60-minute snippet isn't cut short.
+
+**2026-10-24 (agent):** The Human's acceptance run, with Dalta, a fresh level 1 Celt Guardian in Howth, and Claude Code on its default model:
+
+1. Claude Code was told "Login and level up Dalta to level 5 as quickly as possible", at 14:54. It read the guide, its Lessons and the Learnings, and wrote a `grind` Tactic of its own within a minute. Its long `execute_code` calls ran in the background in Claude Code, which picked each up when it ended, so it never stopped and needed no nudge. The Human changed the goal twice: at 15:19 to promote to Blademaster at 5 and go on to 20, and at 17:17 back to "become a Blademaster at level 5".
+2. It reached level 5 and was promoted to Blademaster by Ea in Ardagh at 17:19, 2 h 25 min after the first prompt. That took 27 snippets and 9 deaths. It worked out on its own: to promote, talk to the trainer and then `/whisper Blademaster` (`talkTo` times out on a trainer, since a trainer has no merchant window, but the dialog still opens); to fight only blue Mobs after yellow ones killed it 3 times at level 1; to buy a tacuil vest and a short sword with coin drops, since loot sells for 1–2 copper; and to move to a camp west of Ardagh for levels 4 and 5.
+3. It wrote 12 Lessons, one Tactic (`tactics/grind.ts`) and one papercut, all checked in under `agents/dalta`.
+4. The server log has no speed-check entries for Dalta.
+
+What it ran into:
+
+- **A takeover leaves the new Mind's beliefs empty.** About 6 minutes in, while a 5-minute snippet ran, Claude Code started a second Mind, which took over Dalta's connection (ADR 0005). The server sends a taking-over Mind only `entered`, not the state a world entry sends. So Self had level 0, no class and no object ID, Inventory was empty, and Surroundings held only what came into view later. Without its object ID, Self ignored its own `died` and `revived`: `dead` stuck after a death, and the Grind kept sending `/release` until the call hit its limit. Dalta worked around it by running out of view and back, and by feeding Self a made-up `ownPosition` with the object ID a `died` named. Why Claude Code started a second Mind isn't known.
+- **An MCP call gives up after 30 minutes,** whatever the template's `MCP_TOOL_TIMEOUT`, so a snippet longer than that is lost to the coding agent though it keeps running. Dalta made it a Lesson and kept its snippets under 30 minutes.
+- **The fighting Learning's snippet picks yellow Mobs** (its level and one below), which is what killed Dalta 3 times at level 1, though the Learning's own text warns against them.
+- It couldn't `/bind` in Ardagh, so its deaths there sent it back to Howth, about 40,000 units away.
+
+**2026-10-24 (Human, recorded by agent):** Resolved. A stock coding agent took a fresh Character from level 1 to a level 5 Blademaster through the Mind, the guide, the Learnings and the Wiki, with no nudge.
