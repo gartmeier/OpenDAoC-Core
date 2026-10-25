@@ -52,7 +52,10 @@ namespace DOL.GS.Tests
         public const string CAST_HEAL = "cast-heal";
         public const string CAST_BUFFS = "cast-buffs";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG, USE_ITEM, CAST_HEAL, CAST_BUFFS];
+        // A Magician casting a buff on itself, then killing a Mob with a damage spell.
+        public const string CAST_DAMAGE = "cast-damage";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG, USE_ITEM, CAST_HEAL, CAST_BUFFS, CAST_DAMAGE];
 
         public static CapturedPacket[] Load(string capture)
         {

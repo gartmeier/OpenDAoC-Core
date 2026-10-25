@@ -40,6 +40,10 @@ _Avoid_: skill, special attack
 Magic a Character casts from one of its spell lines, such as a bolt, a heal or a buff.
 _Avoid_: skill
 
+**Kiting**:
+Fighting a Mob from range: sprinting away from it, turning round and casting at it before it closes in, and again.
+_Avoid_: pulling (which only brings a Mob to you)
+
 **Power**:
 What a Character spends to cast Spells, refilled by resting.
 _Avoid_: mana

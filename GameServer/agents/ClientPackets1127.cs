@@ -239,6 +239,13 @@ namespace DOL.GS.Agents
             return PositionAndUse(eClientPackets.UseSkill, position, speed, heading, flags, index, SKILL_AFTER_SPECIALIZATIONS);
         }
 
+        // Casts a list caster's spell of `level` in the spell line at `lineIndex` among the lines the server last sent, as a click on its icon does.
+        // As captured in `cast-damage.tsv`, read by `UseSpellHandler`: laid out as the skill packet, with the level and the line's index in place of the index and its type.
+        public static ClientPacket UseSpell(Vector3 position, float speed, ushort heading, ushort flags, byte level, byte lineIndex)
+        {
+            return PositionAndUse(eClientPackets.UseSpell, position, speed, heading, flags, level, lineIndex);
+        }
+
         // Uses the item in client slot `slot`, as a right-click on it in the backpack (`Use1`) or a click on it in the quickbar (`Click`) does. `Use2` uses its second spell.
         // As captured in `use-item.tsv`, read by `UseSlotHandler`: laid out as the skill packet, with the slot and the use type in place of the index and its type.
         public static ClientPacket UseSlot(Vector3 position, float speed, ushort heading, ushort flags, byte slot, eUseType type)
@@ -292,7 +299,7 @@ namespace DOL.GS.Agents
             return new((byte) eClientPackets.DetailRequest, NO_PARAMETER, data);
         }
 
-        // The skill and use slot packets: the client's position, speed, heading and flags, then what to use, its type and 2 bytes of 0.
+        // The skill, use spell and use slot packets: the client's position, speed, heading and flags, then what to use, its type and 2 bytes of 0.
         private static ClientPacket PositionAndUse(eClientPackets code, Vector3 position, float speed, ushort heading, ushort flags, byte indexOrSlot, byte type)
         {
             byte[] data = new byte[24];

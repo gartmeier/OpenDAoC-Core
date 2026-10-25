@@ -1,6 +1,6 @@
 # Spells
 
-A Spell is magic you cast from one of your spell lines. A Naturalist gets heals from Regrowth and Concentration buffs from Nurture: Minor Revigoration at level 1, Minor Bark Skin at 2, Strength of the Oak and Minor Renewal at 3, Lesser Bark Skin and Renewal at 4, Oak's Stoutness and Minor Revivification at 5. Learned from how the server handles Spells; no Agent has cast one in a fight yet.
+A Spell is magic you cast from one of your spell lines. A Naturalist gets heals from Regrowth and Concentration buffs from Nurture: Minor Revigoration at level 1, Minor Bark Skin at 2, Strength of the Oak and Minor Renewal at 3, Lesser Bark Skin and Renewal at 4, Oak's Stoutness and Minor Revivification at 5. A Magician gets damage from Way of the Sun and buffs on itself from Way of the Moon: Gleam Ray and Lesser Powerward at 1, Gleam Streak and Aura of Turning at 2, Gleam Blast and Powerward at 3, Greater Aura of Turning at 4, Prismatic Flare and Lesser Powerbarrier at 5. Learned from how the server handles Spells; no Agent has cast one in a fight yet.
 
 ## Which Spells you have
 
@@ -117,3 +117,93 @@ for (const effect of off) {
 
 return cancelled.length ? cancelled : "nothing switched off";
 ```
+
+## Damage Spells
+
+A damage Spell's `details.description` starts with "Inflicts", such as "Inflicts 5 heat damage to the target.", and its `target` is "ENEMY". A Magician's Gleam Ray, Gleam Streak and Gleam Blast hit at the end of a 2.6 s cast, as far as 1500 units away, with nothing to dodge or block. Prismatic Flare, at level 5, stuns a Mob for 3 s instead.
+
+Target the Mob, face it and stand still. Casting at a Mob starts the fight: it comes at you. The server answers in the chat:
+
+- "You begin casting a Gleam Ray spell!" when the cast starts;
+- "You hit the wild crouch for 5 damage!" when it lands;
+- "The wild crouch resists the effect! (12.0%)" when it doesn't;
+- "You must select a target for this spell!" with nothing targeted;
+- "That target is too far away!" beyond its range;
+- "Your target is not visible!" when it's behind you: you must face it, within 90° either side;
+- "You can't see your target from here!" when something's in the way;
+- the interrupt, "must wait", Power and sitting lines, as for a heal.
+
+```ts
+const me = agent.self.objectId;
+const at = agent.self.position;
+if (me === undefined || !at) return "not in the world yet";
+
+const damage = agent.self.skills
+  .filter((skill) => skill.page === "Spells")
+  .filter((spell) => spell.details?.description.startsWith("Inflicts"))
+  .sort((a, b) => b.level - a.level)[0];
+if (!damage) return "no damage Spell";
+
+const mob = agent.surroundings.npcs.find((npc) => npc.realm === "None" && !npc.peaceful && npc.level <= agent.self.level);
+if (!mob) return "no Mob in view";
+
+const heading = (Math.round((Math.atan2(-(mob.position.x - at.x), mob.position.y - at.y) * 4096) / (2 * Math.PI)) + 4096) % 4096;
+await agent.send({ name: "face", heading });
+await agent.send({ name: "target", objectId: mob.objectId });
+
+const reply = await agent.sendAndWait({ name: "castSpell", spell: damage.name }, (percept) =>
+  percept?.kind === "message" && /You hit|resists|interrupt|too far away|not visible|can't see|must wait|enough power|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
+return `${damage.name} at the ${mob.name}: ${reply ?? "no answer within 10 s"}`;
+```
+
+## Kiting
+
+A Mob next to you hits you, and every hit interrupts your cast. Kiting keeps it away: sprint away from it, turn round, and cast at it before it reaches you, again and again.
+
+The numbers it rests on, from the server:
+
+- You run at 191, or about 248 sprinting (`/sprint` turns sprint on and off). Sprinting costs endurance while you move.
+- Mobs near the starting towns run at about 145 to 200, most at 180 to 200: as fast as you, unless you sprint. A Mob below a third of its health slows, down to a fifth of its speed near death.
+- In a 2.6 s cast a Mob closes about 500 units. So start a cast only while it's further than that, and within the Spell's 1500.
+- A Mob doesn't leash. It follows you up to 5,000 units, and gives up and walks home about 25 s after it was last in a fight.
+- Moving interrupts a cast, so stop before you cast.
+
+One round, for a Mob that's after you (its `targetId` is your `objectId`):
+
+```ts
+const me = agent.self.objectId;
+const at = agent.self.position;
+if (me === undefined || !at) return "not in the world yet";
+
+const mob = agent.surroundings.npcs.find((npc) => npc.targetId === me);
+if (!mob) return "nothing is after you";
+
+// 900 units straight away from the Mob.
+const dx = at.x - mob.position.x;
+const dy = at.y - mob.position.y;
+const length = Math.hypot(dx, dy) || 1;
+const away = { x: Math.round(at.x + (dx / length) * 900), y: Math.round(at.y + (dy / length) * 900), z: at.z };
+
+const sprinting = () => agent.self.effects.some((effect) => effect.name === "Sprint");
+if (!sprinting()) await agent.sendAndWait({ name: "command", text: "/sprint" }, () => sprinting(), 2_000);
+const ran = await runTo(agent, away);
+if (sprinting()) await agent.sendAndWait({ name: "command", text: "/sprint" }, () => !sprinting(), 2_000);
+if (!ran.ok) return `couldn't run away: ${ran.reason}`;
+
+const now = agent.self.position ?? at;
+const chaser = agent.surroundings.npcs.find((npc) => npc.objectId === mob.objectId);
+if (!chaser) return "lost sight of it";
+
+const gap = Math.hypot(chaser.position.x - now.x, chaser.position.y - now.y);
+if (gap < 500) return `only ${Math.round(gap)} away: run again`;
+
+const heading = (Math.round((Math.atan2(-(chaser.position.x - now.x), chaser.position.y - now.y) * 4096) / (2 * Math.PI)) + 4096) % 4096;
+await agent.send({ name: "face", heading });
+await agent.send({ name: "target", objectId: chaser.objectId });
+
+const reply = await agent.sendAndWait({ name: "castSpell", spell: "Gleam Ray" }, (percept) =>
+  percept?.kind === "message" && /You hit|resists|interrupt|too far away|not visible|can't see|must wait|enough power/.test(percept.text) ? percept.text : undefined, 10_000);
+return `${Math.round(gap)} away: ${reply ?? "no answer within 10 s"}`;
+```
+
+Prismatic Flare's 3 s stun buys you a cast without running. Your buffs from Way of the Moon last 20 minutes: cast them on yourself between fights, as a Naturalist keeps its Concentration buffs up.

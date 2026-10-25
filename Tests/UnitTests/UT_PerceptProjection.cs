@@ -58,6 +58,7 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendStatusUpdateWithFlag = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), [typeof(byte)]);
         private static readonly MethodInfo SendUpdatePlayer = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePlayer));
         private static readonly MethodInfo SendPlayerDied = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerDied));
+        private static readonly MethodInfo SendUpdatePlayerSkills = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePlayerSkills));
         private static readonly MethodInfo SendPlayerRevive = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerRevive));
         private static readonly MethodInfo SendUDP =typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUDP));
         private static readonly MethodInfo SendTCP = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendTCP));
@@ -1090,6 +1091,43 @@ namespace DOL.GS.Tests
             SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(style, style)], [style]);
 
             Assert.That((StyleEntry) entries.Single() with { Details = null }, Is.EqualTo(new StyleEntry("Odd Style", 1, null, null)));
+        }
+
+        // A Magician's first spells, as in the database: Gleam Ray from Way of the Sun, Lesser Powerward from Way of the Moon, and Gleam Streak, which Way of the Sun gains at level 2.
+        private static readonly SpellLine WayOfTheSun = new("Light", "Way of the Sun", "Light", true);
+        private static readonly SpellLine WayOfTheMoon = new("Mana", "Way of the Moon", "Mana", true);
+        private static readonly Spell GleamRay = new(new DbSpell { Name = "Gleam Ray", SpellID = 4101, Target = "Enemy", Type = "DirectDamage", Range = 1500, Damage = 5, DamageType = (int) eDamageType.Heat, Power = 2, CastTime = 2.6 }, 1);
+        private static readonly Spell GleamStreak = new(new DbSpell { Name = "Gleam Streak", SpellID = 4102, Target = "Enemy", Type = "DirectDamage", Range = 1500, Damage = 9, DamageType = (int) eDamageType.Heat, Power = 2, CastTime = 2.6 }, 2);
+        private static readonly Spell LesserPowerward = new(new DbSpell { Name = "Lesser Powerward", SpellID = 4301, Target = "Self", Type = "BaseArmorFactorBuff", Value = 13, Power = 2, CastTime = 3, Duration = 1200 }, 1);
+
+        // A list caster's spells come in its spell lines, a packet of their own after the skills, each with the tooltip a hybrid's spell has.
+        [Test]
+        public void Project_ShouldListAListCastersSpellsAfterItsSkills_WithTheDetailsTheirTooltipsShow_ForTheSkillsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            ((TestPlayer) client.Player).ListSpells = [(WayOfTheSun, [GleamRay]), (WayOfTheMoon, [LesserPowerward])];
+
+            SkillsPercept percept = (SkillsPercept) PerceptProjection.Project(client, SendUpdatePlayerSkills, [false]);
+
+            Assert.That(percept.Skills.Select(static skill => (skill.GetType(), skill.Name, skill.Level)), Is.EqualTo(new[] { (typeof(SpellEntry), "Gleam Ray", 1), (typeof(SpellEntry), "Lesser Powerward", 1) }));
+            SpellDetails gleamRay = ((SpellEntry) percept.Skills[0]).Details;
+            Assert.That(gleamRay with { Description = null }, Is.EqualTo(new SpellDetails(1, null, 2, "ENEMY", 1500, 2.6f, "Heat", null, null)));
+            Assert.That(gleamRay.Description, Is.EqualTo("Inflicts 5 heat damage to the target."));
+        }
+
+        // The server keeps the spell lines it last built, so it asks for them again whenever it sends them, as the real library does: a spell gained on levelling is listed.
+        [Test]
+        public void Project_ShouldListASpellTheCharacterGained_ForTheSkillsCallAfterALevelUp()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestPlayer orla = (TestPlayer) client.Player;
+            orla.ListSpells = [(WayOfTheSun, [GleamRay])];
+            PerceptProjection.Project(client, SendUpdatePlayerSkills, [false]);
+
+            orla.ListSpells = [(WayOfTheSun, [GleamRay, GleamStreak])];
+            SkillsPercept percept = (SkillsPercept) PerceptProjection.Project(client, SendUpdatePlayerSkills, [false]);
+
+            Assert.That(percept.Skills.Select(static skill => skill.Name), Is.EqualTo(new[] { "Gleam Ray", "Gleam Streak" }));
         }
 
         [Test]

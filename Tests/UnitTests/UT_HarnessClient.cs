@@ -7,6 +7,7 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
+using DOL.Database;
 using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
@@ -480,6 +481,90 @@ namespace DOL.GS.Tests
             Assert.That(Wire(Inbound(client)[1..]), Is.EqualTo(Wire([
                 ClientPackets1127.UseSkill(at, 0, 0, 0xA000, 1),
                 ClientPackets1127.UseSkill(at, 0, 0, 0xA000, 2)])));
+            await Close(mind);
+        }
+
+        // A Magician's first spells, in its spell lines: Gleam Ray from Way of the Sun, Lesser Powerward from Way of the Moon, and Gleam Streak, which Way of the Sun gains at level 2.
+        private static readonly SpellLine WayOfTheSun = new("Light", "Way of the Sun", "Light", true);
+        private static readonly SpellLine WayOfTheMoon = new("Mana", "Way of the Moon", "Mana", true);
+        private static readonly Spell GleamRay = new(new DbSpell { Name = "Gleam Ray", SpellID = 4101, Target = "Enemy", Type = "DirectDamage" }, 1);
+        private static readonly Spell GleamStreak = new(new DbSpell { Name = "Gleam Streak", SpellID = 4102, Target = "Enemy", Type = "DirectDamage" }, 2);
+        private static readonly Spell LesserPowerward = new(new DbSpell { Name = "Lesser Powerward", SpellID = 4301, Target = "Self", Type = "BaseArmorFactorBuff" }, 1);
+
+        // What the client hears when the server sends the Character's skills, its spell lines among them.
+        private static Percept SkillsSent(HarnessClient client)
+        {
+            return PerceptProjection.Project(client, typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePlayerSkills)), [false]);
+        }
+
+        // A list caster's spells aren't in its skill list. The use spell packet names one by its level, in the line at its index among the lines the server built, as in `cast-damage.tsv`.
+        [Test]
+        public async Task CastSpell_ShouldQueueTheUseSpellPacketWithTheSpellsLevelAndLine_ForAListCastersSpell()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            ((TestPlayer) client.Player).ListSpells = [(WayOfTheSun, [GleamRay, GleamStreak]), (WayOfTheMoon, [LesserPowerward])];
+            client.OnPerceived(SkillsSent(client));
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Gleam Streak"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Lesser Powerward"), mind.Link), Is.Null);
+
+            Vector3 at = new(296516, 641415, 4848);
+            Assert.That(Wire(Inbound(client)[1..]), Is.EqualTo(Wire([
+                ClientPackets1127.UseSpell(at, 0, 0, 0xA000, 2, 0),
+                ClientPackets1127.UseSpell(at, 0, 0, 0xA000, 1, 1)])));
+            Assert.That(ResolvedByUseSpellHandler(client.Player, 2, 0), Is.SameAs(GleamStreak));
+            Assert.That(ResolvedByUseSpellHandler(client.Player, 1, 1), Is.SameAs(LesserPowerward));
+            await Close(mind);
+        }
+
+        // The spell the server casts for a use spell packet of `level` and `lineIndex`, as `UseSpellHandler` looks it up.
+        private static Skill ResolvedByUseSpellHandler(GamePlayer player, int level, int lineIndex)
+        {
+            object[] args = [player, lineIndex, level, null, null];
+            typeof(UseSpellHandler).GetMethod("GetSkill", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, args);
+            return (Skill) args[3];
+        }
+
+        // As for a hybrid: a name in none of the lines, or a style's, and every spell before the client has heard of its lines.
+        [Test]
+        public async Task CastSpell_ShouldBeRefusedWithAReason_ForAListCastersSpellItDoesntHave_OrBeforeTheServerSentItsLines()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            ((TestPlayer) client.Player).ListSpells = [(WayOfTheSun, [GleamRay]), (WayOfTheMoon, [LesserPowerward])];
+
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Gleam Ray"), mind.Link), Is.EqualTo("Greeen has no Spell \"Gleam Ray\"."));
+
+            client.OnPerceived(SkillsSent(client));
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Gleam Streak"), mind.Link), Is.EqualTo("Greeen has no Spell \"Gleam Streak\"."));
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Way of the Sun"), mind.Link), Is.EqualTo("Greeen has no Spell \"Way of the Sun\"."));
+            Assert.That(client.Dispatch(new UseStylePrimitive("Gleam Ray"), mind.Link), Is.EqualTo("Greeen has no Style \"Gleam Ray\"."));
+
+            Assert.That(Inbound(client), Is.Empty);
+            await Close(mind);
+        }
+
+        // The server reads the line's index against the lines it built last, which it builds again when it sends the skills: a spell gained on levelling is cast once the client has heard of it.
+        [Test]
+        public async Task CastSpell_ShouldFindAListCastersNewSpell_OnceTheServerSentTheSkillsAgain()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            greeen.ListSpells = [(WayOfTheSun, [GleamRay])];
+            client.OnPerceived(SkillsSent(client));
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Gleam Ray"), mind.Link), Is.Null);
+
+            greeen.ListSpells = [(WayOfTheSun, [GleamRay, GleamStreak])];
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Gleam Streak"), mind.Link), Is.EqualTo("Greeen has no Spell \"Gleam Streak\"."));
+
+            client.OnPerceived(SkillsSent(client));
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Gleam Streak"), mind.Link), Is.Null);
+
+            Vector3 at = new(296516, 641415, 4848);
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.UseSpell(at, 0, 0, 0, 1, 0), ClientPackets1127.UseSpell(at, 0, 0, 0, 2, 0)])));
             await Close(mind);
         }
 

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -51,6 +53,8 @@ namespace DOL.GS.Agents
         private bool _attacking;
         // The skill list the server last sent, which the client's icons stand for and the server reads their indexes against.
         private SkillEntry[] _skills = [];
+        // The spell lines the server last sent with the skills, which a list caster's icons stand for and the server reads their indexes against.
+        private List<(SpellLine Line, List<Skill> Spells)> _listSpells = [];
         // The concentration list the server last sent, which the concentration window shows and the server reads its indexes against.
         private ConcentrationBuff[] _concentration = [];
         // The Dialog the client shows, until it answers it. The server keeps no copy of its text to send a new Mind.
@@ -235,6 +239,7 @@ namespace DOL.GS.Agents
             }
 
             int index = 0;
+            (byte Level, byte LineIndex)? listSpell = null;
 
             switch (primitive)
             {
@@ -247,7 +252,10 @@ namespace DOL.GS.Agents
                 }
                 case CastSpellPrimitive castSpell:
                 {
-                    if (SpellIndex(castSpell.Spell, out index) is string reason)
+                    // A list caster's spell is in its spell lines, never in its skill list.
+                    listSpell = ListSpellLevelAndLine(castSpell.Spell);
+
+                    if (listSpell == null && SpellIndex(castSpell.Spell, out index) is string reason)
                         return reason;
 
                     break;
@@ -372,6 +380,7 @@ namespace DOL.GS.Agents
                 SellPrimitive sell => ClientPackets1127.SellRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) sell.Slot),
                 AnswerDialogPrimitive answer => ClientPackets1127.DialogResponse((byte) answer.Code, (ushort) answer.Data1, (ushort) answer.Data2, (ushort) answer.Data3, answer.Accept),
                 // Where the server has the Character, so the position it takes from the packet moves it nowhere.
+                CastSpellPrimitive when listSpell is (byte level, byte lineIndex) => ClientPackets1127.UseSpell(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, level, lineIndex),
                 UseStylePrimitive or CastSpellPrimitive => ClientPackets1127.UseSkill(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) index),
                 // As a right-click in the backpack, never the quickbar's click, which on a weapon or horse slot means something else.
                 UseItemPrimitive useItem => ClientPackets1127.UseSlot(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) useItem.Slot,
@@ -417,6 +426,18 @@ namespace DOL.GS.Agents
         {
             int found = Array.FindIndex(_skills, skill => skill is SpellEntry && skill.Name == name);
             return SkillIndex(found, name, $"{Player.Name} has no Spell \"{name}\".", out index);
+        }
+
+        // The level and line index the use spell handler reads for a list caster's spell, among the spell lines the server last sent, or none when it isn't there.
+        private (byte Level, byte LineIndex)? ListSpellLevelAndLine(string name)
+        {
+            for (int i = 0; i < _listSpells.Count && i <= byte.MaxValue; i++)
+            {
+                if (_listSpells[i].Spells.OfType<Spell>().FirstOrDefault(spell => spell.Name == name) is Spell spell)
+                    return ((byte) spell.Level, (byte) i);
+            }
+
+            return null;
         }
 
         // The index the skill handler reads for the skill at `found` in the skill list the server last sent, counting from the first entry after the specializations, or `missing` when it isn't there.
@@ -486,6 +507,8 @@ namespace DOL.GS.Agents
                 case SkillsPercept skills:
                 {
                     _skills = skills.Skills;
+                    // The lines the server built as it sent them (see `PerceptProjection.Skills`), which it keeps until it sends them again.
+                    _listSpells = Player.GetAllUsableListSpells();
                     break;
                 }
                 case ConcentrationPercept concentration:

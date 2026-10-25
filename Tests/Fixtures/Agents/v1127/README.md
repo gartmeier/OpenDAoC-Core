@@ -15,6 +15,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `login-next-to-agent.tsv` is 189 s of the same Character next to the Agent Greeen, who is already in the world. The Human says `come` and types `/speed 0` with Greeen targeted, quits to the character screen with `/q`, logs back in next to Greeen, says `come`, types `/speed 191`, says `come` three more times and types `/jump greeen to vue`. The first 189 s of a recording with `/agent capture admin` on 2026-10-21, taken while it was still running, otherwise unmodified. See Players already in the world.
 - `swim-straight.tsv`, `swim-turn.tsv` and `swim-stop-sit-stand.tsv` are 43 s, 31 s and 54 s of the same Character, unbuffed, at a river in zone 207. In the first it runs down the bank, swims straight across and runs up the other bank. In the second it swims in, turns about while swimming, and swims back out. In the third it swims in and stops in the water, sits, stands, swims on and runs out. Recorded with `/agent capture agent2` on 2026-10-25, unmodified. See Swimming.
 - `cast-heal.tsv` and `cast-buffs.tsv` are 13 s and 19 s of account `druid`'s Character Fearnan, a Naturalist, already in the world at Connla. In the first, at level 1, it casts Minor Revigoration twice. In the second, at level 2, it casts Minor Revigoration and Minor Bark Skin on another and on itself, then cancels two buffs in the concentration window. Recorded with `/agent capture druid` on 2026-10-25, unmodified apart from their first lines. See Spells.
+- `cast-damage.tsv` is 640 s of account `agentorla`'s Character Orla, a level 1 Magician, from login in Shannon Estuary: it casts Lesser Powerward on itself, targets a Mob and casts Gleam Ray at it until it dies, then targets itself and quits. Recorded with `/agent capture agentorla` on 2026-10-25, unmodified apart from its first line. See Spells of a list caster.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
 ## Format
@@ -234,6 +235,24 @@ From `cast-heal.tsv` and `cast-buffs.tsv`. The Human played Fearnan, a Naturalis
 
 Full packet, the first cancel: `0004 01F0 0005 0000 B076 00 00 72 04 7775`.
 
+## Spells of a list caster
+
+From `cast-damage.tsv`. The Human played Orla, a Magician (object ID 0x4548), and clicked spells on the quickbar. A Magician's spells aren't in its skill list but in its spell lines: Way of the Sun first, then Way of the Moon.
+
+| ms | Part |
+|----|------|
+| 29830 | Lesser Powerward, with nothing targeted |
+| 47197 | targets the Mob (0x2DB9) |
+| 48297 | Gleam Ray, while still running |
+| 48997–59006 | Gleam Ray 13 more times, standing, some clicked while the last was still casting. A line of sight check response (0xD0) follows about every 200 ms from 49230 to the end of the fight |
+| 60964, 65230 | attack on, then off, and the target cleared |
+| 126230, 133897 | targets itself, then `/q` |
+
+- **A list caster's spell is the use spell packet (0x7D).** Parameter 0x0000, 24 bytes: laid out as the skill packet (0xBB), with the spell's level and its line's index in place of the index and its type. Lesser Powerward was level 1 in line 1, with flags `0000` as nothing was targeted. Gleam Ray was level 1 in line 0, with flags `A000`. The first Gleam Ray carried the speed the client was running at, 78.1.
+- **Line of sight check response (0xD0).** As for a hybrid's spell, but sent again and again through a cast at a Mob, as the server checks during the cast.
+
+Full packet, the second Gleam Ray: `0018 0084 0005 0000 707D 424D8F48 D7FF1C49 7CE59745 00000000 0065 A000 01 00 0000 50C0`.
+
 ## Fields that vary between captures
 
 These hold for every packet:
@@ -243,7 +262,7 @@ These hold for every packet:
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
 
-Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79, 0xB5, 0xBB, 0x71 and 0x76; 0xFFFE for 0xFC; 0xFFFF for the rest.
+Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79, 0xB5, 0xBB, 0x71, 0x76 and 0x7D; 0xFFFE for 0xFC; 0xFFFF for the rest.
 
 Packet data, by data offset:
 

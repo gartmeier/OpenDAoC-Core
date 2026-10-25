@@ -359,6 +359,22 @@ namespace DOL.GS.Tests
                 AssertMatches(ClientPackets1127.UseSkill(new(294695.78f, 641726.6f, 4848), 0, 0x048C, 0xA000, indexes[i]), captured[i]);
         }
 
+        // Orla's casts from the quickbar: Lesser Powerward, level 1 of Way of the Moon (line 1), with nothing targeted, then Gleam Ray, level 1 of Way of the Sun (line 0), at a Mob.
+        [Test]
+        public void UseSpell_ShouldMatchCapture()
+        {
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.CAST_DAMAGE, eClientPackets.UseSpell);
+            Assert.That(captured, Has.Length.EqualTo(15));
+
+            for (int i = 0; i < captured.Length; i++)
+            {
+                byte[] data = captured[i].Data;
+                Vector3 position = new(BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(0)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(4)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(8)));
+                (ushort flags, byte line) = i == 0 ? ((ushort) 0, (byte) 1) : ((ushort) 0xA000, (byte) 0);
+                AssertMatches(ClientPackets1127.UseSpell(position, ClientCaptures.Speed(captured[i]), Short(captured[i], 16), flags, 1, line), captured[i]);
+            }
+        }
+
         // Both clicks on the top entry of the concentration window: the second buff moved up once the first was gone.
         [Test]
         public void RemoveConcentrationEffect_ShouldMatchCapture()

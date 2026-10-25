@@ -601,6 +601,7 @@ namespace DOL.GS.Agents
 
         // Mirrors `PacketLib1112.SendUpdatePlayerSkills`, which no later library overrides. Like it, it asks the Character for its skills, with `updateInternalCache` as passed:
         // the server keeps the list it last sent, to read the client's skill numbers against, and the real library never runs for the Agent.
+        // A list caster's spells follow, line by line, as `SendNonHybridSpellLines` sends them after the skills. It always has the server build its spell lines again, so a spell gained on levelling can be cast.
         private static SkillsPercept Skills(GameClient client, bool updateInternalCache)
         {
             GamePlayer player = client.Player;
@@ -610,7 +611,9 @@ namespace DOL.GS.Agents
 
             // The library sends each style's tooltip alongside, naming follow-ups among every style the Character's specializations have up to the highest level, as `SpellDelve.GetStyleString` does.
             List<Style> allStyles = [.. player.GetSpecList().SelectMany(spec => spec.PretendStylesForLiving(player, GamePlayer.MAX_LEVEL))];
-            return new SkillsPercept(SkillEntries(player, player.GetAllUsableSkills(updateInternalCache), allStyles));
+            List<(SpellLine Line, List<Skill> Spells)> lines = player.GetAllUsableListSpells(true);
+            IEnumerable<(Skill, Skill)> listSpells = lines.SelectMany(static line => line.Spells.OfType<Spell>().Select(spell => ((Skill) spell, (Skill) line.Line)));
+            return new SkillsPercept(SkillEntries(player, player.GetAllUsableSkills(updateInternalCache).Concat(listSpells), allStyles));
         }
 
         // Each skill as the packet lists it: a style with the specialization level it needs and its specialization, which the packet carries as an index (none for 0), anything else with its own level.

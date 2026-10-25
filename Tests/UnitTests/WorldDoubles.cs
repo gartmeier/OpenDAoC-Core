@@ -293,6 +293,19 @@ namespace DOL.GS.Tests
             set => m_dbCharacter = new DbCoreCharacter { Name = m_name, HideGraves = value };
         }
 
+        // The spell lines a list caster can cast from now, with their spells. The server builds its list from them only when asked to, or when it has none,
+        // and keeps that list to read the client's spell numbers against, as `GamePlayer.GetAllUsableListSpells` does.
+        public List<(SpellLine, List<Skill>)> ListSpells { get; set; }
+        private List<(SpellLine, List<Skill>)> _builtListSpells;
+
+        public override List<(SpellLine, List<Skill>)> GetAllUsableListSpells(bool update = false)
+        {
+            if (update || _builtListSpells.Count == 0)
+                _builtListSpells = [.. ListSpells];
+
+            return _builtListSpells;
+        }
+
         public override byte GetDisplayLevel(GamePlayer player)
         {
             return DisplayLevel;
@@ -317,6 +330,13 @@ namespace DOL.GS.Tests
             movementComponent = new PlayerMovementComponent(this);
             effectListComponent = EffectListComponent.Create(this);
             Modified = [];
+            ListSpells = [];
+            _builtListSpells = [];
+            // No specializations, and no skills built from them yet, with the locks the initializers would have made.
+            typeof(GamePlayer).GetField(nameof(m_specialization), BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new Dictionary<string, Specialization>());
+            typeof(GamePlayer).GetField(nameof(_specializationLock), BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new System.Threading.Lock());
+            typeof(GamePlayer).GetField("_usableSkills", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new List<(Skill, Skill)>());
+            typeof(GamePlayer).GetField("_usableSkillsLock", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new System.Threading.Lock());
             // No abilities, but the lock the constructor would have made to look them up.
             typeof(GameLiving).GetField("_abilitiesLock", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new System.Threading.Lock());
             m_abilities = [];
