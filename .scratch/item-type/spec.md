@@ -1,6 +1,6 @@
 # Item type
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -85,3 +85,11 @@ This bends ADR 0001, since the packet doesn't carry it. ADR 0006 now records the
 ## Comments
 
 **2026-10-25 (agent):** Implemented, not yet tested in game. `ItemType` sits after `ObjectType` in both records. Its comment also says arrows and bolts go in the quivers (14 to 17) by their object type alone, whatever their item type, as the server's slot check has it. The Agent files wait for the in-game check, as the spec says.
+
+**2026-10-25 (agent):** Dalta's in-game check, on the new build:
+
+1. Her equipped items and backpack showed the `itemType` she'd expect, among them both bracelets 33 and both rings 35, which fit the right wrist and right ring slot too.
+2. A Howth merchant's armour and weapons showed their slots too. Howth sells no jewellery, so no merchant ring was seen.
+3. She took off a ring she wore, found it in her backpack by `itemType` 35 and put it back on. Types 34 and 36 never came up, and no Fist Wraps.
+
+The Agent files are done: Dalta deleted the papercut, rewrote her Wraps Lesson around `itemType` and switched her `junk` Tactic to it; the trading Learning now points at `itemType`. Resolved.

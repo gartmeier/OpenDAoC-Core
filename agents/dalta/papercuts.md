@@ -50,13 +50,6 @@ At level 18, `trainBlades` sent `/train Blades 18`, then `/train "Parry" 12` and
 Workaround: `trainBlades` now waits a second before each line and tries twice.
 Needed: an answer from the server (or a Percept) when a `/train` is refused, so the Mind knows why.
 
-## An item doesn't say which slot it goes in (2026-10-25)
-
-Three "Wraps" dropped (Protector's L11, Speedy L10, Bluntbender L16). I took them for cloaks and tried the Protector's Wrap in the cloak, jewel, neck, waist and both wrist slots; the server said "The Protector's Wrap can't go there!" each time. I wrote it down as fitting no slot and sold all three. They were rings: a Human sees that from the item's icon and its slot in the examine window.
-`InventoryItem` has `objectType`, `hand` and `model`, but not the item type, the slot the server checks against in `CheckItemSlotRestriction`.
-Workaround: the name says the slot (see `from-source.md`), and a ring has model 103.
-Needed: the item type (its equipment slot) on each `InventoryItem`, as the client gets it.
-
 ## Constitution loss doesn't show anywhere (2026-10-25)
 
 At level 20 I let an alp luachra (L30) kill me in Basar and released. Chat said "You've lost some constitution, go to a healer to have it restored!" and "This is your first death for this level. Your experience and constitution losses are greatly reduced." After the release `agent.self.effects` held only Resurrection Illness (60 s); nothing for the lost Constitution, and Self has no stats to compare against.
