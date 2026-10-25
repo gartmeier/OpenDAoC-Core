@@ -487,10 +487,11 @@ namespace DOL.GS.Agents
         }
 
         // What a client standing still tells the server about its Character. It faces the way it last turned to, even if the server hasn't read that heading update yet.
+        // Standing in the water it swims, and sitting there it only sits, as the captured client does.
         public ClientPacket PositionUpdate()
         {
             GamePlayer player = Player;
-            PlayerPositionUpdateHandler.StateFlags stateFlags = player.IsSitting ? PlayerPositionUpdateHandler.StateFlags.SITTING : 0;
+            PlayerPositionUpdateHandler.StateFlags stateFlags = player.IsSitting ? PlayerPositionUpdateHandler.StateFlags.SITTING : _movement.IsSwimming ? PlayerPositionUpdateHandler.StateFlags.SWIMMING : 0;
             return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, _queuedHeading ?? player.Heading, 0, HealthByte, SessionID, stateFlags, ActionFlags, _targetId);
         }
 

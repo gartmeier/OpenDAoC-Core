@@ -31,7 +31,7 @@ Nothing changes for the Mind's Tactics: `runTo` to a point across or in a lake j
 13. As the Human, I want a swimming Agent's position updates to match a real 1.127 client's from the captures, so that the server can't tell them apart.
 14. As the Human, I want the Agent to set the swimming flag the moment it goes into the water and clear it the moment it comes out, as a client does, so that the server's view of it is right.
 15. As the Human, I want an Agent that stops in the water to keep the swimming flag while it stands there, as a client does.
-16. As the Human, I want the Agent's speed to drop to swim speed on going in and to ramp back up to running speed on coming out, as in the captures.
+16. As the Human, I want the Agent's speed to drop to swim speed on going in, as in the captures, and to be back to running speed on coming out.
 17. As the Human, I want the Agent never to set the diving flag, so that the server never bumps it up and jumps it as it does a diver where diving is off.
 18. As the Human, I want a swimming Agent to pass the server's speed check, so that Agents still provably move under the same rules as Humans.
 19. As the Human, I want swimming position updates to go through the same handling as running ones (ADR 0002), so that nothing about the server's view of an Agent changes but the flag.
@@ -55,8 +55,10 @@ Nothing changes for the Mind's Tactics: `runTo` to a point across or in a lake j
 - **Swim legs.** A leg is a Swim leg when the corner it starts from is on a Swim polygon, from the per-corner polygon flags the pathfinding interface already returns.
 - **Swim speed.** Swim speed is 85/191 of the current maximum speed. It's the same fraction unbuffed (85 at 191) and with a speed buff (124 at 280). It's applied to the maximum speed the server last told the client, so a maximum speed change mid-run changes it too. The `WaterSpeed` bonus in the maximum-speed Percept is ignored for now.
 - **Stepping a Swim leg** (the route run).
-  - Z is the Navmesh floor under the position minus 24, i.e. 40 below the water's surface, since the Navmesh's water sheet sits 16 below it. The floor query on a Swim leg allows Swim polygons. If it finds nothing, Z falls back to interpolating between corners, as on land.
-  - Speed on going in drops straight to swim speed, with no ramp down, as in the captures. Coming out ramps up to the maximum speed with the existing acceleration. Stopping, and starting again from standing in the water, use the existing acceleration and deceleration towards swim speed.
+  - Z is the Navmesh floor under the position minus 24, i.e. 40 below the water's surface, since the Navmesh's water sheet sits 16 below it. The floor query on a Swim leg looks at Swim polygons only. If it finds nothing, Z falls back to interpolating between corners, minus 24.
+  - The run's speed profile works along the route as if it were all land, with each Swim leg counting 191/85 times its length, and the speed on a Swim leg is that profile's times 85/191. So going in, the speed drops straight to swim speed, with no ramp down, as in the captures. Coming out, it's straight back to running speed: the captured client ramps up over about 0.4 s instead, a difference only the speed field shows. Stopping, and starting again from standing in the water, use the existing acceleration and deceleration, scaled the same way.
+  - The step from where the Character stands to the nearest walkable point (at the start, and at a zone border) swims if the route swims on from that point, so a run that starts in the water never leaves it for a step.
+  - A corner's swim marker comes from the flags of the polygon the route enters there. The end of a query's route enters no polygon, so it goes on as the leg into it.
   - Each step says whether the Character is swimming, which drives the state flag.
   - Every position still follows from the time since the run started, so a stall never carries the Character past the end.
 - **Position updates.**
@@ -87,7 +89,7 @@ Nothing changes for the Mind's Tactics: `runTo` to a point across or in a lake j
   - Prior art: the existing routing tests.
 - **Route run (the existing route run tests):**
   - On a Swim leg: the speed is 85/191 of the maximum speed, Z is the floor minus 24, and the step says swimming.
-  - Going in drops straight to swim speed. Coming out ramps back up.
+  - Going in drops straight to swim speed. Coming out, it's back to running speed.
   - Stopping in the water stays swimming. A maximum speed change mid-leg changes the swim speed.
   - No overshoot after a stall.
   - Prior art: the existing route run tests.

@@ -496,6 +496,7 @@ export interface RouteCorner {
   x: number;
   y: number;
   z: number;
+  swim: boolean;
 }
 
 export type StopReason = "Stop" | "Replaced" | "MovedByServer" | "UnableToMove" | "Unreachable";

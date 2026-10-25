@@ -40,6 +40,9 @@ namespace DOL.GS.Agents
 
         public bool IsRunning => _run != null;
 
+        // Whether the Character is in the water, as of its last position update from a run. Standing there, the client keeps telling the server it swims, until a jump takes it out.
+        public bool IsSwimming { get; private set; }
+
         // The server told the client how fast its Character may run. A run in progress keeps to it from now on, or ends where it is if it's 0, for example while the Character is rooted.
         // Returns whether it sent a position update.
         public bool OnMaxSpeed(MaxSpeedPercept percept, long now)
@@ -68,6 +71,7 @@ namespace DOL.GS.Agents
                 return;
 
             _client.Unqueue((byte) eClientPackets.PositionUpdate);
+            IsSwimming = false;
 
             if (_run == null)
                 return;
@@ -111,8 +115,8 @@ namespace DOL.GS.Agents
 
             Router router = new(_pathfinding, player.CurrentRegion);
             Route route = router.Find(start, target, within);
-            Perceive(new RoutedPercept(route.Corners.Select(static corner => new RouteCorner(corner.X, corner.Y, corner.Z)).ToArray(), route.ReachesTarget));
-            _run = new(route.Corners, player.Heading, speed, MaxSpeed, player.CurrentRegion, router.FloorAt, now);
+            Perceive(new RoutedPercept(route.Corners.Select((corner, i) => new RouteCorner(corner.X, corner.Y, corner.Z, route.Swims[i])).ToArray(), route.ReachesTarget));
+            _run = new(route.Corners, route.Swims, player.Heading, speed, MaxSpeed, player.CurrentRegion, router.FloorAt, now);
             _target = target;
             _reachesTarget = route.ReachesTarget;
 
@@ -165,7 +169,9 @@ namespace DOL.GS.Agents
         private void Send(RouteRun.Step step, long now, StopReason reason = StopReason.Stop)
         {
             Vector3 position = step.Ended ? WholeUnits(step.Position) : step.Position;
-            _client.Enqueue(ClientPackets1127.PositionUpdate(position, step.ZoneId, (ushort) (step.Heading | HEADING_FLAG), step.Speed, _client.HealthByte, _client.SessionID, 0, _client.ActionFlags, _client.TargetId));
+            IsSwimming = step.Swimming;
+            PlayerPositionUpdateHandler.StateFlags stateFlags = IsSwimming ? PlayerPositionUpdateHandler.StateFlags.SWIMMING : 0;
+            _client.Enqueue(ClientPackets1127.PositionUpdate(position, step.ZoneId, (ushort) (step.Heading | HEADING_FLAG), step.Speed, _client.HealthByte, _client.SessionID, stateFlags, _client.ActionFlags, _client.TargetId));
             NextPositionUpdate(now);
 
             if (!step.Ended)
