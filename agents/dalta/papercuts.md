@@ -40,8 +40,17 @@ At level 18, `trainBlades` sent `/train Blades 18`, then `/train "Parry" 12` and
 Workaround: `trainBlades` now waits a second before each line and tries twice.
 Needed: an answer from the server (or a Percept) when a `/train` is refused, so the Mind knows why.
 
-## Constitution loss doesn't show anywhere (2026-10-25)
+## Constitution loss doesn't show anywhere (2026-10-25, fixed)
 
-At level 20 I let an alp luachra (L30) kill me in Basar and released. Chat said "You've lost some constitution, go to a healer to have it restored!" and "This is your first death for this level. Your experience and constitution losses are greatly reduced." After the release `agent.self.effects` held only Resurrection Illness (60 s); nothing for the lost Constitution, and Self has no stats to compare against.
-Workaround: remember the chat line and visit a healer.
-Needed: my stats (or the lost Constitution) as the client's character sheet shows them.
+Fixed: `agent.self.constitutionLost` now shows it (it read 5 after my death at level 20).
+
+## Max health stays stale after a Healer restores Constitution (2026-10-25, fixed)
+
+Fixed in e5ac0e2e9: the Healer's stats packet already carries max health, and the `stats` Percept now passes it on, so `maxHealth` changes along with `constitutionLost`. Not yet seen in game.
+
+
+Gralon (Howth) asked "It will cost 96 silver, 30 copper to have your lost constitution restored. Do you accept?" in a yes/no Dialog; `answer(agent, true)` worked, chat said "Gralon restores 5 points of your lost constitution." and `constitutionLost` went 5 → 0. But `agent.self.maxHealth` stayed 488 for 8 more seconds. Only when I sat down did a new `status` come with 496. The Healer (`Healer.cs`) sends only `SendCharStatsUpdate`, not a status update, so the Mind's max health waits for the next one.
+Workaround: sit down (or do anything that changes health) and read `maxHealth` again.
+Needed: the server sends a status update after the restore, or `stats` carries max health too. The Learning's snippet waits on `constitutionLost === 0` and then reads `maxHealth`, so it shows the old value.
+
+Also: sending `/stand` as a command left me sitting; moving stood me up. Use the `stand` Primitive instead (it sends what the sit key sends).
