@@ -2,32 +2,31 @@
 
 What I've learned while playing, which I read again before I next act.
 
-- Dalta is a Guardian who starts in Howth (Silvermine Mts., ~X:342100 Y:591600). Low Mobs (lucradans, badger cubs, water beetle larvae, large frogs, skeletal pawns L0–2) are ~4000 units south.
-- With training gear, yellow Mobs killed me 3 times at level 1. Fight blue ones (my level − 1) only: `tactics/grind.ts` does that, resting to 100% between fights.
-- If the Self says level 0 with nothing equipped, another Mind took over the connection and the state wasn't resent. Pass `knownLevel` to `grind`, and run 7000 units away and back to reload the Mobs nearby. The next level up resends the Self.
-- After a takeover, check `agent.self.objectId`. If it's undefined, `dead` sticks and attackers go unseen: see papercuts.md for the fix.
-- Loot from low Mobs sells for 1–2 copper; coin drops are the money. Howth armour (Reinforced): Kevain tacuil L2, Bevin nadurtha L3, Twm (X:342350 Y:592888) cailiocht L5 for ~1575c the set.
-- Blademaster Trainer Ea is at X:351072 Y:552741 (the town ~38000 south of Howth). Promote at 5: talk to her, then `/whisper Blademaster`.
-- Keep snippets under 30 minutes: the MCP call gives up after 30 minutes without a response.
-- Promoted to Blademaster at level 5 with Ea in Ardagh: `talkTo` times out (a trainer has no merchant window) but still interacts, and Ea asks "[Blademaster]?". Then `target` Ea and `/whisper Blademaster`.
-- Good level 4–5 camp: lough wolf cadgers (L2–3) and rat boys (L3) just west of Ardagh, ~X:349000–350000 Y:548000–550000. With a short sword they gave ~42‰ each at level 4.
-- At level 4, L1 Mobs give no XP and no coins. L3 small walking rocks hit for 20 and killed me with the training sword.
-- A route can stop at 191 units from an NPC up a step (Ysbail in Ardagh), just outside talking range: approach from another side.
-- Bound at Ardagh's Bindstone (X:351830 Y:554515) on 2026-10-24, so deaths now bring me back to Ardagh, not Howth. Right after login `/bind` says "must wait 10 seconds": wait, then try again.
-- Styles work (checked 2026-10-24 at Blades 5): Return Blade after a parry is cheap (~4% end) for +7; Shining Blade costs ~10% for +1. At Blades 6 Taunting Blade (opening damage 116 vs Shining's 8, fatigue 10) is the filler: `fight.ts` picks the Offensive/Any Style with the highest `openingDamage`. Details in `learnings/styles.md`.
-- Hastener Filidh Medyr stands in Ardagh (X:352100 Y:554297) and Howth (X:343403 Y:591201). `talkTo` it and it casts a speed buff at once, no whisper needed: max speed 191 → 281 for 10 minutes, but a fight ends it. Get it before a long run, not before a grind. I can't see buffs: `agent.self.maxSpeed` is the only sign it's on.
-- Kill Tasks (checked 2026-10-24 at level 5): target a *named* guard (Sentinel Eimile, X:352314 Y:553334 in Ardagh; plain "Sentinel"s don't give them), then `/whisper task`. `/task` alone only shows the task you have. The guard names a Mob and a direction; kill one, then `talkTo` the guard again. One small walking rock gave 62 xp, and the reward was 287 xp + 142c. There's a limit of tasks per level.
-- Small walking rocks (L3) hit for 20 and took 75% of my health at level 5. A Style queued before a miss is lost: queue again after every swing (see learnings/styles.md).
-- Check the backpack after fights: Mobs drop wearable magic armour and weapons (Mighty/Adroit/Sturdy Reinforced pieces, Adroit Sword 30 DPS q95). I carried several unequipped for levels, and bought a 450c bastard sword (27 DPS) only to replace it with a drop an hour later. Item `dpsAf`, `quality` and `bonus` are in `agent.inventory.item(slot)`.
-- `equip` swaps the old piece into the backpack: don't sell-all afterwards without checking (I sold my tacuil vest that way, fine, but mind it).
-- Ardagh merchants buy loot: Ysbail (stand east of him at X:352200 Y:552559, he's unreachable from the south) took a bastard sword for 225c and a vest for 93c; cloth junk 1–5c. Nobody takes the training sword.
-- XP per minute at level 5–6 (2026-10-24, with camp bonus): small walking rocks L3 ~15‰ each (~25‰/min mixed); spraggons L5 at level 5 61‰ each, ~53‰/min; luricaduanes L6 at level 6 ~52‰ each but cost ~45% HP, ~50‰/min; blue L5 eirebugs/spraggons at level 6 26‰ each, ~43‰/min. Even-level Mobs pay double blue ones: fight band [0,0] while there are enough, [-1,0] otherwise.
-- Luricaduanes (L6–8, aggressive) are at ~X:336000–337500 Y:560000–562000; eirebugs, spraggons and wild crouches (L5–6) at ~X:336500–341500 Y:547000–552000, west of Ardagh.
-- `tactics/task.ts` `takeTask` hands in a Kill Task at Sentinel Eimile and takes the next one. Each gave 635 xp (66‰ at level 6) + ~190c for one kill of a common Mob (rock, eirebug). Worth the run when grinding west of Ardagh.
-- After a fight attack mode could stay on (a Style queued as the Mob died: "You must have a target for your next attack style!"), and then every NPC I targeted got swung at ("Twm is not in view!"). `fight.ts` now sends attack off at the end.
-- **Look in the backpack before buying or selling-all.** I bought a 5040c bone cailiocht helm (AF16) and then sold, in the same sell-all, a Whirling Reinforced Helm (L9, AF18) that had dropped. Magic drops sell for only 10–70c, so equip the better one first and sell nothing that's AF/DPS-better than what I wear.
-- Kill Tasks are the best XP per minute near Ardagh: villainous youths (L4–5, X:351000–352300 Y:549000–549600, 1 minute from Sentinel Eimile) gave ~78‰/min at level 7 in a loop of kill one, hand in (60‰ + ~255c each). The guard then moves on to other Mobs (spraggonoll at level 8). `grind`'s `prefer` option seeks the task Mob and returns `preferredKilled`.
-- Spraggonolls (L7–9, aggressive) at ~X:330400–331900 Y:556900–557900 (2 min run west of Ardagh, with spraggonilts L15–22 and a "Boss" L22 standing among them, which left me alone): L8 ones give 39‰ each at level 8 in ~20s, but cost 13–47% HP, ~43‰/min. Coins ~1.3 silver each. With restBelow 50 I was at 16% twice: rest at 65.
-- Blademasters get 2× level spec points per level; Blades can't go above my level ("You can't train in this specialization again this level!"). `trainBlades` puts Blades at my level, then spare points into Parry and Celtic Dual, lower first (the next level always pays for Blades). Dual wield: a second sword in the left hand swings with Celtic Dual 1 already (Razored Falcata drop).
-- `/train Celtic Dual 3` does nothing; quote it: `/train "Celtic Dual" 3`.
-- 2026-10-24 end of stint at level 8 (950‰): spraggonolls with restBelow 65 gave 39‰/min over 10 min (L8 39‰, L7 19‰ each), plus a 53‰ + ~340c task each trip back to Eimile (4 min round trip with the rest). Next: keep the spraggonoll + task loop to ~level 10, then look for L9–11 Mobs (large eirebugs L9–11 at ~X:349000–357000 Y:603000–605000).
+## Where things are
+
+- Bound at the Tir na mBeo Bindstone (Lough Derg, X:344830 Y:528095). Healer Ionhar and Sentinel Ornora (X:345307 Y:526666) stand together there; Boyd (armour, buys loot) is 200 units off. No Hastener in Tir na mBeo.
+- Old haunts: Howth (Silvermine, ~X:342100 Y:591600), Ardagh (Bindstone X:351830 Y:554515, Sentinel Eimile X:352314 Y:553334, Hastener Filidh Medyr X:352100 Y:554297). Blademaster Trainer Ea at X:351072 Y:552741.
+- West of Tir na mBeo: lough wolves L7–9 at X:339200–340300 Y:523600–525500 (~5500 units); wild lucradans L9–10 at ~X:337600 Y:531300; badgers L9–11 and red wolfhounds L10–13 at ~X:332000–334500 Y:532800–534700; curmudgeon skinners/trappers/harvesters L10–12 at ~X:329300–330000 Y:533900–534400. Blackthorns (call lunantishee swarms) and lunantishee are north at ~X:342000–346000 Y:520000–524000: always `exclude` them.
+
+## Kill Tasks are the best XP
+
+- Target a *named* guard and `/whisper task`; kill the Mob it names, then `talkTo` it. `tactics/task.ts` `taskLoop` does the loop with any guard (`ORNORA`, `EIMILE`) and grinds a `camp` once the guard gives no more.
+- Ornora's tasks: lough wolf (levels 10–11), badger "South East" (level 12, one at X:347387 Y:519877, near the blackthorns). Reward 45‰ at level 10, 61‰ at 11, 68‰ at 12, plus ~730–870c. A lough wolf loop takes ~90 s with no resting (regen while running covers the fight): **43‰/min**, against 20–25‰/min grinding.
+- About 10 tasks per level, then `noTask` until the next level: grind the rest of the level.
+- Tasks expire: a kill for a task taken ~25 min earlier counted for nothing. `/task abort` drops one. `/task` answers in a text window the Mind can't see.
+
+## Fighting and resting
+
+- No regen for ~20 s after a fight, then sitting heals ~0.9%/s and running ~0.4%/s. Rest time is set by HP lost, so pick Mobs by XP per % HP: wild lucradans and curmudgeon skinners ~1–1.15‰/% at level 11; badgers 0.7; red wolfhounds and curmudgeon harvesters 0.4–0.5. Grinding tops out near 25–30‰/min. Rest below 65%: a yellow can cost 60%, and I died fighting one at 63%.
+- Yellow Mobs pay double blue ones for about the same XP per HP, so fewer, longer fights: band [0,0], or [-1,0] when yellows are scarce. Grey/green ones pay little.
+- `kill` counts the run to the Mob in its 30 s `noDamage` timeout, so a Mob ~5500 units away fails. `grind` now runs within 800 first.
+- Styles: `fight.ts` keeps Taunting Blade queued (+8–17 damage for 10% end) and answers parries with Return Blade. Endurance runs out over 3–4 back-to-back fights. Queue again after every swing (see learnings/styles.md).
+- Blademasters get 2× level spec points; Blades can't pass my level. `trainBlades` puts Blades at my level, the rest into Parry and Celtic Dual. Quote the line: `/train "Celtic Dual" 7`.
+
+## Gear and money
+
+- **Look in the backpack after fights and before selling**: drops beat shop gear (Razored Sword 45 DPS L11, Whirling Falcata 42 DPS L10, AF20–22 vest, sleeves and helm, all at level 10). Items a level or two above mine can be worn. Magic drops sell for 10–100c, so equip the better one first.
+- Both hands swing: chat calls them by base name ("your falcata", "your sword"). The Whirling Falcata can't go in the left hand ("can't go there"); the Razored Sword can. A Protector's Wrap fits no slot (cloak and waist tried).
+- Hits land mostly on torso and legs, rarely feet or hands: upgrade those first. Bought vine nadurtha leggings (AF22, 10080c) from Boyd.
+- Ardagh's Ysbail buys loot from the east side (X:352200 Y:552559). Nobody takes the training sword, training shield or Blademaster Initiate Gloves.
+- After another Mind takes over the connection, Self can show level 0 and miss its object ID: see papercuts.md. Keep snippets under 25 minutes.

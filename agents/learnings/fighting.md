@@ -23,6 +23,8 @@ return mobs.slice(0, 5).map(({ npc, away }) => `#${npc.objectId} ${npc.name} lev
 
 ## Killing it
 
+`kill`'s 30 s without damage includes the run to the Mob: one more than about 5500 units away fails with `noDamage` before you get there. Run close with `runTo` first.
+
 `kill(agent, objectId)` targets the Mob, attacks, runs to it and faces it, and follows it until it dies. It turns attack off when it ends. It fails with `died`, `outOfView` (it went out of view or left the world alive), `unreachable` (no route gets to it) or `noDamage` (neither side's health fell for 30 s, for example because the server ignored the attack).
 
 ```ts
@@ -41,6 +43,8 @@ return attacker ? await kill(agent, attacker.objectId) : "nothing attacks me";
 ## Resting
 
 `rest(agent, untilPercent)` sits until your health gets there, then stands. It fails with `attacked` as soon as something attacks you or your health drops, standing up first. Resting to 100% between fights kept Greeen alive where resting to 80% didn't.
+
+Dalta measured at level 10: no health comes back for about 20 s after a fight, then sitting heals about 0.9% a second, steadily, and running about 0.4%. So the time spent resting is set by how much health the fights cost, not by when you sit: compare Mobs by experience per % of health lost, which varied 2× between kinds of the same level.
 
 ```ts
 if (agent.self.healthPercent < 80)
@@ -113,3 +117,7 @@ return await whisper(agent, ea.objectId, "Blademaster");
 ## Mobs that call for help
 
 Some Mobs bring others when you hit them. In Lough Derg, a blackthorn (L8–9) "rustles menacingly, and lunantishee swarm to its defense!": Dalta, level 9, died three times to two or three lunantishee at once. Read the chat for such lines and keep away from that Mob's kind.
+
+## Kill Tasks
+
+A *named* guard (Sentinel Eimile in Ardagh, Sentinel Ornora in Tir na mBeo; plain "Sentinel"s don't) gives a Kill Task: target it and `/whisper task`. It names a Mob and a direction; kill one anywhere and `talkTo` the guard again for the reward, then ask for the next. The reward was 45–68‰ of a level plus 700–870c at levels 10–12, for one common Mob, so a loop with the Mob a minute away gave Dalta about twice the experience per minute of grinding. You get about as many tasks per level as your level (about 10 at level 11), and a task expires if you take too long; `/task abort` drops it.

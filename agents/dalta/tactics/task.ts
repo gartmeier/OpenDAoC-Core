@@ -33,19 +33,30 @@ export async function takeTask(agent: Agent, log: string[] = [], at = EIMILE): P
 
 /**
  * Takes a Kill Task at `at`, grinds (with `opts`) until the task Mob dies, runs back and hands it in, over and over.
- * Grinding also kills what's in the band on the way. Ends with the grind's reason when it isn't `preferredKilled`, or `noTask`.
+ * Grinding also kills what's in the band on the way. `current` is the Mob of a task already taken.
+ * When the guard gives no more tasks (the limit per level), grinds `camp` (other options, such as spots and band) until the next level, then goes back for tasks.
  */
-export async function taskLoop(agent: Agent, minutes: number, at: typeof EIMILE, opts: Omit<GrindOptions, "minutes" | "prefer" | "goal">): Promise<Outcome> {
+export async function taskLoop(agent: Agent, minutes: number, at: typeof EIMILE, opts: Omit<GrindOptions, "minutes" | "prefer" | "goal">, current?: string, camp?: Partial<GrindOptions>): Promise<Outcome> {
   const deadline = Date.now() + minutes * 60_000;
   const log = opts.log ?? [];
   const times = opts.times ?? {};
-  while (Date.now() < deadline) {
-    const t = Date.now();
-    const task = await takeTask(agent, log, at);
-    times.town = Math.round((times.town ?? 0) + (Date.now() - t) / 1000);
-    if (!task.ok || !task.mob) return task;
-    const r = await grind(agent, { ...opts, log, times, goal: 51, prefer: task.mob, minutes: (deadline - Date.now()) / 60_000 });
+  const left = () => (deadline - Date.now()) / 60_000;
+  while (left() > 0) {
+    if (!current) {
+      const t = Date.now();
+      const task = await takeTask(agent, log, at);
+      times.town = Math.round((times.town ?? 0) + (Date.now() - t) / 1000);
+      if (!task.ok || !task.mob) {
+        if (!camp) return task;
+        const r = await grind(agent, { ...opts, ...camp, log, times, goal: agent.self.level + 1, minutes: left() });
+        if (!r.ok) return r;
+        continue;
+      }
+      current = task.mob;
+    }
+    const r = await grind(agent, { ...opts, log, times, goal: 51, prefer: current, minutes: left() });
     if (r.ok || r.reason !== "preferredKilled") return r;
+    current = undefined;
   }
   return failed("outOfTime");
 }

@@ -30,3 +30,14 @@ Needed: a Percept for custom dialogs (text) and a Primitive to accept or decline
 
 Every `runTo` into X:349000–358000 Y:590000–607000 (large eirebugs, cluricaun trips, sheevra) ends `unreachable` at exactly X:347100 Z:4613, from the north, the west and the south. A Human could walk there, as far as I know. Maybe the navmesh is missing tiles there.
 Needed: a navmesh there, or to know it's not walkable.
+
+## `kill` times out on the run to a far Mob (2026-10-25)
+
+`kill` starts its 30 s `noDamage` clock before running to the Mob, so a Mob more than ~5500 units away failed with `noDamage` while I was still running, every time (`grind` then tried again from closer and won).
+Workaround: `grind` runs within 800 units of a Mob more than 2000 away before calling `fight`.
+Needed: the clock starts once in melee range, or `kill` fails with a separate reason while the run is going.
+
+## `/task` answers in a window the Mind can't see (2026-10-25)
+
+`/task` shows the task, its expiry time and how many tasks I've done this level in a custom text window (`SendCustomTextWindow`), which never reaches the Mind. I only learnt a task had expired when its hand-in gave nothing.
+Needed: a Percept with the text of custom text windows.
