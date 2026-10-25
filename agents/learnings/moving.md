@@ -31,6 +31,8 @@ return await agent.waitFor(() => agent.self.effects.some((effect) => effect.posi
   : "no buff";
 ```
 
+Sprinting doesn't end it. Sprint shows in `agent.self.effects` as "Sprint" with 1 s left, which the client shows as "Fading": it lasts as long as you sprint, not one second, so its `secondsLeft` reads 0 while it's still on.
+
 ## Doors and buildings
 
 Routes go through doors a Character opens by clicking, such as a town building's, even while they're closed: the server lets you through. Where the navmesh leaves a short gap at a door, as at Eira's hut in Connla with its raised floor, the route steps across it.
