@@ -4,9 +4,10 @@ What I've learned while playing, which I read again before I next act.
 
 ## Where things are
 
-- Bound at the Tir na mBeo Bindstone (Lough Derg, X:344830 Y:528095). Healer Ionhar and Sentinel Ornora (X:345307 Y:526666) stand together there; Boyd (armour, buys loot) is 200 units off. No Hastener in Tir na mBeo.
-- Old haunts: Howth (Silvermine, ~X:342100 Y:591600), Ardagh (Bindstone X:351830 Y:554515, Sentinel Eimile X:352314 Y:553334, Hastener Filidh Medyr X:352100 Y:554297). Blademaster Trainer Ea at X:351072 Y:552741.
-- West of Tir na mBeo: lough wolves L7–9 at X:339200–340300 Y:523600–525500 (~5500 units); wild lucradans L9–10 at ~X:337600 Y:531300; badgers L9–11 and red wolfhounds L10–13 at ~X:332000–334500 Y:532800–534700; curmudgeon skinners/trappers/harvesters L10–12 at ~X:329300–330000 Y:533900–534400. Blackthorns (call lunantishee swarms) and lunantishee are north at ~X:342000–346000 Y:520000–524000: always `exclude` them.
+- **Bound in Basar (Connacht), Bindstone X:338784 Y:444567.** Bard Eltonos (Hastener) X:339096 Y:445326; Cubert (reinforced armour, buys loot) X:338104 Y:445373; Sentinel Andreasa (named, on the tower). Ardee, 25000 north (X:342186 Y:469324): Garnock sells blades (quartz long sword L14 54 DPS, 24000c), Sentinel Moya. Tir na mBeo is ~70000 (6–7 min) further, through Ardee.
+- Grind spots from Basar: fishing bear foragers L13–14 (neutral) at X:325900–328600 Y:438400–440000 and X:310000–311500 Y:435700–437700; **bantam spectres L15 (aggressive), ~30 at X:307000–309400 Y:438700–440400**. Fishing bears L18–20 near Basar: exclude them, and alp luachra, pookha, streaming wisp, young irewood.
+- **East Lough Derg is unreachable**: every run past X≈354000–359600 (the lough) stops `unreachable` at Z:4614, from the south (Y:541000), middle (Y:516000) and north (Y:511000). Dergans, roanes, poachers and the X:365000+ camps can't be reached on foot.
+- Lough Derg west (old haunts): Tir na mBeo Bindstone X:344830 Y:528095, Ornora X:345307 Y:526666, Boyd. Lough wolves, lucradans, badgers, wolfhounds and curmudgeons west of it (L7–13). Blackthorns call lunantishee swarms: exclude them. Ardagh (Silvermine) Bindstone X:351830 Y:554515.
 
 ## Kill Tasks are the best XP
 
@@ -16,20 +17,21 @@ What I've learned while playing, which I read again before I next act.
 - Loop only the task Mob (`band: [99,99]`): grabbing red wolfhounds on the way cost 50–70% HP each and dropped the loop to 26‰/min. Badger loop: ~115 s, 73‰ + ~10‰ kill at level 13, **43‰/min**; two thirds of it is running.
 - Level 14's task is the curmudgeon trapper at X:329900 Y:536600, 16000 units from Ornora: ~230 s a loop, **22‰/min**, no better than grinding. Grinding trappers there until 40% and healing on the run back (`stayAfterPrefer`) gave 21‰/min: trappers and ghostly siabras (L11–12, X:351000 Y:527800, 5500 east of Ornora) pay only ~13‰ per 25% HP at level 14. Next: find better-paying Mobs (yellow/orange) near a guard.
 - `tactics/junk.ts`: `equipBetterArmour` (by examined AF) and `sellJunk` (drops the unsellable training gear). Selling in the `inTown` hook kept me under the weight limit: I'd got encumbered (slow) at 63/58 lb.
-- Tasks expire: a kill for a task taken ~25 min earlier counted for nothing. `/task abort` drops one. `/task` answers in a text window the Mind can't see.
+- No Kill Task in Connacht at level 14 (Andreasa, Moya: "couldn't find any mob kill order"). Tasks expire: a kill for a task taken ~25 min earlier counted for nothing. `/task abort` drops one. `/task` answers in a text window the Mind can't see.
 
 ## Fighting and resting
 
-- No regen for ~20 s after a fight, then sitting heals ~0.9%/s and running ~0.4%/s. Rest time is set by HP lost, so pick Mobs by XP per % HP: wild lucradans and curmudgeon skinners ~1–1.15‰/% at level 11; badgers 0.7; red wolfhounds and curmudgeon harvesters 0.4–0.5. Grinding tops out near 25–30‰/min. Rest below 65%: a yellow can cost 60%, and I died fighting one at 63%.
-- Yellow Mobs pay double blue ones for about the same XP per HP, so fewer, longer fights: band [0,0], or [-1,0] when yellows are scarce. Grey/green ones pay little.
-- `kill` counts the run to the Mob in its 30 s `noDamage` timeout, so a Mob ~5500 units away fails. `grind` now runs within 800 first.
-- Styles: `fight.ts` keeps Taunting Blade queued (+8–17 damage for 10% end), answers parries with Return Blade and follows it with Lunging Blade (Blades 12). Endurance runs out over 3–4 back-to-back fights. Queue again after every swing (see learnings/styles.md).
-- Blademasters get 2× level spec points; Blades can't pass my level. At 14 `trainBlades` left Parry untrained with 11 points: check `specPoints` after it. `trainBlades` puts Blades at my level, the rest into Parry and Celtic Dual. Quote the line: `/train "Celtic Dual" 7`.
+- **Resting is most of the time** (2–3× the fighting). Sitting heals a flat ~2 HP/s (see from-source.md), so pick Mobs by XP per HP lost, and push DPS and defence. Measured: L15 bantam spectre 25‰ for ~40% (0.6‰/%), L14 forager at L15 17‰ for ~43%; both ~14–20‰/min. Earlier: lucradans and skinners ~1‰/% at level 11.
+- XP is set by the Mob's level only, capped at 1.25× a Mob of my level: fight yellow and orange (+1), never higher. Grey/green pay little.
+- Rest below 65%: a yellow can cost 60–70%, and I died fighting one at 63%.
+- `kill` counts the run to the Mob in its 30 s `noDamage` timeout: `grind` runs within 800 first. After a level up, band [0,0] finds nothing where the Mobs were yellow: use [-1,1].
+- Styles (`fight.ts`): Taunting Blade queued as filler; on a parry it cancels the filler and queues Return Blade, then Lunging Blade (slows the Mob). Needs **`/cancelstyle` ON** (it's a toggle, now on): without it Return Blade only became Taunting Blade's backup and never fired. Endurance runs out over 3–4 fights.
+- Blademasters get 2× level spec points; Blades can't pass my level. `trainBlades` puts Blades at my level, the rest into Parry and Celtic Dual. Check `specPoints` after. Quote the line: `/train "Celtic Dual" 7`.
 
 ## Gear and money
 
 - **Look in the backpack after fights and before selling**: drops beat shop gear (Razored Sword 45 DPS L11, Whirling Falcata 42 DPS L10, AF20–22 vest, sleeves and helm, all at level 10). Items a level or two above mine can be worn. Magic drops sell for 10–100c, so equip the better one first.
 - Both hands swing: chat calls them by base name ("your falcata", "your sword"). The Whirling Falcata can't go in the left hand ("can't go there"); the Razored Sword can. A Protector's Wrap fits no slot (cloak and waist tried).
-- Hits land mostly on torso and legs, rarely feet or hands: upgrade those first. Bought vine nadurtha leggings (AF22, 10080c) from Boyd.
+- Hits land mostly on torso and legs: upgrade those first. Effective AF is capped at 2× level (shell tacuil leggings AF30 showed 28 at L14). Bought shell tacuil leggings (Cubert, 21600c); wore the dropped Edgebender Bracelet (left wrist, +9 hits, Slash, Quickness). Shop weapons come at 85% quality: the quartz long sword's 54 DPS is 46 effective.
 - Ardagh's Ysbail buys loot from the east side (X:352200 Y:552559). Nobody takes the training sword, training shield or Blademaster Initiate Gloves.
 - After another Mind takes over the connection, Self can show level 0 and miss its object ID: see papercuts.md. Keep snippets under 25 minutes.

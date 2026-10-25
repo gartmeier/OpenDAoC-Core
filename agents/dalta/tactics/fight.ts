@@ -33,37 +33,52 @@ export async function fight(agent: Agent, mobId: number, fillerEndurance = 25): 
 
   let fighting = true;
   const killing = kill(agent, mobId).finally(() => { fighting = false; });
-  let fillerQueued = false;
+  // What the server says is queued, and whether a useStyle waits for its answer. Needs `/cancelstyle` ON: using the queued
+  // Style again cancels it ("You are no longer preparing"), so a parry can swap the filler for Return Blade, which otherwise
+  // only becomes the filler's backup and never fires.
+  let queued: string | undefined;
+  let pending: string | undefined;
+  let wantReactive = false;
+  const queue = async (style: string) => { pending = style; await agent.send({ name: "useStyle", style }); };
 
   while (fighting) {
-    if (filler && !fillerQueued && agent.self.endurancePercent > fillerEndurance) {
-      await agent.send({ name: "useStyle", style: filler });
-      fillerQueued = true;
-    }
+    if (filler && !queued && !pending && agent.self.endurancePercent > fillerEndurance) await queue(filler);
     const text = await agent.waitFor((p) => {
       if (!fighting) return "done";
       if (p?.kind !== "message") return undefined;
-      return /attacks you and you parry the blow|You perform your|You fail to execute your|too fatigued|^You (attack|miss|enter combat mode)/.test(p.text) ? p.text : undefined;
-    }, 5_000);
+      return /attacks you and you parry the blow|You perform your|You fail to execute your|too fatigued|You prepare to perform|as a backup for|no longer preparing|already preparing|must perform|^You (attack|miss|fumble)/.test(p.text) ? p.text : undefined;
+    }, pending ? 1_500 : 5_000);
+    if (text === undefined) { pending = undefined; continue; }
     if (typeof text !== "string" || text === "done") continue;
 
+    let m: RegExpExecArray | null;
     if (/attacks you and you parry/.test(text)) {
       stats.parries++;
-      if (reactive) await agent.send({ name: "useStyle", style: reactive });
-    } else if (/^You (attack|miss|enter combat mode)/.test(text)) {
-      // The server forgets a queued Style after every swing, a miss too, and whenever attack stops.
-      fillerQueued = false;
+      if (!reactive) continue;
+      if (queued && queued !== reactive && !pending) { wantReactive = true; await queue(queued); }
+      else if (!queued && !pending) await queue(reactive);
+      else wantReactive = true;
+    } else if ((m = /You prepare to perform an? (.+?)!/.exec(text))) {
+      queued = m[1]; pending = undefined;
+      if (wantReactive && queued !== reactive) await queue(queued);
+    } else if (/as a backup for/.test(text)) {
+      pending = undefined;
+    } else if (/no longer preparing/.test(text)) {
+      queued = undefined; pending = undefined;
+      if (wantReactive && reactive) { wantReactive = false; await queue(reactive); }
+    } else if (/already preparing|must perform/.test(text)) {
+      pending = undefined;
     } else if (/too fatigued/.test(text)) {
-      stats.fatigued++;
-      fillerQueued = false;
-    } else {
-      const m = /You (perform|fail to execute) your (.+?) perfectly/.exec(text);
-      if (m) {
-        const bucket = m[1] === "perform" ? stats.performed : stats.failed;
-        bucket[m[2]] = (bucket[m[2]] ?? 0) + 1;
-        if (m[2] === filler) fillerQueued = false;
-        if (m[1] === "perform" && m[2] === reactive && followup) await agent.send({ name: "useStyle", style: followup });
-      }
+      stats.fatigued++; queued = undefined; pending = undefined; wantReactive = false;
+    } else if (/^You (attack|miss|fumble)/.test(text)) {
+      // The server forgets a queued Style after every swing, a miss too.
+      if (!pending) queued = undefined;
+      wantReactive = false;
+    } else if ((m = /You (perform|fail to execute) your (.+?) perfectly/.exec(text))) {
+      const bucket = m[1] === "perform" ? stats.performed : stats.failed;
+      bucket[m[2]] = (bucket[m[2]] ?? 0) + 1;
+      queued = undefined;
+      if (m[1] === "perform" && m[2] === reactive && followup) await queue(followup);
     }
   }
 

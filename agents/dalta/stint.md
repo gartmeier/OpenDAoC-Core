@@ -32,6 +32,7 @@ Imports are relative to `agents/dalta/`. The wiki is in `agents/wiki/`.
   - One `execute_code` at a time.
   - Never run anything outside `execute_code` that connects as the Character.
   - Keep each call under 25 minutes.
+  - You may read the server's source (e.g. `GameServer/`) to learn game rules. Check `agents/dalta/from-source.md` first; it may already have the answer. Record every rule you learn there, with the file it came from, so the Human can add it to the Agents' knowledge and no one has to search again.
   - If a Human says `stop` in chat, stop and report.
 - **When to stop:** play for about 90 minutes, then stop at a safe point (not mid-fight).
 

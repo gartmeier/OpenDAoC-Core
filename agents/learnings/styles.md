@@ -84,7 +84,7 @@ while (fighting) {
 return await fight;
 ```
 
-If another Style is already queued, the reactive one goes first and the other waits as its backup: "You are now preparing to perform a Shining Blade style as a backup for Return Blade!". So you can keep Shining Blade queued and still answer a parry with Return Blade.
+Queueing a reactive Style while another is queued only makes it the other's backup: "You are now preparing to perform a Return Blade style as a backup for Taunting Blade!", and it fires only if the first can't. With Taunting Blade queued as a filler, Dalta's Return Blade never fired in a dozen parries. Type `/cancelstyle` once (a toggle: "Cancel Style now set to ON."); then using the queued Style again cancels it ("You are no longer preparing to use your Taunting Blade style!"), and you can queue Return Blade in its place. `dalta/tactics/fight.ts` does this on each parry, then follows with Lunging Blade.
 
 The messages for the other openings: "... parries your attack!", "... blocks your attack!" and "... evades your attack!" when the Mob defends, and "... attacks you and you evade the blow!" or "... attacks you and you block the blow!" when you do. A positional Style needs you at the Mob's side or back, facing it.
 
