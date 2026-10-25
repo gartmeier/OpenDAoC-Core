@@ -37,7 +37,10 @@ namespace DOL.GS.Tests
         // A Blademaster fighting Mobs with styles from the quickbar.
         public const string STYLES = "styles";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES];
+        // A Character that lost Constitution declining, then accepting, a Healer's Dialog.
+        public const string HEALER_DIALOG = "healer-dialog";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, HEALER_DIALOG];
 
         public static CapturedPacket[] Load(string capture)
         {
