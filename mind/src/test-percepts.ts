@@ -13,6 +13,7 @@ import type {
   MerchantWindowPercept,
   MoneyPercept,
   NpcCreatePercept,
+  ObjectCreatePercept,
   ObjectDeletePercept,
   ObjectRemovePercept,
   ObjectUpdatePercept,
@@ -135,6 +136,11 @@ export function npcCreate(objectId: number, name: string, x: number, y: number, 
     guildName: "",
     ...fields,
   };
+}
+
+/** A World object, such as a Grave. */
+export function objectCreate(objectId: number, name: string, x: number, y: number, z: number): ObjectCreatePercept {
+  return { kind: "objectCreate", x, y, z, objectId, heading: 0, model: 637, realm: "Hibernia", emblem: 0, underwater: false, keepBanner: false, yours: false, name };
 }
 
 export function objectUpdate(objectId: number, x: number, y: number, z: number, fields: Partial<ObjectUpdatePercept> = {}): ObjectUpdatePercept {

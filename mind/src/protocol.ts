@@ -140,7 +140,7 @@ export interface UseStylePrimitive {
   line?: string;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -239,6 +239,23 @@ export interface NpcCreatePercept {
   questIndicator: eQuestIndicator;
   name: string;
   guildName: string;
+}
+
+export interface ObjectCreatePercept {
+  kind: "objectCreate";
+  x: number;
+  y: number;
+  z: number;
+  objectId: number;
+  heading: number;
+  model: number;
+  realm: PacketRealm;
+  emblem: number;
+  underwater: boolean;
+  keepBanner: boolean;
+  yours: boolean;
+  name: string;
+  doorId?: number;
 }
 
 export interface ObjectUpdatePercept {

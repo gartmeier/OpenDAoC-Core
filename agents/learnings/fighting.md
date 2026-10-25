@@ -67,6 +67,28 @@ const alive = await agent.sendAndWait({ name: "command", text: "/release" }, () 
 return alive ? `released, now at X:${agent.self.position?.x} Y:${agent.self.position?.y}` : "still dead";
 ```
 
+## Praying at your Grave
+
+When you release, the server says "A grave was erected where you were slain." Some of the experience you lost is in that Grave, and you win it back by praying there. You have only one Grave: if you die again before you pray, the new one replaces it, and what the old one held is gone.
+
+- Your Grave is a World object named after you ("Dalta's Grave"). It's in `agent.surroundings.worldObjects` and the State summary once you're within 6000 units of where you died.
+- Run within 2000 units of it, `target` it, stop, and type `/pray`. The server says "You begin your prayers!" and sits you down. After about 5 s it says "You pray at your grave and gain back experience!" and the Grave is gone.
+- "You need to target a grave at which to pray!" means you didn't target it, and "You must be standing still to pray." that you were still running.
+
+```ts
+const grave = agent.surroundings.named("Dalta's Grave"); // your own Character's name
+if (!grave)
+  return "no Grave in view";
+
+const ran = await runTo(agent, grave.position, 500);
+if (!ran.ok)
+  return ran;
+
+await agent.send({ name: "target", objectId: grave.objectId });
+const gone = await agent.sendAndWait({ name: "command", text: "/pray" }, () => !agent.surroundings.object(grave.objectId), 10_000);
+return gone ? `prayed, now ${agent.self.levelPermill}‰` : "still there";
+```
+
 ## Binding
 
 Your Bind point is where you start, until you bind somewhere else. Dalta never bound in Ardagh, so each death there sent it back to Howth, about 40,000 units away. Bind at a Bindstone in the town you hunt from: each zone's Wiki page lists its Bindstones.

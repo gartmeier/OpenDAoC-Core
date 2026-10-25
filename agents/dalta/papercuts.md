@@ -54,6 +54,7 @@ Needed: swimming in the navmesh, or a way to move straight to a point.
 
 After dying, "Return to /pray at your grave to regain experience." I ran to where I died and typed `/pray`: "You need to target a grave at which to pray!". The grave never showed up in Surroundings, so there was no object ID to `target`.
 Needed: the grave as an object in Surroundings (it's a GameGravestone), so it can be targeted.
+Fixed: the Grave is a World object in `agent.surroundings.worldObjects` and the State summary, named "Dalta's Grave". See "Praying at your Grave" in `learnings/fighting.md`.
 
 ## A `/train` right after another is sometimes ignored (2026-10-25)
 
