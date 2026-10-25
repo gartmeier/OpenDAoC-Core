@@ -46,9 +46,16 @@ export async function buffSelf(agent: Agent): Promise<string[]> {
   for (const buff of best.values()) {
     if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name))) continue;
     await agent.send({ name: "target", objectId: me });
-    const reply = await agent.sendAndWait({ name: "castSpell", spell: buff.name }, (percept) =>
-      percept?.kind === "message" && /You cast a|interrupt|must wait|requires|can't cast|enough power/.test(percept.text) ? percept.text : undefined, 10_000);
-    cast.push(`${buff.name}: ${reply ?? "no answer"}`);
+    for (let tries = 0; tries < 3; tries++) {
+      const reply = await agent.sendAndWait({ name: "castSpell", spell: buff.name }, (percept) =>
+        percept?.kind === "message" && /You cast a|interrupt|must wait|requires|can't cast|enough power/.test(percept.text) ? percept.text : undefined, 10_000);
+      const wait = reply?.match(/must wait (\d+) seconds?/);
+      if (!wait) {
+        cast.push(`${buff.name}: ${reply ?? "no answer"}`);
+        break;
+      }
+      await agent.waitFor(() => undefined, Number(wait[1]) * 1000 + 300);
+    }
   }
   return cast;
 }
