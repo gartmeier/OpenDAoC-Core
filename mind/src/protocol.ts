@@ -486,6 +486,7 @@ export interface MerchantItem {
   hand: number;
   damageType: number;
   objectType: number;
+  itemType: number;
   usable: boolean;
   weight: number;
   price: number;
@@ -539,6 +540,7 @@ export interface InventoryItem {
   hand: number;
   damageType: number;
   objectType: number;
+  itemType: number;
   weight: number;
   condition: number;
   durability: number;

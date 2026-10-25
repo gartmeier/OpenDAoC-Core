@@ -81,3 +81,7 @@ This bends ADR 0001, since the packet doesn't carry it. ADR 0006 now records the
   - Generated "Fist Wraps" are hand-to-hand weapons, not rings: the item type gets that right where a name rule wouldn't.
 - Relevant decisions: ADR 0001 (Percepts only as a client knows), ADR 0006 (static knowledge is fair; now including what the client knows about an item from its own data files), ADR 0009 (the coding agent plays through these Percepts).
 - The grilling dropped one clean-up item: the `shop` stand-in that guessed a piece's slot from the last word of its name no longer exists.
+
+## Comments
+
+**2026-10-25 (agent):** Implemented, not yet tested in game. `ItemType` sits after `ObjectType` in both records. Its comment also says arrows and bolts go in the quivers (14 to 17) by their object type alone, whatever their item type, as the server's slot check has it. The Agent files wait for the in-game check, as the spec says.

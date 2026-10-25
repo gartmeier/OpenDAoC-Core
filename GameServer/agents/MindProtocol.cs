@@ -497,6 +497,10 @@ namespace DOL.GS.Agents
     // `Count` is how many there are, carried for generic items, arrows, bolts, poisons and thrown weapons, and 1 for anything else. Any stack of more than one also has its count in front of its `Name`.
     // `Hand` is 0 for the right hand, 1 for two-handed and 2 for either hand. `Weight` is in tenths of a pound, for the whole stack. `Condition`, `Durability` and `Quality` are percentages.
     // `SpellNames` are the names of the spells it casts or procs.
+    // `ItemType` is the server's equipment slot the item is made for (see `MoveItemPrimitive`). The packet doesn't carry it, but the client works it out from its own data, as a Human sees it from the item's icon (ADR 0006).
+    // An item goes only in its own slot, except that a wrist item (33 or 34) goes on either wrist, a ring (35 or 36) on either finger, a right-hand weapon (10) in the right hand or both,
+    // and a left-hand weapon (11) in either hand or both. A shield or an instrument goes by its `ObjectType` too, and arrows and bolts go in the quivers (14 to 17) by theirs alone.
+    // Anything else, such as 0 or 40, goes in no equipment slot.
     public sealed record InventoryItem(
         string Name,
         int Level,
@@ -506,6 +510,7 @@ namespace DOL.GS.Agents
         int Hand,
         int DamageType,
         int ObjectType,
+        int ItemType,
         int Weight,
         int Condition,
         int Durability,
@@ -530,7 +535,7 @@ namespace DOL.GS.Agents
     public sealed record MerchantWindowPercept(eMerchantWindowType Window, MerchantItem[] Items) : Percept;
 
     // One item in a merchant's window. `Page` and `Place` are where it is: `buy` and `examineMerchantItem` take `Page * 30 + Place`.
-    // `DpsAf`, `SpeedAbs`, `Hand`, `DamageType` and `ObjectType` are as in an `InventoryItem`. `Count` is how many come in a pack, 1 unless the packet carries it.
+    // `DpsAf`, `SpeedAbs`, `Hand`, `DamageType`, `ObjectType` and `ItemType` are as in an `InventoryItem`. `Count` is how many come in a pack, 1 unless the packet carries it.
     // `Weight` is in tenths of a pound, for the whole pack, and 0 for a thrown weapon. `Price` is in copper. `Usable` says whether the Character's class can use it.
     public sealed record MerchantItem(
         int Page,
@@ -542,6 +547,7 @@ namespace DOL.GS.Agents
         int Hand,
         int DamageType,
         int ObjectType,
+        int ItemType,
         bool Usable,
         int Weight,
         long Price,

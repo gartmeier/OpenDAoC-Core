@@ -228,6 +228,9 @@ export function stopped(x: number, y: number, z: number, reason: StopReason): St
 /** The server's `eObjectType` for an item that's none of the others. */
 export const GENERIC_ITEM = 0;
 
+/** The server's item type (`eInventorySlot.FirstBackpack`) for an item that goes in no equipment slot. */
+export const BACKPACK_ITEM = 40;
+
 /** A level 1 generic item of quality 100 in good condition, unless `fields` say otherwise. */
 export function item(name: string, fields: Partial<InventoryItem> = {}): InventoryItem {
   return {
@@ -239,6 +242,7 @@ export function item(name: string, fields: Partial<InventoryItem> = {}): Invento
     hand: 0,
     damageType: 0,
     objectType: GENERIC_ITEM,
+    itemType: BACKPACK_ITEM,
     weight: 10,
     condition: 100,
     durability: 100,
@@ -284,5 +288,5 @@ export function merchantWindow(...items: MerchantItem[]): MerchantWindowPercept 
 
 /** A level 1 item the Agent's class can use, on the first page, unless `fields` say otherwise. */
 export function merchantItem(place: number, name: string, price: number, fields: Partial<MerchantItem> = {}): MerchantItem {
-  return { page: 0, place, level: 1, dpsAf: 0, speedAbs: 0, count: 1, hand: 0, damageType: 0, objectType: GENERIC_ITEM, usable: true, weight: 10, price, model: 0, name, ...fields };
+  return { page: 0, place, level: 1, dpsAf: 0, speedAbs: 0, count: 1, hand: 0, damageType: 0, objectType: GENERIC_ITEM, itemType: BACKPACK_ITEM, usable: true, weight: 10, price, model: 0, name, ...fields };
 }
