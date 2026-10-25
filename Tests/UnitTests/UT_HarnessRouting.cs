@@ -696,7 +696,7 @@ namespace DOL.GS.Tests
             Assert.That(_movement.IsSwimming, Is.True);
         }
 
-        // Starting in the water, the step to the nearest point of it swims too.
+        // Starting in the water, right over the navmesh's water: the step down to it is no distance to run, so the Character swims from the first position update.
         [Test]
         public void MoveTo_ShouldSwimFromTheStart_InTheWater()
         {
@@ -709,7 +709,7 @@ namespace DOL.GS.Tests
             _movement.MoveTo(Target, null, 0);
             RunToTheEnd();
 
-            Assert.That(((RoutedPercept) _client.Perceived[0]).Corners.Select(static corner => corner.Swim), Is.EqualTo(new[] { true, true, true }));
+            Assert.That(((RoutedPercept) _client.Perceived[0]).Corners.Select(static corner => corner.Swim), Is.EqualTo(new[] { false, true, true }));
             Assert.That(_client.Queued.Select(StateFlags), Has.All.EqualTo(PlayerPositionUpdateHandler.StateFlags.SWIMMING));
         }
 

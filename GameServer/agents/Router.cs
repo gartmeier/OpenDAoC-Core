@@ -148,7 +148,7 @@ namespace DOL.GS.Agents
             if (WalkableNear(zone, position, WALKABLE_RANGE, WALKABLE_RANGE) is not Vector3 from)
                 return false;
 
-            corners.Snap(from);
+            corners.Continue(from);
             int start = corners.Count;
 
             if (TryPath(zone, from, legEnd, corners))
@@ -319,8 +319,6 @@ namespace DOL.GS.Agents
         private sealed class RouteBuilder
         {
             private readonly List<Route.Corner> _corners;
-            // The corners from which the route steps to the nearest walkable point (`Snap`).
-            private readonly List<int> _snaps = [];
 
             public RouteBuilder(Vector3 first)
             {
@@ -331,7 +329,7 @@ namespace DOL.GS.Agents
 
             public Vector3 Last => _corners[^1].Position;
 
-            // A corner the route got to some other way than along the navmesh, such as a zone border or a door step: it goes on as it came in.
+            // A corner the route got to some other way than along the navmesh, such as the nearest walkable point, a zone border or a door step: it goes on as it came in.
             public void Continue(Vector3 position)
             {
                 Add(new(position, _corners[^1].Swim));
@@ -341,15 +339,6 @@ namespace DOL.GS.Agents
             public void Follow(WrappedPathfindingNode node)
             {
                 Add(new(node.Position, node.Flags == 0 ? _corners[^1].Swim : node.Flags.HasFlag(EDtPolyFlags.Swim)));
-            }
-
-            // The nearest walkable point to where the route is, a step from it. The step swims if the route swims on from that point, which the navmesh says only later.
-            public void Snap(Vector3 position)
-            {
-                if (Last != position)
-                    _snaps.Add(_corners.Count - 1);
-
-                Continue(position);
             }
 
             // All of `other`'s corners after its first.
@@ -362,18 +351,11 @@ namespace DOL.GS.Agents
             public void RemoveFrom(int index)
             {
                 _corners.RemoveRange(index, _corners.Count - index);
-                // A snap from the corner before `index` stepped to a corner that's gone.
-                _snaps.RemoveAll(snap => snap >= index - 1);
             }
 
             public Route ToRoute(bool reachesTarget)
             {
-                Route.Corner[] corners = _corners.ToArray();
-
-                foreach (int snap in _snaps)
-                    corners[snap] = corners[snap] with { Swim = corners[snap + 1].Swim };
-
-                return new(corners, reachesTarget);
+                return new(_corners.ToArray(), reachesTarget);
             }
 
             private void Add(Route.Corner corner)
