@@ -1,6 +1,6 @@
 # Water routes: swim when it's faster
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -139,3 +139,16 @@ Nothing changes for the Mind's Tactics: `runTo` to a point across or in a lake j
 - Risk: the swimming flag follows Swim polygons, while a client sets it from depth. At a shallow shore the two may switch a step apart. It isn't checked by the server, but watch for it in acceptance check 1.
 - Risk: water cells outside BuildNav's river bank polygons are Walk polygons at the sheet's height, so a route could "walk" there at running speed. If the acceptance test shows it, fix it in BuildNav's input, not in the Harness.
 - Papercuts this resolves: "Routes stop at X≈347100 east of Howth" and "Routes stop at the shore of Lough Derg" in Dalta's papercuts.
+
+## Comments
+
+**2026-10-25 (Human, recorded by agent):** Water routes are done and merged into main. The manual acceptance test passed with Dalta:
+
+1. East Lough Derg: from X:353180 Y:541476 the route went into the water at X:353266 Y:541518, where the papercut's runs used to stop, swam across, and arrived on the dergan island at X:358059 Y:537949.
+2. East of Howth: from X:347022 Y:597851 Dalta swam east at Z 4574 and 85 per second, climbed out at X≈349000, and arrived at X:352900 Y:597986.
+3. A river next to a bridge: the run took the bridge, which was faster.
+4. Runs that ended in the river at Basar left Dalta standing there swimming, at Z 4651, 24 below the navmesh's water at 4675.
+5. Runs over land behaved as before.
+6. The server log has no speed-check entries since the restart.
+
+Dalta's two water papercuts are closed, and her Lessons about east Lough Derg and the fishing bears in the Basar river are corrected. Dalta also fought a fishing bear standing in the river; the fight ran, though fighting in water stays untested otherwise.
