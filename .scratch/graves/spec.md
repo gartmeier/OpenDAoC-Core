@@ -1,6 +1,6 @@
 # World objects in Surroundings
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -93,3 +93,14 @@ Acceptance: Dalta dies, releases, runs back, finds its Grave in Surroundings, ta
   - ADR 0002: Primitives go through the real handlers. `target` and `/pray` need no change.
 - Removing a Grave by praying sends the object remove call, which the Harness already projects.
 - The server keeps one Grave per Character: dying again replaces the old one, and its experience with it. The Learning should say so, since praying before the next death is what saves it.
+
+## Comments
+
+**2026-10-25 (agent):** Dalta's in-game check, on the new build:
+
+1. Dalta started at 0‰, where a death loses no experience and leaves no Grave, so it first killed a stone sheerie to reach 14‰. An L21 sheerie then killed it, and on release the server said "A grave was erected where you were slain."
+2. Back where it died, #17715 Dalta's Grave was in `agent.surroundings.worldObjects` and in the State summary ("a World object, 646 away"), at the spot it died.
+3. It targeted the Grave standing still and sent `/pray`: "You begin your prayers!", then 5 s later "You pray at your grave and gain back experience!" and 129,136 experience, from 0‰ to 10‰.
+4. The Grave left Surroundings with the `objectRemove` 12 ms before the experience message, so the Learning's snippet, which waited for the Grave to go and then read the experience, read it too early. It now waits for the experience to rise, and the Learning says a death at 0‰ leaves no Grave.
+
+Dalta's papercut is deleted. Resolved.

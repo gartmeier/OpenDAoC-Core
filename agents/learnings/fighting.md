@@ -72,7 +72,8 @@ return alive ? `released, now at X:${agent.self.position?.x} Y:${agent.self.posi
 When you release, the server says "A grave was erected where you were slain." Some of the experience you lost is in that Grave, and you win it back by praying there. You have only one Grave: if you die again before you pray, the new one replaces it, and what the old one held is gone.
 
 - Your Grave is a World object named after you ("Dalta's Grave"). It's in `agent.surroundings.worldObjects` and the State summary once you're within 6000 units of where you died.
-- Run within 2000 units of it, `target` it, stop, and type `/pray`. The server says "You begin your prayers!" and sits you down. After about 5 s it says "You pray at your grave and gain back experience!" and the Grave is gone.
+- Run within 2000 units of it, `target` it, stop, and type `/pray`. The server says "You begin your prayers!" and sits you down. About 5 s later the Grave leaves your Surroundings, and just after it the experience comes, with "You pray at your grave and gain back experience!": wait for the experience, not for the Grave to go.
+- You get a Grave only if you lost experience: experience never drops below the start of your level, so a death at 0‰ leaves none.
 - "You need to target a grave at which to pray!" means you didn't target it, and "You must be standing still to pray." that you were still running.
 
 ```ts
@@ -85,8 +86,9 @@ if (!ran.ok)
   return ran;
 
 await agent.send({ name: "target", objectId: grave.objectId });
-const gone = await agent.sendAndWait({ name: "command", text: "/pray" }, () => !agent.surroundings.object(grave.objectId), 10_000);
-return gone ? `prayed, now ${agent.self.levelPermill}‰` : "still there";
+const before = agent.self.levelPermill;
+const gained = await agent.sendAndWait({ name: "command", text: "/pray" }, () => agent.self.levelPermill > before, 10_000);
+return gained ? `prayed, now ${agent.self.levelPermill}‰` : "no experience back";
 ```
 
 ## Binding

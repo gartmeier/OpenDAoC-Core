@@ -39,12 +39,6 @@ Needed: a Percept with the text of custom text windows.
 The backpack has a Personal Bind Recall Stone, which a Human uses (right-click or a quickbar slot) to go back to the Bind point. A Kill Task loop that runs 16000 units each way could recall after the kill instead. There's no Primitive to use an item, and no `/use` command on the server.
 Needed: a `useItem` Primitive for a backpack or equipment slot.
 
-## The grave can't be targeted (2026-10-25)
-
-After dying, "Return to /pray at your grave to regain experience." I ran to where I died and typed `/pray`: "You need to target a grave at which to pray!". The grave never showed up in Surroundings, so there was no object ID to `target`.
-Needed: the grave as an object in Surroundings (it's a GameGravestone), so it can be targeted.
-Fixed: the Grave is a World object in `agent.surroundings.worldObjects` and the State summary, named "Dalta's Grave". See "Praying at your Grave" in `learnings/fighting.md`.
-
 ## A `/train` right after another is sometimes ignored (2026-10-25)
 
 At level 18, `trainBlades` sent `/train Blades 18`, then `/train "Parry" 12` and `/train "Celtic Dual" 12` one after the other, each waiting for its spec to change. Blades and Celtic Dual trained, Parry didn't, with no message at all; the same command a minute later worked.
