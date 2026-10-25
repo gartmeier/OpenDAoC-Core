@@ -1,6 +1,6 @@
 # Effects on the Self
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
