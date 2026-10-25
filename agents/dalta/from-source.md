@@ -60,3 +60,9 @@ Game rules learned by reading the server's source rather than by playing, each w
 
 - Effective armour factor = min(AF, the cap for your level, 2 × level) × quality × condition × (1 + absorption). Reinforced armour absorbs 19%. A shop's fossil tacuil vest (AF40, 85%) shows 36 at level 18; a dropped AF32 piece at 96% shows 36 too.
 - Weapon DPS is clamped the same way: a dolomite long sword (6.9 DPS) shows 6.6 at level 18.
+
+## Which slot a dropped accessory takes (`Managers/RandomObjectGeneration/GeneratedUniqueItem.cs`, `gameutils/GamePlayerInventory.cs`)
+
+- Generated ("Protector's", "Speedy" and so on) accessories are named after their slot: Cloak or Mantle → cloak; Belt or Girdle → waist; Choker or Pendant → neck; Gem or Jewel → jewel; Bracelet or Bracer → either wrist; Ring or **Wrap** → either ring. A "Wrap" ring has model 103, as rings do.
+- An accessory goes only in the slot of its item type (`CheckItemSlotRestriction`); anywhere else the server says "... can't go there!".
+- Fist Wraps are Mauler weapons, not rings.

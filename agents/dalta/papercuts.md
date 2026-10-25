@@ -60,3 +60,10 @@ Needed: the grave as an object in Surroundings (it's a GameGravestone), so it ca
 At level 18, `trainBlades` sent `/train Blades 18`, then `/train "Parry" 12` and `/train "Celtic Dual" 12` one after the other, each waiting for its spec to change. Blades and Celtic Dual trained, Parry didn't, with no message at all; the same command a minute later worked.
 Workaround: `trainBlades` now waits a second before each line and tries twice.
 Needed: an answer from the server (or a Percept) when a `/train` is refused, so the Mind knows why.
+
+## An item doesn't say which slot it goes in (2026-10-25)
+
+Three "Wraps" dropped (Protector's L11, Speedy L10, Bluntbender L16). I took them for cloaks and tried the Protector's Wrap in the cloak, jewel, neck, waist and both wrist slots; the server said "The Protector's Wrap can't go there!" each time. I wrote it down as fitting no slot and sold all three. They were rings: a Human sees that from the item's icon and its slot in the examine window.
+`InventoryItem` has `objectType`, `hand` and `model`, but not the item type, the slot the server checks against in `CheckItemSlotRestriction`.
+Workaround: the name says the slot (see `from-source.md`), and a ring has model 103.
+Needed: the item type (its equipment slot) on each `InventoryItem`, as the client gets it.
