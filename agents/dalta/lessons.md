@@ -49,4 +49,5 @@ What I've learned while playing, which I read again before I next act.
 - Hits land mostly on torso and legs: upgrade those first. Effective AF is capped at 2× level (shell tacuil leggings AF30 showed 28 at L14). Bought shell tacuil leggings (Cubert, 21600c); wore the dropped Edgebender Bracelet (left wrist, +9 hits, Slash, Quickness). Shop weapons come at 85% quality: the quartz long sword's 54 DPS is 46 effective.
 - Ardagh's Ysbail buys loot from the east side (X:352200 Y:552559). Nobody takes the training sword, training shield or Blademaster Initiate Gloves.
 - **After a death, see a Healer**: `talkTo` it, wait for `agent.self.dialog`, `answer(agent, true)`. Gralon in Howth (X:341833 Y:592161) restored 5 Con for 9630c (1926c a point at L20); max health 488 → 496. Other Healers: Llyn in Ardee, Cinead near Tir Urphost, Ionhar in Tir na mBeo (`wiki/`).
+- Stand up with the `stand` Primitive, not a `/stand` command: that left me sitting until I moved.
 - After another Mind takes over the connection, Self can show level 0 and miss its object ID: see papercuts.md. Keep snippets under 25 minutes.

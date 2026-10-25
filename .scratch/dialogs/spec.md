@@ -1,6 +1,6 @@
 # Dialogs
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -122,3 +122,14 @@ The Harness turns every Dialog the server opens into a Dialog Percept with its t
   - ADR 0001: Percepts only as a client would know them. The stats packet carries the lost Constitution, and the Dialog packet carries the text.
   - ADR 0002: `answerDialog` goes through the real dialog response handler.
   - ADR 0004: a Primitive's result reports dispatch only.
+
+## Comments
+
+**2026-10-25 (agent):** Dalta's in-game check:
+
+1. After a death at level 20, `agent.self.constitutionLost` read 5.
+2. Dalta talked to Gralon, a Healer in Howth. The Journal shows the `dialog` Percept (CustomDialog, yes or no) with "It will cost 96 silver, 30 copper to have your lost constitution restored. Do you accept?", and `answer(agent, true)` sent `answerDialog` accept.
+3. 32 ms later the money went down by 9,630 copper, chat said "Gralon restores 5 points of your lost constitution.", and the `stats` Percept said 0 lost, so `constitutionLost` went 5 → 0.
+4. Max health stayed at 488 until the next status update brought 496. bdb200715 fixed that: the `stats` Percept now carries max health too. It's covered by the tests but hasn't been seen in game yet.
+
+Dalta wrote a Lesson about Healers. Its Healer and Constitution papercuts are deleted, and its note on `/stand` became a Lesson. Resolved.
