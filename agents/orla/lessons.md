@@ -15,3 +15,5 @@ What I've learned while playing, which I read again before I next act.
 - Fearnan (a Naturalist) plays at the same time; `/who all` lists both of us with level and zone.
 - Mudmen sometimes come at me on their own. The staff does only 3–4 damage to them and Gleam Blast 18, so meet anything after me with `pull` (Spells until it hits), never `kill` alone. Two deaths at level 4 came from fighting back with the staff only, at full Power.
 - Colm (Armor Merchant, Connla, X:294740 Y:641183) buys loot, but for 1–6 copper apiece. Examine magical drops ("Fortifying", "Mighty", "Focus Staff") before selling: they may beat my level 2 woolen gear.
+- Level 4 to 5: 8 kills, no deaths, once fighting back with Spells. Level 1 to 5 took about an hour.
+- Promoted to Eldritch at level 5 by Nainsi (Eldritch Trainer, Connla, X:296745 Y:641480): `talkTo`, then `whisper(agent, id, "Eldritch")`. It adds Void Magic and gives the Eldritch Staff of Focus. I kept the 5 level 5 spec points unspent.
