@@ -45,12 +45,18 @@ export interface KnownNpc extends KnownObjectFields {
   readonly targetId: number;
 }
 
-/** Everything the Agent knows of around it. `kind` tells players and NPCs apart. */
-export type KnownObject = KnownPlayer | KnownNpc;
+/** A World object the Agent knows of: anything that's neither a Character nor an NPC, such as a Grave, a door or loot on the ground. It stands still. */
+export interface KnownWorldObject extends KnownObjectFields {
+  readonly kind: "object";
+  readonly model: number;
+}
+
+/** Everything the Agent knows of around it. `kind` tells players, NPCs and World objects apart. */
+export type KnownObject = KnownPlayer | KnownNpc | KnownWorldObject;
 
 /**
  * What the Agent currently believes is around it, built only from Percepts (see `CONTEXT.md`).
- * One collection of known objects by object ID, since the server gives players and NPCs IDs from the same range and a delete or remove Percept doesn't say which it was.
+ * One collection of known objects by object ID, since the server gives players, NPCs and World objects IDs from the same range and a delete or remove Percept doesn't say which it was.
  * An object is known from its create Percept until a delete Percept (it went out of view) or a remove Percept (it left the world, for example by quitting or despawning). Position and object update Percepts move it.
  * Whenever the Agent's own Character moves, by running or by the server moving it, everything farther than the visibility distance from it is forgotten too, as the client forgets it: the server doesn't always say, and never does for an NPC that goes out of view.
  * Nothing is forgotten by time, because the server doesn't send a player who stands still again.
@@ -99,6 +105,18 @@ export class Surroundings {
           targetId: 0,
         });
         break;
+      case "objectCreate":
+        this.#objects.set(percept.objectId, {
+          kind: "object",
+          objectId: percept.objectId,
+          name: percept.name,
+          position: { x: percept.x, y: percept.y, z: percept.z },
+          heading: percept.heading,
+          speed: 0,
+          lastHeardMs: elapsedMs,
+          model: percept.model,
+        });
+        break;
       case "playerPosition":
       case "objectUpdate": {
         const known = this.#objects.get(percept.objectId);
@@ -115,6 +133,8 @@ export class Surroundings {
 
         if (known.kind === "npc" && percept.kind === "objectUpdate")
           this.#objects.set(percept.objectId, { ...known, ...moved, realm: percept.realm, untargetable: percept.untargetable, healthPercent: percept.healthPercent, targetId: percept.targetId });
+        else if (known.kind === "object")
+          this.#objects.set(percept.objectId, { ...known, ...moved, speed: 0 });
         else
           this.#objects.set(percept.objectId, { ...known, ...moved });
 
@@ -127,7 +147,7 @@ export class Surroundings {
     }
   }
 
-  /** Every object the Agent knows of, players and NPCs. */
+  /** Every object the Agent knows of: players, NPCs and World objects. */
   get objects(): readonly KnownObject[] {
     return [...this.#objects.values()];
   }
@@ -138,6 +158,10 @@ export class Surroundings {
 
   get npcs(): readonly KnownNpc[] {
     return this.objects.filter((known) => known.kind === "npc");
+  }
+
+  get worldObjects(): readonly KnownWorldObject[] {
+    return this.objects.filter((known) => known.kind === "object");
   }
 
   object(objectId: number): KnownObject | undefined {
@@ -159,7 +183,7 @@ export class Surroundings {
     return this.npcs.filter((npc) => npc.targetId === objectId);
   }
 
-  /** The object called `name`, player or NPC, in any case. */
+  /** The object called `name`, a player, an NPC or a World object, in any case. */
   named(name: string): KnownObject | undefined {
     const wanted = name.toLowerCase();
     return this.objects.find((known) => known.name.toLowerCase() === wanted);

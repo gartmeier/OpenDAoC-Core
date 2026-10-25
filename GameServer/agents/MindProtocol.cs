@@ -207,6 +207,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(PlayerCreatePercept), "playerCreate")]
     [JsonDerivedType(typeof(PlayerPositionPercept), "playerPosition")]
     [JsonDerivedType(typeof(NpcCreatePercept), "npcCreate")]
+    [JsonDerivedType(typeof(ObjectCreatePercept), "objectCreate")]
     [JsonDerivedType(typeof(ObjectUpdatePercept), "objectUpdate")]
     [JsonDerivedType(typeof(ObjectDeletePercept), "objectDelete")]
     [JsonDerivedType(typeof(ObjectRemovePercept), "objectRemove")]
@@ -324,6 +325,24 @@ namespace DOL.GS.Agents
         eQuestIndicator QuestIndicator,
         string Name,
         string GuildName) : Percept;
+
+    // A World object came into view: anything that's neither a Character nor an NPC, such as a Grave, a door or loot on the ground. Positions are global. The server sends it again whenever its name, model, heading or emblem changes.
+    // `Heading` is 0 to 4095. `Emblem` is a guild emblem, 0 for none. `KeepBanner` marks a keep's banner, and `Yours` loot the Agent's Character may pick up.
+    // `DoorId` is there only for a door.
+    public sealed record ObjectCreatePercept(
+        int X,
+        int Y,
+        int Z,
+        int ObjectId,
+        int Heading,
+        int Model,
+        PacketRealm Realm,
+        int Emblem,
+        bool Underwater,
+        bool KeepBanner,
+        bool Yours,
+        string Name,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? DoorId = null) : Percept;
 
     // Where an object is now, usually an NPC, sent about every 5 s while it's in view and whenever it starts or stops moving. Positions are global, turned back from the zone-relative ones the packet carries.
     // `Speed` is the horizontal speed and `ZSpeed` a quarter of the vertical one, signed. `Heading` is 0 to 4095. `ZoneId` is the zone's skin ID.

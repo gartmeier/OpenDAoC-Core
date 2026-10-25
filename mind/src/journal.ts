@@ -1,4 +1,4 @@
-// The Journal's lines: one for every Percept the Agent gets and every Primitive it sends, naming players, NPCs and items from its beliefs.
+// The Journal's lines: one for every Percept the Agent gets and every Primitive it sends, naming players, NPCs, World objects and items from its beliefs.
 import { merchantIndex } from "./inventory.ts";
 import type { EffectEntry, InventoryItem, Percept, PerceptMessage, Primitive } from "./protocol.ts";
 import type { Position } from "./surroundings.ts";
@@ -26,6 +26,8 @@ function describe(agent: Agent, character: string, percept: Percept): string {
       return `playerPosition #${percept.objectId} ${surroundings.object(percept.objectId)?.name ?? "(unknown)"}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} zone ${percept.zoneId}`;
     case "npcCreate":
       return `npcCreate #${percept.objectId} ${percept.name}\t${at(percept)} heading ${percept.heading} speed ${percept.speed} level ${percept.level}`;
+    case "objectCreate":
+      return `objectCreate #${percept.objectId} ${percept.name}\t${at(percept)} heading ${percept.heading} model ${percept.model}`;
     case "objectUpdate": {
       const target = percept.targetId ? ` target #${percept.targetId}` : "";
       const destination = percept.destination ? ` to ${at(percept.destination)}` : "";

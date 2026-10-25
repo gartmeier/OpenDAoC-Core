@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { type Entry, Mind, type MindOptions } from "./mind.ts";
 import type { Percept, Primitive } from "./protocol.ts";
 import { FakeClock, settle } from "./test-agent.ts";
-import { encumbrance, inventory, item, message, money, npcCreate, ownPosition, player, playerCreate, points, sayLine, status } from "./test-percepts.ts";
+import { encumbrance, inventory, item, message, money, npcCreate, objectCreate, ownPosition, player, playerCreate, points, sayLine, status } from "./test-percepts.ts";
 
 // A Mind on a clock the test moves on by hand, recording the Primitives it sends and the Journal it writes.
 class TestMind {
@@ -195,6 +195,22 @@ test("every result ends with what the Agent believes about itself, what's near i
       "Backpack: 1 of 40 slots used. Money: 182 copper. Weight: 12 of 50 lb.",
     ].join("\n"),
   );
+});
+
+test("the summary lists a World object near the Agent, such as its Grave", async () => {
+  const t = new TestMind();
+  await t.perceive(ownPosition(296000, 642000, 4848), objectCreate(300, "Greeen's Grave", 296000, 642300, 4848));
+
+  const { text } = await t.mind.executeCode({ code: `return 1;` });
+
+  expect(text).toContain("Near (1):\n  #300 Greeen's Grave, a World object, 300 away");
+});
+
+test("the Journal names a World object as it comes into view", async () => {
+  const t = new TestMind();
+  await t.perceive({ ...objectCreate(300, "Greeen's Grave", 296000, 642300, 4848), heading: 1024 });
+
+  expect(t.journal).toEqual(["#1\t0.100 s\tobjectCreate #300 Greeen's Grave\tX:296000 Y:642300 Z:4848 heading 1024 model 637"]);
 });
 
 test("each result has the chat and game messages since the last call, newest 50", async () => {

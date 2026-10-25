@@ -35,6 +35,7 @@ namespace DOL.GS.Tests
         public static Zone Zone(ushort id, int xOffset, int yOffset, int width, int height)
         {
             Region region = (Region) RuntimeHelpers.GetUninitializedObject(typeof(Region));
+            typeof(Region).GetProperty(nameof(GS.Region.RegionData)).SetValue(region, new RegionData { Id = id });
             Zone zone = new(region, id, $"Zone {id}", xOffset, yOffset, width, height, id, false, 0, false, 0, 0, 0, 0, 0);
             typeof(Region).GetField("_zones", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(region, new List<Zone> { zone });
             return zone;
@@ -265,6 +266,12 @@ namespace DOL.GS.Tests
         public bool Roleplay
         {
             set => m_dbCharacter = new DbCoreCharacter { Name = m_name, RPFlag = value };
+        }
+
+        // The option that hides other players' Graves. A Grave asks for it, so it needs a character record.
+        public bool HideGraves
+        {
+            set => m_dbCharacter = new DbCoreCharacter { Name = m_name, HideGraves = value };
         }
 
         public override byte GetDisplayLevel(GamePlayer player)

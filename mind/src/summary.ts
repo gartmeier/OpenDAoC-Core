@@ -48,6 +48,9 @@ function describeObject(object: KnownObject, selfId: number | undefined): string
   if (object.kind === "player")
     return `#${object.objectId} ${object.name}, a player`;
 
+  if (object.kind === "object")
+    return `#${object.objectId} ${object.name}, a World object`;
+
   const flags = [object.peaceful ? "peaceful" : "", object.realm === "None" ? "" : `realm ${object.realm}`, object.targetId !== 0 && object.targetId === selfId ? "attacking you" : ""].filter(Boolean);
   return `#${object.objectId} ${object.name}, level ${object.level} NPC${flags.length ? ` (${flags.join(", ")})` : ""}, health ${object.healthPercent}%`;
 }
