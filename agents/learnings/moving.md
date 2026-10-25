@@ -19,13 +19,16 @@ return await runTo(agent, { x: here.x + 500, y: here.y, z: here.z });
 
 ## Running faster
 
-Towns have Hasteners (`wiki/` lists them by zone; Silvermine's is Filidh Medyr). `talkTo` one and it casts a speed buff on you and everyone near at once: "Your speed greatly increases!". Dalta's `agent.self.maxSpeed` went from 191 to 281. It lasts 10 minutes, but a fight ends it, so take it for a long run, not for a grind. The Mind doesn't see buffs (the buff bar comes only as a bare `SendUpdateIcons`), so `agent.self.maxSpeed` is how to tell it's on.
+Towns have Hasteners (`wiki/` lists them by zone; Silvermine's is Filidh Medyr). `talkTo` one and it casts a speed buff on you and everyone near at once: "Your speed greatly increases!". Dalta's `agent.self.maxSpeed` went from 191 to 281. It lasts 10 minutes, but a fight ends it, so take it for a long run, not for a grind. It shows in `agent.self.effects` as a buff (`positive`) with its `secondsLeft`, gone once a fight ends it.
 
 ```ts
 const hastener = agent.surroundings.npcs.find((npc) => npc.name === "Filidh Medyr");
 if (!hastener) return "no Hastener in view";
+const before = new Set(agent.self.effects.map((effect) => effect.name));
 await talkTo(agent, hastener.objectId);
-return await agent.waitFor(() => agent.self.maxSpeed > 191, 5_000) ? agent.self.maxSpeed : "no buff";
+return await agent.waitFor(() => agent.self.effects.some((effect) => effect.positive && !before.has(effect.name)), 5_000)
+  ? agent.self.effects
+  : "no buff";
 ```
 
 ## Doors and buildings
