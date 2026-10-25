@@ -112,8 +112,7 @@ export async function grind(agent: Agent, minutes: number, stopAtLevel: number, 
 
     const outcome = await kill(agent, mob.npc.objectId);
     if (outcome.ok) kills++;
-    else if (outcome.reason === "died") deaths++;
-    else shunned.set(mob.npc.objectId, (shunned.get(mob.npc.objectId) ?? 0) + 1);
+    else if (outcome.reason !== "died") shunned.set(mob.npc.objectId, (shunned.get(mob.npc.objectId) ?? 0) + 1);
   }
 
   return { ...succeeded, kills, deaths };
