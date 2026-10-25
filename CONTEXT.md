@@ -40,6 +40,10 @@ _Avoid_: skill, special attack
 Magic a Character casts from one of its spell lines, such as a bolt, a heal or a buff.
 _Avoid_: skill
 
+**Concentration buff**:
+A buff Spell that lasts until its caster cancels it and uses part of the caster's concentration while it's up. It turns off while the Character wearing it is too far from the caster and comes back on when they're close again; it doesn't end.
+_Avoid_: conc, const, permanent buff
+
 **Effect**:
 A buff or debuff on a Character, shown in its buff bar with its time left.
 _Avoid_: buff (when meaning both)
@@ -47,6 +51,10 @@ _Avoid_: buff (when meaning both)
 **Dialog**:
 A question the server puts to a Character in a window, answered with Accept or Decline, or only acknowledged with OK.
 _Avoid_: popup, prompt
+
+**Group**:
+Up to eight Characters who have joined together to share the experience from their kills and talk in their own chat channel.
+_Avoid_: party
 
 **Navmesh**:
 A zone's static map of where a Character can walk or swim, built from the game client's zone data; it says nothing about what changes, such as whether a door is open or where NPCs are.
