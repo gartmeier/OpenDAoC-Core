@@ -37,8 +37,12 @@ A buff or debuff on a Character, shown in its buff bar with its time left.
 _Avoid_: buff (when meaning both)
 
 **Navmesh**:
-A zone's static map of where a Character can walk, built from the game client's zone data; it says nothing about what changes, such as whether a door is open or where NPCs are.
+A zone's static map of where a Character can walk or swim, built from the game client's zone data; it says nothing about what changes, such as whether a door is open or where NPCs are.
 _Avoid_: pathing grid, nav data
+
+**Swim leg**:
+A stretch of a route that a Character crosses swimming on the water's surface, slower than running and never under it.
+_Avoid_: water path, dive
 
 ### Agents
 
