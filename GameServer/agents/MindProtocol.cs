@@ -589,8 +589,8 @@ namespace DOL.GS.Agents
     // `Code`, `Data1`, `Data2` and `Data3` are what an `answerDialog` echoes back, as the client does. A newer Dialog takes its place.
     public sealed record DialogPercept(eDialogCode Code, int Data1, int Data2, int Data3, bool YesNo, string Text) : Percept;
 
-    // The Agent's Character's stats window. Only the Constitution it has lost by dying, which a Healer restores, and the client shows in red. The packet's other stats have no fields yet.
-    public sealed record StatsPercept(int ConstitutionLost) : Percept;
+    // The Agent's Character's stats window: the Constitution it has lost by dying, which a Healer restores, and the client shows in red, and its maximum health. The packet's other stats have no fields yet.
+    public sealed record StatsPercept(int ConstitutionLost, int MaxHealth) : Percept;
 
     // Worked out by the Harness, as the Agent's client works it out: where the Character is while it runs to the target of a `moveTo`, sent with each position update. Positions are global.
     public sealed record MovedPercept(float X, float Y, float Z, int Heading, float Speed, float TargetX, float TargetY, float TargetZ) : Percept;

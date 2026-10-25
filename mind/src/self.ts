@@ -123,6 +123,7 @@ export class Self {
         break;
       case "stats":
         this.#constitutionLost = percept.constitutionLost;
+        this.#maxHealth = percept.maxHealth;
         break;
       case "dialog": {
         const { kind, ...dialog } = percept;

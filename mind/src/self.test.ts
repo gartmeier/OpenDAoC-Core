@@ -319,3 +319,13 @@ test("takes the lost Constitution from each stats Percept", () => {
   agentSelf.perceive(message(stats(0)));
   expect(agentSelf.constitutionLost).toBe(0);
 });
+
+test("takes its max health from a stats Percept too, as a Healer restoring Constitution sends no status", () => {
+  const agentSelf = new Self(new FakeClock());
+  agentSelf.perceive(message(status(100, { health: 488, maxHealth: 488 })));
+
+  agentSelf.perceive(message(stats(0, 496)));
+
+  expect(agentSelf.maxHealth).toBe(496);
+  expect(agentSelf.health).toBe(488);
+});
