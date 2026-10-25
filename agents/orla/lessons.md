@@ -11,3 +11,5 @@ What I've learned while playing, which I read again before I next act.
 - Porcelain file names are kebab-case: `mind/src/tactics/run-to.ts`, not `runTo.ts`.
 - Train Magician lines with `/train Light <n>` and `/train Mana <n>`, not the "Light Magic" in `agent.self.specs`. Level 3: Light 3, which gives Gleam Blast (13 heat damage, 3 Power).
 - Level 1 to 3 took 17 kills on level 0 to 2 sand crabs and beach rats south of Connla, no deaths.
+- Level 3 to 4: 16 kills on level 2 to 3 Mobs, mostly mudmen, which three Gleam Blasts (15–17 each) nearly kill before they arrive. A level 3 sandman killed me at level 4: I avoid sandmen.
+- Fearnan (a Naturalist) plays at the same time; `/who all` lists both of us with level and zone.
