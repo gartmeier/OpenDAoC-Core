@@ -11,6 +11,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `sit-key.tsv` is 26 s of the same Character sitting and standing twice with the sit key. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Fighting and resting.
 - `styles.tsv` is 209 s of account `agent2`'s Character Dalta, a level 5 Blademaster, already in the world, fighting Mobs and using styles from the quickbar. Recorded with `/agent capture agent2` on 2026-10-24, unmodified apart from its first line. See Styles.
 - `healer-dialog.tsv` is 188 s of the same Character, who had lost Constitution, from login: it talks to a Healer and declines the Dialog asking whether to pay to restore it, then talks to the Healer again and accepts. Recorded with `/agent capture agent2` on 2026-10-25, unmodified apart from its first line. See Dialogs.
+- `use-item.tsv` is 81 s of the same Character, already in the world at a quiet spot in Hibernia, using its Personal Bind Recall Stone in backpack slot 40: from the backpack, from the quickbar, while moving, once more until it teleports to its Bind point, then three times there on the stone's reuse timer. Recorded with `/agent capture agent2` on 2026-10-25, unmodified apart from its first line. See Using an item.
 - `login-next-to-agent.tsv` is 189 s of the same Character next to the Agent Greeen, who is already in the world. The Human says `come` and types `/speed 0` with Greeen targeted, quits to the character screen with `/q`, logs back in next to Greeen, says `come`, types `/speed 191`, says `come` three more times and types `/jump greeen to vue`. The first 189 s of a recording with `/agent capture admin` on 2026-10-21, taken while it was still running, otherwise unmodified. See Players already in the world.
 - `swim-straight.tsv`, `swim-turn.tsv` and `swim-stop-sit-stand.tsv` are 43 s, 31 s and 54 s of the same Character, unbuffed, at a river in zone 207. In the first it runs down the bank, swims straight across and runs up the other bank. In the second it swims in, turns about while swimming, and swims back out. In the third it swims in and stops in the water, sits, stands, swims on and runs out. Recorded with `/agent capture agent2` on 2026-10-25, unmodified. See Swimming.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
@@ -193,6 +194,27 @@ From `healer-dialog.tsv`. No markers were said: the parts are told apart by thei
   - For the Healer's custom Dialog: data1 `0003` (the session ID), data2 `0001` (the custom marker), data3 `0000`, code `06` (`CustomDialog`).
   - The response was `00` when declining and `01` when accepting.
 
+## Using an item
+
+From `use-item.tsv`. The Human, possessing Dalta with nothing targeted, used the Personal Bind Recall Stone in backpack slot 40. No markers were said: the parts are told apart by timing and position.
+
+| ms | Part | Speed | Flags | Type |
+|----|------|-------|-------|------|
+| 38363 | right-click in the backpack; the Character moved 0.7 s later, and no teleport followed | 0 | `0000` | 1 |
+| 47997 | click on the quickbar; the Character moved 1.8 s later, and no teleport followed | 0 | `0000` | 0 |
+| 56568 | quickbar, while moving | 85 | `4000` | 0 |
+| 62097 | quickbar, standing; 10.8 s later the position updates jump to the Bind point at X:338704 Y:444627 | 0 | `0000` | 0 |
+| 74530, 75697, 76730 | quickbar, at the Bind point, on the reuse timer | 0 | `0000` | 0 |
+
+- **Use slot (0x71).** Parameter 0x0000, 24 bytes, laid out as the use skill packet (0xBB): X, Y and Z as little-endian floats, the speed as a float, the heading (the low 12 bits only), 2 bytes of flags, the slot, the type and 2 bytes of 0.
+  - The slot is the inventory slot itself, 40 for the first backpack slot, from the backpack and from the quickbar alike.
+  - The type is 1 from the backpack and 0 from the quickbar. The server's use of a magical backpack item treats 0 and 1 alike, and 2 (an item's second spell) not at all.
+  - The flags had no target-in-view bits, as nothing was targeted. While moving they had 0x4000, which the server reads as strafing.
+  - The position and speed are the client's, which the server takes as a position update too.
+- The server's replies aren't in an inbound capture.
+
+Full packet, the use from the backpack: `0018 0045 0001 0000 0071 60EFA648 14911049 8F0EAB45 00000000 0C00 0000 28 01 0000 5264`.
+
 ## Fields that vary between captures
 
 These hold for every packet:
@@ -202,7 +224,7 @@ These hold for every packet:
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
 
-Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79, 0xB5 and 0xBB; 0xFFFE for 0xFC; 0xFFFF for the rest.
+Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79, 0xB5, 0xBB and 0x71; 0xFFFE for 0xFC; 0xFFFF for the rest.
 
 Packet data, by data offset:
 

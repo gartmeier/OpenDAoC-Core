@@ -46,7 +46,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | AnswerDialogPrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | AnswerDialogPrimitive | UseItemPrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -147,6 +147,12 @@ export interface AnswerDialogPrimitive {
   data2: number;
   data3: number;
   accept: boolean;
+}
+
+export interface UseItemPrimitive {
+  name: "useItem";
+  slot: number;
+  second?: boolean;
 }
 
 export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;

@@ -113,6 +113,13 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Read_ShouldReadAUseItemPrimitive_WithOrWithoutSecond()
+        {
+            Assert.That(Read("""{"type":"primitive","id":28,"primitive":{"name":"useItem","slot":40}}"""), Is.EqualTo(new PrimitiveMessage(28, new UseItemPrimitive(40))));
+            Assert.That(Read("""{"type":"primitive","id":29,"primitive":{"name":"useItem","slot":26,"second":true}}"""), Is.EqualTo(new PrimitiveMessage(29, new UseItemPrimitive(26, true))));
+        }
+
+        [Test]
         public void Read_ShouldReadAnAnswerDialogPrimitive_WithItsCodeAsAName()
         {
             Assert.That(Read("""{"type":"primitive","id":27,"primitive":{"name":"answerDialog","code":"CustomDialog","data1":257,"data2":1,"data3":0,"accept":true}}"""),

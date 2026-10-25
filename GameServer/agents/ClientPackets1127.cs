@@ -236,17 +236,14 @@ namespace DOL.GS.Agents
         // then `flags`, whose strafing (0x4000), target in view (0xA000) and ground target in view (0x1000) bits it takes too, the index, the type and 2 bytes of 0.
         public static ClientPacket UseSkill(Vector3 position, float speed, ushort heading, ushort flags, byte index)
         {
-            byte[] data = new byte[24];
-            Span<byte> span = data;
-            BinaryPrimitives.WriteSingleLittleEndian(span[0..], position.X);
-            BinaryPrimitives.WriteSingleLittleEndian(span[4..], position.Y);
-            BinaryPrimitives.WriteSingleLittleEndian(span[8..], position.Z);
-            BinaryPrimitives.WriteSingleLittleEndian(span[12..], speed);
-            BinaryPrimitives.WriteUInt16BigEndian(span[16..], heading);
-            BinaryPrimitives.WriteUInt16BigEndian(span[18..], flags);
-            data[20] = index;
-            data[21] = SKILL_AFTER_SPECIALIZATIONS;
-            return new((byte) eClientPackets.UseSkill, NO_PARAMETER, data);
+            return PositionAndUse(eClientPackets.UseSkill, position, speed, heading, flags, index, SKILL_AFTER_SPECIALIZATIONS);
+        }
+
+        // Uses the item in client slot `slot`, as a right-click on it in the backpack (`Use1`) or a click on it in the quickbar (`Click`) does. `Use2` uses its second spell.
+        // As captured in `use-item.tsv`, read by `UseSlotHandler`: laid out as the skill packet, with the slot and the use type in place of the index and its type.
+        public static ClientPacket UseSlot(Vector3 position, float speed, ushort heading, ushort flags, byte slot, eUseType type)
+        {
+            return PositionAndUse(eClientPackets.UseSlot, position, speed, heading, flags, slot, (byte) type);
         }
 
         // Picks up the object the client has targeted, which the server reads instead of anything in the packet: the captured client sent a single 0.
@@ -286,6 +283,22 @@ namespace DOL.GS.Agents
             BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(2), ITEM_DETAIL_EXTRA);
             BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(6), objectId);
             return new((byte) eClientPackets.DetailRequest, NO_PARAMETER, data);
+        }
+
+        // The skill and use slot packets: the client's position, speed, heading and flags, then what to use, its type and 2 bytes of 0.
+        private static ClientPacket PositionAndUse(eClientPackets code, Vector3 position, float speed, ushort heading, ushort flags, byte indexOrSlot, byte type)
+        {
+            byte[] data = new byte[24];
+            Span<byte> span = data;
+            BinaryPrimitives.WriteSingleLittleEndian(span[0..], position.X);
+            BinaryPrimitives.WriteSingleLittleEndian(span[4..], position.Y);
+            BinaryPrimitives.WriteSingleLittleEndian(span[8..], position.Z);
+            BinaryPrimitives.WriteSingleLittleEndian(span[12..], speed);
+            BinaryPrimitives.WriteUInt16BigEndian(span[16..], heading);
+            BinaryPrimitives.WriteUInt16BigEndian(span[18..], flags);
+            data[20] = indexOrSlot;
+            data[21] = type;
+            return new((byte) code, NO_PARAMETER, data);
         }
 
         private static ClientPacket PositionAndTwoShorts(eClientPackets code, uint x, uint y, ushort first, ushort second)

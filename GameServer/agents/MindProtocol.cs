@@ -128,6 +128,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(SellPrimitive), "sell")]
     [JsonDerivedType(typeof(UseStylePrimitive), "useStyle")]
     [JsonDerivedType(typeof(AnswerDialogPrimitive), "answerDialog")]
+    [JsonDerivedType(typeof(UseItemPrimitive), "useItem")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -206,6 +207,12 @@ namespace DOL.GS.Agents
         [property: JsonRequired] int Data2,
         [property: JsonRequired] int Data3,
         [property: JsonRequired] bool Accept) : Primitive;
+
+    // Uses the item in slot `Slot`, backpack or equipment as for `moveItem`, as a right-click on it in the backpack does. `Second` uses its second spell, which some charged gear has.
+    // The Harness refuses only a slot past 255. Whether the use worked, and why not, the server says in `message` Percepts: an empty slot, moving, combat, the reuse timer. A teleport comes as a `jump` Percept.
+    public sealed record UseItemPrimitive(
+        [property: JsonRequired] int Slot,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? Second = null) : Primitive;
 
     /// <summary>
     /// One thing the Harness tells the Mind: only what the 1.127 packet would tell a real client (ADR 0001).

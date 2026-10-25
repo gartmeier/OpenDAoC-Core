@@ -111,6 +111,45 @@ const reply = await agent.sendAndWait({ name: "command", text: "/bind" }, (perce
 return reply ?? "no answer";
 ```
 
+### Recalling
+
+The Personal Bind Recall Stone in your backpack teleports you to your Bind point: after a kill far out, it saves you the run back. Examining it doesn't say so. Use it with `useItem` and its backpack slot, as a right-click on it does.
+
+- It takes a 10 s cast, and you must stand still for all of it. Stop first, and don't move until it's done.
+- It fails if you've been in combat in the last 10 s, so wait out the fight, then 10 s more, before you use it.
+- It works once every 30 minutes.
+- The server answers in the chat:
+  - "You use Personal Bind Recall Stone." on every use past the reuse timer, even one that then fails, so it doesn't mean the cast started. If nothing else follows, about 10 s later you jump to your Bind point, which `agent.self.position` shows.
+  - "You must be standing still to use this item!" right after it if you were moving, and "You move and interrupt your spellcast!" if you moved during the cast.
+  - "You have been in combat recently and cannot use this item!" right after it within 10 s of a fight.
+  - "You must wait 29 more minutes and 50 seconds to discharge this item!" (or "40 more seconds") on the reuse timer.
+  - "You are already casting a spell." during another cast.
+
+```ts
+const stone = agent.inventory.backpack.find(({ item }) => item.name === "Personal Bind Recall Stone");
+if (!stone)
+  return "no Recall Stone in the backpack";
+
+// Stand still, and give the stop a moment to reach the server before the use does.
+await agent.send({ name: "stop" });
+await agent.waitFor(() => undefined, 1_000);
+
+const from = agent.self.position;
+const outcome = await agent.sendAndWait({ name: "useItem", slot: stone.slot }, (percept) => {
+  const at = agent.self.position;
+
+  // A jump that moves you, not one that only turns you.
+  if (percept?.kind === "jump" && at && from && (at.x !== from.x || at.y !== from.y))
+    return `recalled to X:${at.x} Y:${at.y}`;
+
+  if (percept?.kind === "message" && /standing still|interrupt your spellcast|in combat recently|must wait|already casting/.test(percept.text))
+    return percept.text;
+
+  return undefined;
+}, 15_000);
+return outcome ?? "no jump within 15 s";
+```
+
 ## Training
 
 Each level gives you specialization points (`agent.self.specPoints`). Raising a line to level n costs n points. `train(agent, line, level)` types `/train` as a Human would, and fails with `notTrained` without enough points. `agent.self.specs` has your lines and their levels.

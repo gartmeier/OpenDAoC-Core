@@ -284,6 +284,14 @@ namespace DOL.GS.Agents
 
                     break;
                 }
+                case UseItemPrimitive useItem:
+                {
+                    // The use slot packet's slot is a single byte. Whether there's anything to use in it, the server says.
+                    if (useItem.Slot is < 0 or > byte.MaxValue)
+                        return $"A slot to use is 0 to {byte.MaxValue}, not {useItem.Slot}.";
+
+                    break;
+                }
                 case ExamineMerchantItemPrimitive examine:
                 {
                     if (BadIndex(examine.Index) is string reason)
@@ -348,6 +356,9 @@ namespace DOL.GS.Agents
                 AnswerDialogPrimitive answer => ClientPackets1127.DialogResponse((byte) answer.Code, (ushort) answer.Data1, (ushort) answer.Data2, (ushort) answer.Data3, answer.Accept),
                 // Where the server has the Character, so the position it takes from the packet moves it nowhere.
                 UseStylePrimitive => ClientPackets1127.UseSkill(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) styleIndex),
+                // As a right-click in the backpack, never the quickbar's click, which on a weapon or horse slot means something else.
+                UseItemPrimitive useItem => ClientPackets1127.UseSlot(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) useItem.Slot,
+                    useItem.Second is true ? eUseType.Use2 : eUseType.Use1),
                 _ => null
             };
 
@@ -358,7 +369,7 @@ namespace DOL.GS.Agents
             return null;
         }
 
-        // Slots are 16 bits in every packet that carries one.
+        // Slots are 16 bits in every packet that carries one, except the use slot packet.
         private static string BadSlot(int slot)
         {
             return slot is < 0 or > ushort.MaxValue ? $"A slot is 0 to {ushort.MaxValue}, not {slot}." : null;
@@ -397,7 +408,7 @@ namespace DOL.GS.Agents
         // The skill packet's target in view bits (see `UseSkillHandler`).
         private const ushort SKILL_TARGET_IN_VIEW = 0xA000;
 
-        // The skill packet's flags: the target in view exactly while something is selected, as in the position updates (see `ActionFlags`), and never strafing.
+        // The skill and use slot packets' flags: the target in view exactly while something is selected, as in the position updates (see `ActionFlags`), and never strafing.
         private ushort SkillFlags => _targetId == 0 ? (ushort) 0 : SKILL_TARGET_IN_VIEW;
 
         // The server picks up and talks to what the client targets, so a click on the object selects it first, unless it's selected already.
