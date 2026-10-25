@@ -97,7 +97,8 @@ export class Agent {
     if (this.#stopped)
       throw new Stopped();
 
-    // Before it goes: the Harness can answer with Percepts before the Primitive's result. A refused one only makes the Inventory think it isn't trading, which a Tactic gets over by talking to the merchant again.
+    // Before it goes: the Harness can answer with Percepts before the Primitive's result. A refused one only makes the Inventory think it isn't trading, which a Tactic gets over by talking to the merchant again, or the Self forget the Dialog, which talking to the NPC again opens anew.
+    this.self.sent(primitive);
     this.inventory.sent(primitive);
     const result = await this.#send(primitive);
 

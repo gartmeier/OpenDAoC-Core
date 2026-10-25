@@ -68,6 +68,14 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendUpdateMoney) => Money(client),
                 nameof(IPacketLib.SendCustomTextWindow) => Examined((string) args[0], (IList<string>) args[1]),
                 nameof(IPacketLib.SendMerchantWindow) => MerchantWindow(client, (MerchantTradeItems) args[0], (eMerchantWindowType) args[1]),
+                nameof(IPacketLib.SendCustomDialog) => CustomDialog(client, (string) args[0], (CustomDialogResponse) args[1]),
+                nameof(IPacketLib.SendDialogBox) => DialogBox((eDialogCode) args[0], (ushort) args[1], (ushort) args[2], (ushort) args[3], (eDialogType) args[5], (string) args[7]),
+                nameof(IPacketLib.SendGroupInviteCommand) => Invite(eDialogCode.GroupInvite, (GamePlayer) args[0], (string) args[1]),
+                nameof(IPacketLib.SendGuildInviteCommand) => Invite(eDialogCode.GuildInvite, (GamePlayer) args[0], (string) args[1]),
+                nameof(IPacketLib.SendGuildLeaveCommand) => new DialogPercept(eDialogCode.GuildLeave, ((GamePlayer) args[0]).ObjectID, 0x00, 0x00, true, Encoded((string) args[1])),
+                nameof(IPacketLib.SendQuestSubscribeCommand) => Quest((GameNPC) args[0], (ushort) args[1], false, (string) args[2]),
+                nameof(IPacketLib.SendQuestAbortCommand) => Quest((GameNPC) args[0], (ushort) args[1], true, (string) args[2]),
+                nameof(IPacketLib.SendCharStatsUpdate) => Stats(client),
                 nameof(IPacketLib.SendUDP) => RawPacket(method.Name, (PacketOut) args[0], UDP_HEADER_LENGTH),
                 nameof(IPacketLib.SendTCP) => RawPacket(method.Name, (PacketOut) args[0], TCP_HEADER_LENGTH),
                 _ => new BarePercept(method.Name)
@@ -746,6 +754,41 @@ namespace DOL.GS.Agents
         {
             GamePlayer player = client.Player;
             return player == null ? null : new MoneyPercept((byte) player.Copper, (byte) player.Silver, (ushort) player.Gold, (ushort) player.Mithril, (ushort) player.Platinum);
+        }
+
+        // Mirrors `PacketLib168.SendCustomDialog`, which no later library overrides: the client's session ID and 1 mark it as custom, and it asks yes or no only with a response to call.
+        private static DialogPercept CustomDialog(GameClient client, string text, CustomDialogResponse callback)
+        {
+            return client.Player == null ? null : new DialogPercept(eDialogCode.CustomDialog, client.SessionID, 0x01, 0x00, callback != null, Encoded(text));
+        }
+
+        // Mirrors `PacketLib168.SendDialogBox`, which no later library overrides. The client doesn't send data4 back, so it's left out.
+        // A portal stone opens the realm's warmap through it, a map to pick a destination on rather than a question.
+        private static DialogPercept DialogBox(eDialogCode code, ushort data1, ushort data2, ushort data3, eDialogType type, string text)
+        {
+            if (code is eDialogCode.WarmapWindowHibernia or eDialogCode.WarmapWindowAlbion or eDialogCode.WarmapWindowMidgard)
+                return null;
+
+            return new DialogPercept(code, data1, data2, data3, type is eDialogType.YesNo, Encoded(text));
+        }
+
+        // Mirrors `PacketLib168.SendGroupInviteCommand` and `SendGuildInviteCommand`, which no later library overrides: the inviter's session ID, asking yes or no.
+        private static DialogPercept Invite(eDialogCode code, GamePlayer inviter, string text)
+        {
+            return new DialogPercept(code, inviter.Client.SessionID, 0x00, 0x00, true, Encoded(text));
+        }
+
+        // Mirrors `PacketLib168.SendQuestSubscribeCommand` and `SendQuestAbortCommand`, which no later library overrides: the quest's ID, the NPC's object ID, and 1 to abort it rather than take it.
+        private static DialogPercept Quest(GameNPC npc, ushort questId, bool abort, string text)
+        {
+            return new DialogPercept(eDialogCode.QuestSubscribe, questId, npc.ObjectID, abort ? 0x01 : 0x00, true, Encoded(text));
+        }
+
+        // Mirrors the lost Constitution `PacketLib175.SendCharStatsUpdate` sends in a byte of its own, which no later library overrides.
+        private static StatsPercept Stats(GameClient client)
+        {
+            GamePlayer player = client.Player;
+            return player == null ? null : new StatsPercept((byte) player.TotalConstitutionLostAtDeath);
         }
 
         // Mirrors `PacketLib181.SendCustomTextWindow`, which no later library overrides, and the `PacketLib168.WriteCustomTextWindowData` it calls.

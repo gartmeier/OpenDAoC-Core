@@ -1,6 +1,7 @@
 // Percepts as the Harness sends them, for tests. Every field a test doesn't pass is a plain default.
 import type {
   ArrivedPercept,
+  DialogPercept,
   DiedPercept,
   EffectEntry,
   EffectsPercept,
@@ -27,6 +28,7 @@ import type {
   RevivedPercept,
   SkillEntry,
   SkillsPercept,
+  StatsPercept,
   StatusPercept,
   StopReason,
   StoppedPercept,
@@ -213,6 +215,15 @@ export function spec(name: string, level: number): SkillEntry {
 
 export function effects(...entries: EffectEntry[]): EffectsPercept {
   return { kind: "effects", effects: entries };
+}
+
+/** A custom Dialog to the Character with session ID 0x0101, asking yes or no unless `yesNo` is false. */
+export function dialog(text: string, yesNo = true): DialogPercept {
+  return { kind: "dialog", code: "CustomDialog", data1: 0x0101, data2: 1, data3: 0, yesNo, text };
+}
+
+export function stats(constitutionLost: number): StatsPercept {
+  return { kind: "stats", constitutionLost };
 }
 
 export function died(objectId: number, killerId = 0): DiedPercept {

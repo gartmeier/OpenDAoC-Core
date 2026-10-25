@@ -76,6 +76,10 @@ function describe(agent: Agent, character: string, percept: Percept): string {
       return `examined ${percept.caption}\t${percept.lines.join(" | ")}`;
     case "merchantWindow":
       return `merchantWindow${inventory.merchant?.objectId === undefined ? "" : ` #${inventory.merchant.objectId} ${nameOf(inventory.merchant.objectId)}`}\t${percept.items.map((sold) => `${merchantIndex(sold)}: ${sold.name} level ${sold.level} ${sold.price} copper${sold.usable ? "" : " (unusable)"}`).join(", ") || "nothing"}`;
+    case "dialog":
+      return `dialog ${percept.code} (${percept.yesNo ? "yes or no" : "OK"})\t${percept.text}`;
+    case "stats":
+      return `stats\tconstitution lost ${percept.constitutionLost}`;
   }
 }
 
@@ -108,6 +112,8 @@ export function describePrimitive(agent: Agent, character: string, primitive: Pr
     case "pickUp":
     case "talkTo":
       return `${primitive.name} #${primitive.objectId} ${nameIn(agent, character, primitive.objectId)}`;
+    case "answerDialog":
+      return `answerDialog ${primitive.code} ${primitive.accept ? "accept" : "decline"}`;
     default:
       return primitive.name;
   }

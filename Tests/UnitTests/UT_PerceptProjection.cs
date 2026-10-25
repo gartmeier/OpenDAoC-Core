@@ -29,6 +29,14 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendInventoryItemsUpdateWithSlots = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendInventoryItemsUpdate), [typeof(IDictionary<int, DbInventoryItem>), typeof(eInventoryWindowType)]);
         private static readonly MethodInfo SendEncumbrance = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendEncumbrance));
         private static readonly MethodInfo SendCustomTextWindow = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendCustomTextWindow));
+        private static readonly MethodInfo SendCustomDialog = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendCustomDialog));
+        private static readonly MethodInfo SendDialogBox = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendDialogBox));
+        private static readonly MethodInfo SendGroupInviteCommand = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendGroupInviteCommand));
+        private static readonly MethodInfo SendGuildInviteCommand = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendGuildInviteCommand));
+        private static readonly MethodInfo SendGuildLeaveCommand = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendGuildLeaveCommand));
+        private static readonly MethodInfo SendQuestSubscribeCommand = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendQuestSubscribeCommand));
+        private static readonly MethodInfo SendQuestAbortCommand = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendQuestAbortCommand));
+        private static readonly MethodInfo SendCharStatsUpdate =typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendCharStatsUpdate));
         private static readonly MethodInfo SendMerchantWindow = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendMerchantWindow));
         private static readonly MethodInfo SendUpdatePoints = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePoints));
         private static readonly MethodInfo SendMessage = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendMessage));
@@ -1130,6 +1138,88 @@ namespace DOL.GS.Tests
             Percept percept = PerceptProjection.Project(client, SendUpdateMoney, []);
 
             Assert.That(percept, Is.EqualTo(new MoneyPercept(82, 1, 3, 0, 0)));
+        }
+
+        // The packet marks a custom Dialog with the client's session ID and 1, and asks yes or no only when the server waits for an answer.
+        [Test]
+        public void Project_ShouldGiveTheTextAndWhatTheAnswerEchoes_ForTheCustomDialogCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            CustomDialogResponse response = static (_, _) => { };
+
+            Percept asking = PerceptProjection.Project(client, SendCustomDialog, ["It will cost 2 silver. Do you accept?", response]);
+            Percept telling = PerceptProjection.Project(client, SendCustomDialog, ["Done.", null]);
+
+            Assert.That(asking, Is.EqualTo(new DialogPercept(eDialogCode.CustomDialog, 0x0101, 0x01, 0x00, true, "It will cost 2 silver. Do you accept?")));
+            Assert.That(telling, Is.EqualTo(new DialogPercept(eDialogCode.CustomDialog, 0x0101, 0x01, 0x00, false, "Done.")));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheCustomDialogCallBeforeTheAgentHasACharacter()
+        {
+            Assert.That(PerceptProjection.Project(Playing(), SendCustomDialog, ["Do you accept?", null]), Is.Null);
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheCodeDataTypeAndText_ForTheDialogBoxCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+
+            Percept percept = PerceptProjection.Project(client, SendDialogBox, [eDialogCode.GroupInvite, (ushort) 0x0304, (ushort) 0x01, (ushort) 0x02, (ushort) 0x03, eDialogType.YesNo, true, "Dalta has invited you to join a group."]);
+
+            Assert.That(percept, Is.EqualTo(new DialogPercept(eDialogCode.GroupInvite, 0x0304, 0x01, 0x02, true, "Dalta has invited you to join a group.")));
+        }
+
+        // A portal stone opens the realm's warmap through the same call, which is a map to pick a destination on, not a question.
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheDialogBoxCallOpeningAWarmap()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+
+            Assert.That(PerceptProjection.Project(client, SendDialogBox, [eDialogCode.WarmapWindowHibernia, (ushort) 0, (ushort) 0, (ushort) 0, (ushort) 0, eDialogType.Warmap, false, ""]), Is.Null);
+        }
+
+        // Each writes the dialog packet itself: an invite carries the inviter's session ID, leaving a guild its object ID, and a quest its ID, the NPC's object ID, and 0 to take it or 1 to abort it.
+        [Test]
+        public void Project_ShouldGiveWhatTheAnswerEchoes_ForTheInviteGuildLeaveAndQuestCalls()
+        {
+            Zone zone = WorldDoubles.Zone(201, 0, 0, 65536, 65536);
+            GameClient client = AgentInWorld(zone);
+            TestPlayer dalta = PlayerIn(zone, "Dalta");
+            dalta.ObjectID = 0x0123;
+            TestNpc ionhar = WorldDoubles.Npc("Ionhar");
+            ionhar.ObjectID = 0x0456;
+
+            Assert.That(PerceptProjection.Project(client, SendGroupInviteCommand, [dalta, "Dalta has invited you to join a group."]),
+                Is.EqualTo(new DialogPercept(eDialogCode.GroupInvite, 0x0304, 0x00, 0x00, true, "Dalta has invited you to join a group.")));
+            Assert.That(PerceptProjection.Project(client, SendGuildInviteCommand, [dalta, "Dalta has invited you into Greenwood."]),
+                Is.EqualTo(new DialogPercept(eDialogCode.GuildInvite, 0x0304, 0x00, 0x00, true, "Dalta has invited you into Greenwood.")));
+            Assert.That(PerceptProjection.Project(client, SendGuildLeaveCommand, [dalta, "Do you really want to leave Greenwood?"]),
+                Is.EqualTo(new DialogPercept(eDialogCode.GuildLeave, 0x0123, 0x00, 0x00, true, "Do you really want to leave Greenwood?")));
+            Assert.That(PerceptProjection.Project(client, SendQuestSubscribeCommand, [ionhar, (ushort) 7, "Will you help?"]),
+                Is.EqualTo(new DialogPercept(eDialogCode.QuestSubscribe, 7, 0x0456, 0x00, true, "Will you help?")));
+            Assert.That(PerceptProjection.Project(client, SendQuestAbortCommand, [ionhar, (ushort) 7, "Abort the quest?"]),
+                Is.EqualTo(new DialogPercept(eDialogCode.QuestSubscribe, 7, 0x0456, 0x01, true, "Abort the quest?")));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheConstitutionLost_ForTheStatsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestPlayer greeen = (TestPlayer) client.Player;
+
+            Percept none = PerceptProjection.Project(client, SendCharStatsUpdate, []);
+            greeen.TestConstitutionLost = 7;
+            Percept lost = PerceptProjection.Project(client, SendCharStatsUpdate, []);
+
+            Assert.That(none, Is.EqualTo(new StatsPercept(0)));
+            Assert.That(lost, Is.EqualTo(new StatsPercept(7)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheStatsCallBeforeTheAgentHasACharacter()
+        {
+            Assert.That(PerceptProjection.Project(Playing(), SendCharStatsUpdate, []), Is.Null);
         }
 
         [Test]

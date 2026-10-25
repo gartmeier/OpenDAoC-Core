@@ -10,6 +10,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `items-merchants.tsv` is 15 minutes of account `joshua`'s Character Nuschka, from login at Connla: talking to merchants, buying and selling, equipping and unequipping by dragging, examining items, dropping one, trying salvage, picking up loot and typing `/sell all`. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Items and merchants.
 - `sit-key.tsv` is 26 s of the same Character sitting and standing twice with the sit key. Recorded with `/agent capture joshua` on 2026-10-23, unmodified apart from its first line. See Fighting and resting.
 - `styles.tsv` is 209 s of account `agent2`'s Character Dalta, a level 5 Blademaster, already in the world, fighting Mobs and using styles from the quickbar. Recorded with `/agent capture agent2` on 2026-10-24, unmodified apart from its first line. See Styles.
+- `healer-dialog.tsv` is 188 s of the same Character, who had lost Constitution, from login: it talks to a Healer and declines the Dialog asking whether to pay to restore it, then talks to the Healer again and accepts. Recorded with `/agent capture agent2` on 2026-10-25, unmodified apart from its first line. See Dialogs.
 - `login-next-to-agent.tsv` is 189 s of the same Character next to the Agent Greeen, who is already in the world. The Human says `come` and types `/speed 0` with Greeen targeted, quits to the character screen with `/q`, logs back in next to Greeen, says `come`, types `/speed 191`, says `come` three more times and types `/jump greeen to vue`. The first 189 s of a recording with `/agent capture admin` on 2026-10-21, taken while it was still running, otherwise unmodified. See Players already in the world.
 - `swim-straight.tsv`, `swim-turn.tsv` and `swim-stop-sit-stand.tsv` are 43 s, 31 s and 54 s of the same Character, unbuffed, at a river in zone 207. In the first it runs down the bank, swims straight across and runs up the other bank. In the second it swims in, turns about while swimming, and swims back out. In the third it swims in and stops in the water, sits, stands, swims on and runs out. Recorded with `/agent capture agent2` on 2026-10-25, unmodified. See Swimming.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
@@ -182,6 +183,15 @@ From `styles.tsv`. The Human, possessing Dalta, fought Mobs and clicked styles o
   - The flags were `A000` every time, with a Mob targeted: both target-in-view bits, which the server takes from this packet as from a position update.
   - The type was `01`, so the index counts from the first entry after the specializations: Shining Blade was 9 and Return Blade 10.
   - The position is where the client stands, which the server takes as a position update too.
+
+## Dialogs
+
+From `healer-dialog.tsv`. No markers were said: the parts are told apart by their packets.
+
+- **Talking to the Healer** is an interact request (0x7A), after targeting it, as with a merchant. The Healer answers with a custom Dialog.
+- **Dialog response (0x82).** Parameter 0xFFFF, 8 bytes: data1, data2 and data3 as the server's Dialog sent them, then the dialog code and the response.
+  - For the Healer's custom Dialog: data1 `0003` (the session ID), data2 `0001` (the custom marker), data3 `0000`, code `06` (`CustomDialog`).
+  - The response was `00` when declining and `01` when accepting.
 
 ## Fields that vary between captures
 

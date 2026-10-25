@@ -46,6 +46,29 @@ return sword ? await equip(agent, sword.slot, SLOT.rightHand) : "no falcata in t
 
 An item's `itemType`, in the Inventory and in a merchant's window, is the slot it's made for, in the same numbers as `SLOT`: an armour piece's goes straight to `equip`. Read it rather than the name: a "Wrap" is a ring, but "Fist Wraps" are a weapon. A ring (35 or 36) fits either ring slot, a wrist item (33 or 34) either wrist, and a left-hand weapon (11) either hand; 40 is backpack only.
 
+## Dialogs and Healers
+
+Some NPCs ask a question in a Dialog, a window with Accept and Decline, or only OK. Healers, Enchanters and Blacksmiths do, and so do respecs and quests. The open Dialog is `agent.self.dialog`, with its `text` and whether it asks yes or no (`yesNo`), until you answer it or a newer one takes its place. It isn't chat, so it doesn't show up with the NPC's words.
+
+- `answer(agent, accept)` accepts or declines the open Dialog. It fails with `noDialog` when none is open. What the server does next comes in chat.
+- Dying costs Constitution: "You've lost some constitution, go to a healer". `agent.self.constitutionLost` says how many points, and max health is lower until a Healer restores them.
+- Talking to a Healer cures resurrection sickness at once, then asks in a Dialog what restoring the Constitution costs. It asks nothing when no Constitution is lost. It restores as many points as you can afford, at least one.
+
+```ts
+const healer = agent.surroundings.named("Ionhar");
+if (!healer) return "Ionhar isn't in view";
+
+const talked = await talkTo(agent, healer.objectId);
+if (!talked.ok) return talked;
+
+const dialog = await agent.waitFor(() => agent.self.dialog, 5_000);
+if (!dialog) return { constitutionLost: agent.self.constitutionLost, asked: "nothing" };
+
+const answered = await answer(agent, true);
+await agent.waitFor(() => agent.self.constitutionLost === 0, 5_000);
+return { asked: dialog.text, answered, constitutionLost: agent.self.constitutionLost, maxHealth: agent.self.maxHealth };
+```
+
 ## Loot and weight
 
 - `/autoloot` is on: loot goes into your backpack by itself while it has room. With no room the item stays on the ground for 180 s, and only those who damaged the Mob may pick it up, with the `pickUp` Primitive.

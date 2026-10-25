@@ -44,6 +44,10 @@ _Avoid_: skill
 A buff or debuff on a Character, shown in its buff bar with its time left.
 _Avoid_: buff (when meaning both)
 
+**Dialog**:
+A question the server puts to a Character in a window, answered with Accept or Decline, or only acknowledged with OK.
+_Avoid_: popup, prompt
+
 **Navmesh**:
 A zone's static map of where a Character can walk or swim, built from the game client's zone data; it says nothing about what changes, such as whether a door is open or where NPCs are.
 _Avoid_: pathing grid, nav data
@@ -85,7 +89,7 @@ One thing the Harness tells the Mind; only what a real game client would know, w
 _Avoid_: event, observation
 
 **Self**:
-What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere and which Effects are on it, built only from Percepts.
+What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere, which Effects are on it, how much Constitution it has lost and which Dialog is open, built from Percepts. Only that a Dialog was answered comes from the Primitives it sent, as a client closes the window on the click.
 _Avoid_: player, status, me
 
 **Surroundings**:

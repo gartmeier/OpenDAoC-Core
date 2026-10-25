@@ -18,11 +18,6 @@ When Return Blade slowed a rock, only the chat said so ("can't attack as fast as
 `train(agent, "Celtic Dual", 3)` sends `/train Celtic Dual 3`, which the server ignores without a word, so it fails with `notTrained`. Sending `/train "Celtic Dual" 3` myself worked.
 Needed: the porcelain quotes the line name.
 
-## Healer's Constitution dialog can't be answered (2026-10-25)
-
-After dying, "You've lost some constitution, go to a healer". `talkTo` the Healer Ionhar cured resurrection sickness, then the server sent its "It will cost ... Do you accept?" custom dialog (`Healer.cs`, `SendCustomDialog`), which reached the Mind as nothing and has no Primitive to accept. Max health stayed 172 instead of 179.
-Needed: a Percept for custom dialogs (text) and a Primitive to accept or decline them.
-
 ## `kill` times out on the run to a far Mob (2026-10-25)
 
 `kill` starts its 30 s `noDamage` clock before running to the Mob, so a Mob more than ~5500 units away failed with `noDamage` while I was still running, every time (`grind` then tried again from closer and won).

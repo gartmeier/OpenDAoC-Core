@@ -113,6 +113,21 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Read_ShouldReadAnAnswerDialogPrimitive_WithItsCodeAsAName()
+        {
+            Assert.That(Read("""{"type":"primitive","id":27,"primitive":{"name":"answerDialog","code":"CustomDialog","data1":257,"data2":1,"data3":0,"accept":true}}"""),
+                Is.EqualTo(new PrimitiveMessage(27, new AnswerDialogPrimitive(eDialogCode.CustomDialog, 257, 1, 0, true))));
+        }
+
+        [Test]
+        public void Write_ShouldWriteTheDialogAndStatsPercepts()
+        {
+            Assert.That(Write(new PerceptMessage(15, 2600, new DialogPercept(eDialogCode.CustomDialog, 257, 1, 0, true, "Do you accept?"))),
+                Does.EndWith("""{"kind":"dialog","code":"CustomDialog","data1":257,"data2":1,"data3":0,"yesNo":true,"text":"Do you accept?"}}"""));
+            Assert.That(Write(new PerceptMessage(16, 2700, new StatsPercept(7))), Does.EndWith("""{"kind":"stats","constitutionLost":7}}"""));
+        }
+
+        [Test]
         public void Write_ShouldWriteASkillsPercept_WithAStylesLineAndNoneForAnythingElse()
         {
             string json = Write(new PerceptMessage(13, 2400, new SkillsPercept([new("Blades", 5, SkillPage.Specialization), new("Shining Blade", 2, SkillPage.Styles, "Blades")])));
@@ -155,6 +170,7 @@ namespace DOL.GS.Tests
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"attack"}}""", "on")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"command"}}""", "text")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"useStyle","line":"Blades"}}""", "style")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"answerDialog","code":"CustomDialog","data1":257,"data2":1,"data3":0}}""", "accept")]
         public void Read_ShouldSayWhy_ForAPrimitiveWithoutItsField(string json, string field)
         {
             Assert.That(MindProtocol.Read(Encoding.UTF8.GetBytes(json), out string error), Is.Null);
