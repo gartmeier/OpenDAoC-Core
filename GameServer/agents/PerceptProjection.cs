@@ -7,6 +7,7 @@ using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerRules;
+using DOL.GS.Spells;
 using DOL.GS.Styles;
 using DOL.Language;
 using DOL.Network;
@@ -436,7 +437,34 @@ namespace DOL.GS.Agents
 
             return new EffectsPercept([.. player.effectListComponent.GetSortedEffects(static effect => effect.EffectType is not eEffect.Pulse)
                 .Where(static effect => effect.Icon != 0)
-                .Select(static effect => new EffectEntry(Encoded(effect.Name), effect.HasPositiveEffect, SecondsLeft(effect)))]);
+                .Select(static effect => new EffectEntry(Encoded(effect.Name), effect.HasPositiveEffect, SecondsLeft(effect), effect is ECSGameSpellEffect spellEffect ? Details(spellEffect.SpellHandler) : null))]);
+        }
+
+        // Mirrors `SpellDelve.GetSpellString`, the tooltip the library sends with the bar for each spell's Effect, as the client's tooltip window shows it.
+        // The client words its target and magic type ids. It shows the duration, power cost, range, radius and magic type only when the spell has one, and a power cost only for a spell that costs power.
+        private static SpellDetails Details(ISpellHandler spellHandler)
+        {
+            Spell spell = spellHandler.Spell;
+
+            return new SpellDetails(
+                Level: spell.Level,
+                DurationSeconds: spell.Duration > 0 ? spell.Duration / 1000f : null,
+                PowerCost: spell.Power != 0 && spellHandler.CostType is SpellCostType.Power ? spell.Power : null,
+                Target: TargetName(spell),
+                Range: spell.Range != 0 ? spell.Range : null,
+                CastingSeconds: spell.CastTime / 1000f,
+                MagicType: SpellDelve.GetMagicTypeId(spell) != 0 ? spell.DamageType.ToString() : null,
+                Radius: spell.Radius != 0 ? spell.Radius : null,
+                Description: Encoded(SpellDelve.GetSpellDescription(spellHandler, spell)));
+        }
+
+        // The client's words for a realm spell's target, as seen in the client, and the server's name for any other.
+        private static string TargetName(Spell spell)
+        {
+            if (spell.Target is not eSpellTarget.REALM)
+                return spell.Target.ToString();
+
+            return spell.Radius != 0 ? "Realm area effect" : "Realm";
         }
 
         // The packet's whole seconds left, where 0 stands for no timer.

@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using DOL.AI;
 using DOL.Database;
 using DOL.GS.ServerRules;
+using DOL.GS.Spells;
 using DOL.Network;
 
 namespace DOL.GS.Tests
@@ -98,14 +99,26 @@ namespace DOL.GS.Tests
         public static TestEffect Effect(TestPlayer player, string name, ushort icon, bool positive, int msLeft, eEffect type = eEffect.Unknown)
         {
             TestEffect effect = new(player, name, icon, positive, msLeft, type);
+            AddToEffectList(player, effect);
+            return effect;
+        }
+
+        // Puts the Effect of the spell `handler` casts on the player, as the server keeps it once started, with `msLeft` on its timer.
+        public static ECSGameSpellEffect SpellEffect(TestPlayer player, ISpellHandler handler, int msLeft)
+        {
+            ECSGameSpellEffect effect = new(new ECSGameEffectInitParams(player, msLeft, 1, handler));
+            AddToEffectList(player, effect);
+            return effect;
+        }
+
+        private static void AddToEffectList(TestPlayer player, ECSGameEffect effect)
+        {
             var effects = (Dictionary<eEffect, List<ECSGameEffect>>) typeof(EffectListComponent).GetField("_effects", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(player.effectListComponent);
 
-            if (effects.TryGetValue(type, out List<ECSGameEffect> ofType))
+            if (effects.TryGetValue(effect.EffectType, out List<ECSGameEffect> ofType))
                 ofType.Add(effect);
             else
-                effects[type] = [effect];
-
-            return effect;
+                effects[effect.EffectType] = [effect];
         }
 
         public static TestNpc Npc(string name)

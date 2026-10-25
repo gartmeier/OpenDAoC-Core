@@ -126,7 +126,7 @@ namespace DOL.GS.Spells
                 .Finalize();
         }
 
-        private static string GetSpellDescription(ISpellHandler spellHandler, Spell spell)
+        internal static string GetSpellDescription(ISpellHandler spellHandler, Spell spell)
         {
             if (spell.SubSpellID == 0)
                 return spellHandler.ShortDescription;
@@ -186,7 +186,7 @@ namespace DOL.GS.Spells
             };
         }
 
-        private static int GetMagicTypeId(Spell spell)
+        internal static int GetMagicTypeId(Spell spell)
         {
             return _damageTypeToIdMap.TryGetValue(spell.DamageType, out int damageTypeId) ? damageTypeId : 0;
         }

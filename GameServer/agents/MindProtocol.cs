@@ -458,10 +458,26 @@ namespace DOL.GS.Agents
     public sealed record EffectsPercept(EffectEntry[] Effects) : Percept;
 
     // One Effect. `Positive` says it's a buff rather than a debuff. `SecondsLeft` is its time left in whole seconds when the server sent the bar, or none for an Effect without a timer.
+    // `Details` are what a spell's Effect shows in its tooltip. An ability's Effect has none.
     public sealed record EffectEntry(
         string Name,
         bool Positive,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SecondsLeft = null);
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SecondsLeft = null,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] SpellDetails Details = null);
+
+    // What a spell is, as the server's forced tooltip update tells a 1.110+ client, and the client's tooltip window shows: each field under its label there, and only when it shows it.
+    // `Target` is in the client's words where seen ("Realm", "Realm area effect") and the server's name otherwise. `MagicType` is the server's name, which is the client's word for those seen ("Energy").
+    // A negative `PowerCost` is a percentage of maximum power. `CastingSeconds` is 0 for an instant spell. `Description` is the server's sentence for what it does.
+    public sealed record SpellDetails(
+        int Level,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] float? DurationSeconds,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? PowerCost,
+        string Target,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Range,
+        float CastingSeconds,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string MagicType,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Radius,
+        string Description);
 
     // A player died, the Agent's Character included: its object ID, and the object ID of what killed it, or 0.
     public sealed record DiedPercept(int ObjectId, int KillerId) : Percept;

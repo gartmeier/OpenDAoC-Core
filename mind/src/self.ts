@@ -1,4 +1,4 @@
-import type { EffectEntry, JumpPercept, Percept, PerceptMessage, SkillEntry, StopReason } from "./protocol.ts";
+import type { EffectEntry, JumpPercept, Percept, PerceptMessage, SkillEntry, SpellDetails, StopReason } from "./protocol.ts";
 import type { Position } from "./surroundings.ts";
 import type { Clock } from "./tactic.ts";
 
@@ -23,6 +23,8 @@ export interface Effect {
   readonly positive: boolean;
   /** Whole seconds until it ends, counting down as the client's buff bar does. 0 once its time is up, until the server takes it off. `undefined` for an Effect without a timer. */
   readonly secondsLeft: number | undefined;
+  /** A spell's, as its tooltip window shows them. `undefined` for an ability's Effect, such as Sprint. */
+  readonly details: SpellDetails | undefined;
 }
 
 /**
@@ -235,6 +237,7 @@ function effectFrom(entry: EffectEntry, clock: Clock): Effect {
   return {
     name: entry.name,
     positive: entry.positive,
+    details: entry.details,
     get secondsLeft() {
       return endsAt === undefined ? undefined : Math.max(0, Math.ceil((endsAt - clock.now()) / 1000));
     },

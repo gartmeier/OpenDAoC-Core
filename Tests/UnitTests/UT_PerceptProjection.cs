@@ -11,6 +11,7 @@ using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
 using DOL.GS.ServerRules;
+using DOL.GS.Spells;
 using DOL.GS.Styles;
 using NUnit.Framework;
 
@@ -705,6 +706,47 @@ namespace DOL.GS.Tests
             EffectsPercept percept = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIcons, [0, false]);
 
             Assert.That(percept.Effects, Is.EqualTo(new EffectEntry[] { new("speed", true, 600) }));
+        }
+
+        // As the client's window shows a Hastener's buff: "Speed of the Realm", Level 1, Duration 10 minutes, Target Realm area effect, Range 1500, Area radius 350, Casting time Instant.
+        [Test]
+        public void Project_ShouldGiveASpellEffectsDetails_ForTheIconsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0]);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            Spell speed = new(new DbSpell { Name = "Speed of the Realm", SpellID = 2430, Icon = 3060, Target = "Realm", Type = "SpeedEnhancement", Range = 1500, Radius = 350, Value = 147, Duration = 600 }, 1);
+            WorldDoubles.SpellEffect(greeen, new SpeedEnhancementSpellHandler(greeen, speed, null), 314_000);
+
+            EffectsPercept percept = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIcons, [0, false]);
+
+            Assert.That(percept.Effects.Single() with { Details = null }, Is.EqualTo(new EffectEntry("Speed of the Realm", true, 314)));
+            Assert.That(percept.Effects.Single().Details, Is.EqualTo(new SpellDetails(1, 600, null, "Realm area effect", 1500, 0, null, 350, "The target's speed is increased to 147% of normal for 10 minutes.")));
+        }
+
+        // As the client's window shows "Aura of Global Feedback": Level 44, Duration 20 minutes, Power cost 28, Target Realm, Range 1000, Casting time 4.0 seconds, Magic Type Energy.
+        [Test]
+        public void Project_ShouldGiveASpellEffectsPowerCostCastingTimeAndMagicType_WhenItHasThem_ForTheIconsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0]);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            Spell aura = new(new DbSpell { Name = "Aura of Global Feedback", SpellID = 2431, Icon = 3061, Target = "Realm", Type = "DamageShield", Range = 1000, Damage = 4.6, DamageType = (int) eDamageType.Energy, Duration = 1200, Power = 28, CastTime = 4 }, 44);
+            WorldDoubles.SpellEffect(greeen, new DamageShieldSpellHandler(greeen, aura, null), 1_492_000);
+
+            EffectsPercept percept = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIcons, [0, false]);
+
+            Assert.That(percept.Effects.Single().Details, Is.EqualTo(new SpellDetails(44, 1200, 28, "Realm", 1000, 4, "Energy", null, "The target's melee attackers receive 4.6 damage per second for 20 minutes.")));
+        }
+
+        // A Human's client shows an ability's Effect, such as Sprint, by its name and time left only.
+        [Test]
+        public void Project_ShouldGiveNoDetails_ForAnAbilitysEffect()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0]);
+            WorldDoubles.Effect((TestPlayer) client.Player, "Sprint", 3062, true, 0);
+
+            EffectsPercept percept = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIcons, [0, false]);
+
+            Assert.That(percept.Effects.Single().Details, Is.Null);
         }
 
         [Test]

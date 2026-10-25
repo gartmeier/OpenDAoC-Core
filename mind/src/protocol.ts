@@ -464,6 +464,7 @@ export interface EffectEntry {
   name: string;
   positive: boolean;
   secondsLeft?: number;
+  details?: SpellDetails;
 }
 
 export type eInventoryWindowType = "Update" | "Equipment" | "Inventory" | "PlayerVault" | "HouseVault" | "ConsignmentOwner" | "ConsignmentViewer" | "HorseBags";
@@ -514,6 +515,18 @@ export interface StyleDetails {
   openingDamage: number;
   hidden: boolean;
   weapon?: string;
+}
+
+export interface SpellDetails {
+  level: number;
+  durationSeconds?: number;
+  powerCost?: number;
+  target: string;
+  range?: number;
+  castingSeconds: number;
+  magicType?: string;
+  radius?: number;
+  description: string;
 }
 
 export interface InventoryItem {

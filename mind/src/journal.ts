@@ -120,7 +120,8 @@ function describeItem(item: InventoryItem): string {
 }
 
 function describeEffect(effect: EffectEntry): string {
-  return `${effect.name} (${effect.positive ? "buff" : "debuff"}${effect.secondsLeft === undefined ? "" : `, ${effect.secondsLeft} s`})`;
+  const description = effect.details ? `: ${effect.details.description.trim().replaceAll("\n", " ")}` : "";
+  return `${effect.name} (${effect.positive ? "buff" : "debuff"}${effect.secondsLeft === undefined ? "" : `, ${effect.secondsLeft} s`})${description}`;
 }
 
 function merchantItemName({ inventory }: Agent, index: number): string {

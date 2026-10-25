@@ -269,3 +269,15 @@ test("takes the whole buff bar from each Effects Percept, so an Effect the serve
 
   expect(agentSelf.effects.map(({ name, secondsLeft }) => ({ name, secondsLeft }))).toEqual([{ name: "slow", secondsLeft: 19 }]);
 });
+
+test("keeps a spell Effect's details, and none for an ability's", () => {
+  const agentSelf = new Self(new FakeClock());
+  const details = { level: 1, durationSeconds: 600, target: "Realm area effect", range: 1500, castingSeconds: 0, radius: 350, description: "The target's speed is increased to 147% of normal for 10 minutes." };
+
+  agentSelf.perceive(message(effects({ name: "Speed of the Realm", positive: true, secondsLeft: 600, details }, { name: "Sprint", positive: true })));
+
+  expect(agentSelf.effects.map(({ name, details }) => ({ name, details }))).toEqual([
+    { name: "Speed of the Realm", details },
+    { name: "Sprint", details: undefined },
+  ]);
+});

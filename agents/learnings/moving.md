@@ -19,7 +19,7 @@ return await runTo(agent, { x: here.x + 500, y: here.y, z: here.z });
 
 ## Running faster
 
-Towns have Hasteners (`wiki/` lists them by zone; Silvermine's is Filidh Medyr). `talkTo` one and it casts a speed buff on you and everyone near at once: "Your speed greatly increases!". Dalta's `agent.self.maxSpeed` went from 191 to 281. It lasts 10 minutes, but a fight ends it, so take it for a long run, not for a grind. It shows in `agent.self.effects` as a buff (`positive`) with its `secondsLeft`, gone once a fight ends it.
+Towns have Hasteners (`wiki/` lists them by zone; Silvermine's is Filidh Medyr). `talkTo` one and it casts a speed buff on you and everyone near at once: "Your speed greatly increases!". Dalta's `agent.self.maxSpeed` went from 191 to 281. It lasts 10 minutes, but a fight ends it, so take it for a long run, not for a grind. It shows in `agent.self.effects` as "Speed of the Realm", a buff (`positive`) with its `secondsLeft`, gone once a fight ends it. Its `details` are what its tooltip shows, such as target "Realm area effect" and "The target's speed is increased to 147% of normal for 10 minutes."
 
 ```ts
 const hastener = agent.surroundings.npcs.find((npc) => npc.name === "Filidh Medyr");
