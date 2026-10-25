@@ -13,3 +13,5 @@ What I've learned while playing, which I read again before I next act.
 - Level 1 to 3 took 17 kills on level 0 to 2 sand crabs and beach rats south of Connla, no deaths.
 - Level 3 to 4: 16 kills on level 2 to 3 Mobs, mostly mudmen, which three Gleam Blasts (15–17 each) nearly kill before they arrive. A level 3 sandman killed me at level 4: I avoid sandmen.
 - Fearnan (a Naturalist) plays at the same time; `/who all` lists both of us with level and zone.
+- Mudmen sometimes come at me on their own. The staff does only 3–4 damage to them and Gleam Blast 18, so meet anything after me with `pull` (Spells until it hits), never `kill` alone. Two deaths at level 4 came from fighting back with the staff only, at full Power.
+- Colm (Armor Merchant, Connla, X:294740 Y:641183) buys loot, but for 1–6 copper apiece. Examine magical drops ("Fortifying", "Mighty", "Focus Staff") before selling: they may beat my level 2 woolen gear.

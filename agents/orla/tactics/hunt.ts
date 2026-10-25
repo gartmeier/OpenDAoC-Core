@@ -108,15 +108,17 @@ export async function hunt(agent: Agent, levels: (level: number) => number[], un
     }
 
     const me = agent.self.objectId;
-    const attacker = me === undefined ? undefined : agent.surroundings.attacking(me).find((npc) => distance(agent, npc.position) < 500);
+    // A Mob after me, in reach or still on its way: meet it with Spells too, not only the staff.
+    const attacker = me === undefined ? undefined : (agent.surroundings.attacking(me).find((npc) => distance(agent, npc.position) < 500)
+      ?? agent.surroundings.npcs.find((npc) => npc.targetId === me && npc.healthPercent > 0 && npc.realm === "None" && distance(agent, npc.position) < 2000));
     if (attacker) {
-      const k = await kill(agent, attacker.objectId);
+      const k = await pull(agent, attacker.objectId);
       if (k.ok) kills++;
       else log.push(`fought back ${attacker.name} L${attacker.level}: ${k.reason}`);
       continue;
     }
 
-    if (agent.self.healthPercent < 95 || agent.self.powerPercent < 80) {
+    if (agent.self.healthPercent < 95 || agent.self.powerPercent < 95) {
       await rest(agent, 100);
       continue;
     }
