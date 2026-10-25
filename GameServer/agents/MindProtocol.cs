@@ -217,6 +217,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(PlayerCreatePercept), "playerCreate")]
     [JsonDerivedType(typeof(PlayerPositionPercept), "playerPosition")]
     [JsonDerivedType(typeof(NpcCreatePercept), "npcCreate")]
+    [JsonDerivedType(typeof(ObjectCreatePercept), "objectCreate")]
     [JsonDerivedType(typeof(ObjectUpdatePercept), "objectUpdate")]
     [JsonDerivedType(typeof(ObjectDeletePercept), "objectDelete")]
     [JsonDerivedType(typeof(ObjectRemovePercept), "objectRemove")]
@@ -336,6 +337,24 @@ namespace DOL.GS.Agents
         eQuestIndicator QuestIndicator,
         string Name,
         string GuildName) : Percept;
+
+    // A World object came into view: anything that's neither a Character nor an NPC, such as a Grave, a door or loot on the ground. Positions are global. The server sends it again whenever its name, model, heading or emblem changes.
+    // `Heading` is 0 to 4095. `Emblem` is a guild emblem, 0 for none. `KeepBanner` marks a keep's banner, and `Yours` loot the Agent's Character may pick up.
+    // `DoorId` is there only for a door.
+    public sealed record ObjectCreatePercept(
+        int X,
+        int Y,
+        int Z,
+        int ObjectId,
+        int Heading,
+        int Model,
+        PacketRealm Realm,
+        int Emblem,
+        bool Underwater,
+        bool KeepBanner,
+        bool Yours,
+        string Name,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? DoorId = null) : Percept;
 
     // Where an object is now, usually an NPC, sent about every 5 s while it's in view and whenever it starts or stops moving. Positions are global, turned back from the zone-relative ones the packet carries.
     // `Speed` is the horizontal speed and `ZSpeed` a quarter of the vertical one, signed. `Heading` is 0 to 4095. `ZoneId` is the zone's skin ID.
@@ -509,6 +528,10 @@ namespace DOL.GS.Agents
     // `Count` is how many there are, carried for generic items, arrows, bolts, poisons and thrown weapons, and 1 for anything else. Any stack of more than one also has its count in front of its `Name`.
     // `Hand` is 0 for the right hand, 1 for two-handed and 2 for either hand. `Weight` is in tenths of a pound, for the whole stack. `Condition`, `Durability` and `Quality` are percentages.
     // `SpellNames` are the names of the spells it casts or procs.
+    // `ItemType` is the server's equipment slot the item is made for (see `MoveItemPrimitive`). The packet doesn't carry it, but the client works it out from its own data, as a Human sees it from the item's icon (ADR 0006).
+    // An item goes only in its own slot, except that a wrist item (33 or 34) goes on either wrist, a ring (35 or 36) on either finger, a right-hand weapon (10) in the right hand or both,
+    // and a left-hand weapon (11) in either hand or both. A shield or an instrument goes by its `ObjectType` too, and arrows and bolts go in the quivers (14 to 17) by theirs alone.
+    // Anything else, such as 0 or 40, goes in no equipment slot.
     public sealed record InventoryItem(
         string Name,
         int Level,
@@ -518,6 +541,7 @@ namespace DOL.GS.Agents
         int Hand,
         int DamageType,
         int ObjectType,
+        int ItemType,
         int Weight,
         int Condition,
         int Durability,
@@ -542,7 +566,7 @@ namespace DOL.GS.Agents
     public sealed record MerchantWindowPercept(eMerchantWindowType Window, MerchantItem[] Items) : Percept;
 
     // One item in a merchant's window. `Page` and `Place` are where it is: `buy` and `examineMerchantItem` take `Page * 30 + Place`.
-    // `DpsAf`, `SpeedAbs`, `Hand`, `DamageType` and `ObjectType` are as in an `InventoryItem`. `Count` is how many come in a pack, 1 unless the packet carries it.
+    // `DpsAf`, `SpeedAbs`, `Hand`, `DamageType`, `ObjectType` and `ItemType` are as in an `InventoryItem`. `Count` is how many come in a pack, 1 unless the packet carries it.
     // `Weight` is in tenths of a pound, for the whole pack, and 0 for a thrown weapon. `Price` is in copper. `Usable` says whether the Character's class can use it.
     public sealed record MerchantItem(
         int Page,
@@ -554,6 +578,7 @@ namespace DOL.GS.Agents
         int Hand,
         int DamageType,
         int ObjectType,
+        int ItemType,
         bool Usable,
         int Weight,
         long Price,
@@ -574,8 +599,8 @@ namespace DOL.GS.Agents
     // `ReachesTarget` is false when the route can't get to the target, and the run then ends `stopped` with `Unreachable` at the last corner.
     public sealed record RoutedPercept(RouteCorner[] Corners, bool ReachesTarget) : Percept;
 
-    // One corner of a route, global.
-    public sealed record RouteCorner(float X, float Y, float Z);
+    // One corner of a route, global. `Swim` when the route swims from it on, across water on the surface; on the last corner, when the route ends in the water.
+    public sealed record RouteCorner(float X, float Y, float Z, bool Swim);
 
     // Worked out by the Harness: a `moveTo` reached its target, and the Character stands there.
     public sealed record ArrivedPercept(float X, float Y, float Z) : Percept;

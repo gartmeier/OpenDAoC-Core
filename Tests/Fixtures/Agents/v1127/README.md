@@ -12,6 +12,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `styles.tsv` is 209 s of account `agent2`'s Character Dalta, a level 5 Blademaster, already in the world, fighting Mobs and using styles from the quickbar. Recorded with `/agent capture agent2` on 2026-10-24, unmodified apart from its first line. See Styles.
 - `healer-dialog.tsv` is 188 s of the same Character, who had lost Constitution, from login: it talks to a Healer and declines the Dialog asking whether to pay to restore it, then talks to the Healer again and accepts. Recorded with `/agent capture agent2` on 2026-10-25, unmodified apart from its first line. See Dialogs.
 - `login-next-to-agent.tsv` is 189 s of the same Character next to the Agent Greeen, who is already in the world. The Human says `come` and types `/speed 0` with Greeen targeted, quits to the character screen with `/q`, logs back in next to Greeen, says `come`, types `/speed 191`, says `come` three more times and types `/jump greeen to vue`. The first 189 s of a recording with `/agent capture admin` on 2026-10-21, taken while it was still running, otherwise unmodified. See Players already in the world.
+- `swim-straight.tsv`, `swim-turn.tsv` and `swim-stop-sit-stand.tsv` are 43 s, 31 s and 54 s of the same Character, unbuffed, at a river in zone 207. In the first it runs down the bank, swims straight across and runs up the other bank. In the second it swims in, turns about while swimming, and swims back out. In the third it swims in and stops in the water, sits, stands, swims on and runs out. Recorded with `/agent capture agent2` on 2026-10-25, unmodified. See Swimming.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
 ## Format
@@ -129,6 +130,18 @@ Full packet, the first of the turn: `000E 0068 0001 FFFF 00BA 0001 0000 06D6 00 
 ### Running past an NPC
 
 While running past the NPC, the client sends a create object request (0xBE) for an object the server sent, as when idling. After stopping, the Human targeted the NPC: target (0xB0) with data `1F0B E000`, the NPC's object ID and two bytes the server reads as flags. From then on, position updates carry 0x1F0B at data offsets 22–23 and action flags 0xB0.
+
+### Swimming
+
+From the three swim captures. The river's surface is at 4690 (the zone's water height in OpenDAoC-BuildNav's `zone207.gset`, 146.5625 × 32), where the navmesh's water sheet sits 16 below it.
+
+- **Going in.** The update in which Z reaches the water already has state flag 0x04 (`SWIMMING`) and the swim speed, with no ramp down: 191 on the bank, then 85. From then on Z stays at 4650, 40 below the surface, with Z speed 0.
+- **Speed.** The speed field is 85 while swimming, and the Character covers about 85 units a second. That's 85/191 of its running speed. In an earlier, unchecked-in capture with a speed buff, the same Character ran at 280 and swam at 124, the same fraction, so swim speed follows the maximum speed.
+- **What changes.** As when running: X and Y, the speed and the heading. Turning while swimming changes the heading in the position updates only; no heading update is sent. The rate is the running one.
+- **Stopping.** The speed falls (81, 9.1), then an update with speed 0 at the final spot, and the idle cadence. State flag 0x04 stays set while standing in the water, in the idle updates too. Starting again ramps the speed up to 85 over about 0.6 s.
+- **Sitting.** `/sit` in the water works: the state flags become 0x10 (`SITTING`) with 0x04 cleared, at the same Z. Standing up sets 0x04 again.
+- **Coming out.** The first update with Z above 4650 clears 0x04, and the speed ramps up to the running speed over about 0.4 s, as when starting a run.
+- Action flags, the heading's 0x1000 flag and health are as on land. The diving action flag (0x02) is never set.
 
 ## Players already in the world
 

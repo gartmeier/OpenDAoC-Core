@@ -28,10 +28,8 @@ export async function sellJunk(agent: Agent, merchantName: string, keep: string[
   return log;
 }
 
-const ARMOUR: [RegExp, number][] = [
-  [/helm|cap|coif/i, SLOT.head], [/gloves|gauntlets/i, SLOT.hands], [/boots/i, SLOT.feet],
-  [/vest|jerkin|hauberk|tunic|breastplate/i, SLOT.torso], [/leggings|pants|legs/i, SLOT.legs], [/sleeves|arms/i, SLOT.arms],
-];
+/** The armour slots: an armour piece's `itemType` is the slot it goes in. */
+const ARMOUR: number[] = [SLOT.head, SLOT.hands, SLOT.feet, SLOT.torso, SLOT.legs, SLOT.arms];
 
 /** The effective armour factor of the item in `slot`, from examining it, or 0. */
 async function armourFactor(agent: Agent, slot: number): Promise<number> {
@@ -46,7 +44,7 @@ async function armourFactor(agent: Agent, slot: number): Promise<number> {
 /** Wears any armour piece in the backpack with a higher effective armour factor than what's worn in its slot. */
 export async function equipBetterArmour(agent: Agent, log: string[] = []): Promise<string[]> {
   for (const { slot, item } of [...agent.inventory.backpack]) {
-    const to = ARMOUR.find(([re]) => re.test(item.name))?.[1];
+    const to = ARMOUR.includes(item.itemType) ? item.itemType : undefined;
     if (to === undefined) continue;
     const mine = await armourFactor(agent, slot);
     const worn = await armourFactor(agent, to);

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { MovedPercept, NpcCreatePercept, ObjectDeletePercept, ObjectUpdatePercept, OwnPositionPercept, Percept, PerceptMessage, PlayerCreatePercept, PlayerPositionPercept } from "./protocol.ts";
+import type { MovedPercept, NpcCreatePercept, ObjectCreatePercept, ObjectDeletePercept, ObjectUpdatePercept, OwnPositionPercept, Percept, PerceptMessage, PlayerCreatePercept, PlayerPositionPercept } from "./protocol.ts";
 import { distance, headingTowards, Surroundings, VISIBILITY_DISTANCE } from "./surroundings.ts";
 
 function message(elapsedMs: number, percept: Percept): PerceptMessage {
@@ -90,6 +90,10 @@ function npcCreate(objectId: number, name: string, x: number, y: number, z: numb
     name,
     guildName: "",
   };
+}
+
+function objectCreate(objectId: number, name: string, x: number, y: number, z: number, heading = 0): ObjectCreatePercept {
+  return { kind: "objectCreate", x, y, z, objectId, heading, model: 637, realm: "Hibernia", emblem: 0, underwater: false, keepBanner: false, yours: false, name };
 }
 
 function objectUpdate(objectId: number, x: number, y: number, z: number, heading: number, speed: number): ObjectUpdatePercept {
@@ -456,6 +460,71 @@ test("an NPC farther than the visibility distance is forgotten when the Agent's 
   surroundings.perceive(message(2000, { kind: "jump", x: 531234, y: 478901, z: 2345, objectId: 17, heading: 0, houseNumber: 0 }));
 
   expect(surroundings.npcs.map((npc) => npc.name)).toEqual(["spider"]);
+});
+
+test("an object create makes the World object known, with its name, position, heading and model, standing still", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, objectCreate(0x789, "Dalta's Grave", 531234, 478901, 2345, 1024)));
+
+  expect(surroundings.worldObjects).toEqual([
+    {
+      kind: "object",
+      objectId: 0x789,
+      name: "Dalta's Grave",
+      position: { x: 531234, y: 478901, z: 2345 },
+      heading: 1024,
+      speed: 0,
+      lastHeardMs: 1500,
+      model: 637,
+    },
+  ]);
+});
+
+test("World objects are known beside players and NPCs, a Grave found by its name", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, playerCreate(0x123, "Vue", 531234, 478901, 2345)));
+  surroundings.perceive(message(1600, npcCreate(0x456, "rat", 531000, 478000, 2345)));
+  surroundings.perceive(message(1700, objectCreate(0x789, "Dalta's Grave", 531100, 478500, 2345)));
+
+  expect(surroundings.objects.map((known) => [known.kind, known.name])).toEqual([["player", "Vue"], ["npc", "rat"], ["object", "Dalta's Grave"]]);
+  expect(surroundings.players.map((player) => player.name)).toEqual(["Vue"]);
+  expect(surroundings.npcs.map((npc) => npc.name)).toEqual(["rat"]);
+  expect(surroundings.worldObjects.map((worldObject) => worldObject.name)).toEqual(["Dalta's Grave"]);
+  expect(surroundings.named("dalta's grave")?.objectId).toBe(0x789);
+});
+
+test("an object update moves a known World object, and changes nothing else about it", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, objectCreate(0x789, "door", 531234, 478901, 2345)));
+  surroundings.perceive(message(6500, { ...objectUpdate(0x789, 531300, 478901, 2345, 2048, 150), healthPercent: 40 }));
+
+  expect(surroundings.object(0x789)).toEqual({
+    kind: "object",
+    objectId: 0x789,
+    name: "door",
+    position: { x: 531300, y: 478901, z: 2345 },
+    heading: 2048,
+    speed: 0,
+    lastHeardMs: 6500,
+    model: 637,
+  });
+});
+
+// As when a Character prays at its Grave.
+test("an object remove forgets the World object", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, objectCreate(0x789, "Dalta's Grave", 531234, 478901, 2345)));
+  surroundings.perceive(message(3000, { kind: "objectRemove", objectId: 0x789, objectType: 0 }));
+
+  expect(surroundings.worldObjects).toEqual([]);
+});
+
+test("a World object farther than the visibility distance is forgotten when the Agent's Character moves", () => {
+  const surroundings = new Surroundings();
+  surroundings.perceive(message(1500, objectCreate(0x789, "Dalta's Grave", 531234 + VISIBILITY_DISTANCE + 1, 478901, 2345)));
+  surroundings.perceive(message(2000, { kind: "jump", x: 531234, y: 478901, z: 2345, objectId: 17, heading: 0, houseNumber: 0 }));
+
+  expect(surroundings.worldObjects).toEqual([]);
 });
 
 test("heading 0 faces +Y and a quarter turn faces -X, as the server measures headings", () => {

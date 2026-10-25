@@ -8,6 +8,7 @@ using DOL.AI;
 using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.Agents;
+using DOL.GS.Keeps;
 using DOL.GS.PacketHandler;
 using DOL.GS.PacketHandler.Client.v168;
 using DOL.GS.ServerRules;
@@ -44,6 +45,7 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendObjectDeleteObject = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectDelete), [typeof(GameObject)]);
         private static readonly MethodInfo SendObjectDeleteId = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectDelete), [typeof(ushort)]);
         private static readonly MethodInfo SendNPCCreate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendNPCCreate));
+        private static readonly MethodInfo SendObjectCreate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectCreate));
         private static readonly MethodInfo SendObjectUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectUpdate));
         private static readonly MethodInfo SendObjectRemove = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectRemove));
         private static readonly MethodInfo SendPlayerPositionAndObjectID = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerPositionAndObjectID));
@@ -391,6 +393,88 @@ namespace DOL.GS.Tests
             _rules.AllowedToAttack = true;
 
             Assert.That(PerceptProjection.Project(agent, SendNPCCreate, [mine]), Is.Null);
+        }
+
+        [Test]
+        public void Project_ShouldGiveWhatThePacketCarries_ForTheObjectCreateCallOnAGrave()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            ((TestPlayer) agent.Player).HideGraves = false;
+            GameGravestone grave = WorldObjectIn(zone, new GameGravestone(), "Greeen's Grave");
+            (grave.X, grave.Y, grave.Z) = (531234, 478901, 2345);
+            grave.ObjectID = 0x0789;
+            grave.Heading = 1024;
+            grave.Model = 637;
+            grave.Realm = eRealm.Hibernia;
+
+            Percept percept = PerceptProjection.Project(agent, SendObjectCreate, [grave]);
+
+            Assert.That(percept, Is.EqualTo(new ObjectCreatePercept(531234, 478901, 2345, 0x0789, 1024, 637, PacketRealm.Hibernia, 0, false, false, false, "Greeen's Grave")));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheDoorId_ForTheObjectCreateCallOnADoor()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            GameDoor door = WorldObjectIn(zone, new GameDoor(), "door");
+            door.DoorId = 101000123;
+
+            ObjectCreatePercept percept = (ObjectCreatePercept) PerceptProjection.Project(agent, SendObjectCreate, [door]);
+
+            Assert.That((percept.Name, percept.DoorId), Is.EqualTo(("door", 101000123)));
+        }
+
+        // With the option that hides other players' Graves on.
+        [Test]
+        public void Project_ShouldGiveNothing_ForAnObjectCreateTheAgentCantSee()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            ((TestPlayer) agent.Player).HideGraves = true;
+            GameGravestone grave = WorldObjectIn(zone, new GameGravestone(), "Vue's Grave");
+            grave.OwnerID = "Vue";
+
+            Assert.That(PerceptProjection.Project(agent, SendObjectCreate, [grave]), Is.Null);
+        }
+
+        [Test]
+        public void Project_ShouldCutTheNameToWhatThePacketHoldsForIt_ForTheObjectCreateCall()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            GameStaticItem statue = WorldObjectIn(zone, new GameStaticItem(), new string('s', 60));
+
+            ObjectCreatePercept percept = (ObjectCreatePercept) PerceptProjection.Project(agent, SendObjectCreate, [statue]);
+
+            Assert.That(percept.Name, Is.EqualTo(new string('s', 48)));
+        }
+
+        [Test]
+        public void Project_ShouldGiveTheObjectsFlags_ForTheObjectCreateCall()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            GameKeepBanner banner = WorldObjectIn(zone, new GameKeepBanner(), "banner");
+            banner.Emblem = 0x01ABCD;
+
+            ObjectCreatePercept percept = (ObjectCreatePercept) PerceptProjection.Project(agent, SendObjectCreate, [banner]);
+
+            Assert.That((percept.Emblem, percept.KeepBanner, percept.Yours), Is.EqualTo((0x01ABCD, true, false)));
+        }
+
+        [Test]
+        public void Project_ShouldMarkLootTheAgentMayPickUp_ForTheObjectCreateCall()
+        {
+            Zone zone = WorldDoubles.Zone(101, 524288, 458752, 65536, 65536);
+            GameClient agent = AgentInWorld(zone);
+            GameMoney money = WorldObjectIn(zone, new GameMoney(100), "bag of coins");
+            money.AddOwner(agent.Player);
+
+            ObjectCreatePercept percept = (ObjectCreatePercept) PerceptProjection.Project(agent, SendObjectCreate, [money]);
+
+            Assert.That((percept.Yours, percept.KeepBanner), Is.EqualTo((true, false)));
         }
 
         // The packet carries the position relative to the zone. The Percept has it global again.
@@ -961,18 +1045,33 @@ namespace DOL.GS.Tests
         {
             GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
             TestInventory inventory = WorldDoubles.Inventory((TestPlayer) client.Player);
-            inventory.Items[eInventorySlot.RightHandWeapon] = Item(new() { Name = "falcata", Level = 2, DPS_AF = 22, SPD_ABS = 34, Hand = 2, Type_Damage = 2, Object_Type = (int) eObjectType.Blades, Weight = 25, MaxCondition = 100, MaxDurability = 100, Quality = 85, Model = 445, Color = 7 }, condition: 50);
-            inventory.Items[eInventorySlot.FirstBackpack + 1] = Item(new() { Name = "bear claw", Level = 1, Object_Type = (int) eObjectType.GenericItem, Weight = 2, MaxCondition = 100, MaxDurability = 100, Quality = 100, Model = 100 }, count: 300);
+            inventory.Items[eInventorySlot.RightHandWeapon] = Item(new() { Name = "falcata", Level = 2, DPS_AF = 22, SPD_ABS = 34, Hand = 2, Type_Damage = 2, Object_Type = (int) eObjectType.Blades, Item_Type = (int) eInventorySlot.LeftHandWeapon, Weight = 25, MaxCondition = 100, MaxDurability = 100, Quality = 85, Model = 445, Color = 7 }, condition: 50);
+            inventory.Items[eInventorySlot.FirstBackpack + 1] = Item(new() { Name = "bear claw", Level = 1, Object_Type = (int) eObjectType.GenericItem, Item_Type = (int) eInventorySlot.FirstBackpack, Weight = 2, MaxCondition = 100, MaxDurability = 100, Quality = 100, Model = 100 }, count: 300);
 
             InventoryPercept percept = (InventoryPercept) PerceptProjection.Project(client, SendInventorySlotsUpdate, [new List<eInventorySlot> { eInventorySlot.RightHandWeapon, eInventorySlot.FirstBackpack, eInventorySlot.FirstBackpack + 1 }]);
 
             Assert.That(percept.Window, Is.EqualTo(eInventoryWindowType.Update));
             Assert.That(percept.Slots.Select(static slot => slot.Slot), Is.EqualTo(new[] { 10, 40, 41 }));
-            Assert.That(percept.Slots[0].Item with { SpellNames = null }, Is.EqualTo(new InventoryItem("falcata", 2, 22, 34, 1, 2, 2, (int) eObjectType.Blades, 25, 50, 100, 85, 0, 0, 445, 7, 0, null)));
+            Assert.That(percept.Slots[0].Item with { SpellNames = null }, Is.EqualTo(new InventoryItem("falcata", 2, 22, 34, 1, 2, 2, (int) eObjectType.Blades, (int) eInventorySlot.LeftHandWeapon, 25, 50, 100, 85, 0, 0, 445, 7, 0, null)));
             Assert.That(percept.Slots[0].Item.SpellNames, Is.Empty);
             Assert.That(percept.Slots[1].Item, Is.Null);
             // A generic item's count fills both value fields, a stack's name starts with it, and its weight is the whole stack's.
-            Assert.That(percept.Slots[2].Item with { SpellNames = null }, Is.EqualTo(new InventoryItem("300 bear claw", 1, 0, 0, 300, 0, 0, (int) eObjectType.GenericItem, 600, 100, 100, 100, 0, 0, 100, 0, 0, null)));
+            Assert.That(percept.Slots[2].Item with { SpellNames = null }, Is.EqualTo(new InventoryItem("300 bear claw", 1, 0, 0, 300, 0, 0, (int) eObjectType.GenericItem, (int) eInventorySlot.FirstBackpack, 600, 100, 100, 100, 0, 0, 100, 0, 0, null)));
+        }
+
+        // The packet doesn't carry an item's type, but the client works out its slot from the icon (ADR 0006).
+        [Test]
+        public void Project_ShouldGiveEachItemsType_ForTheInventorySlotsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestInventory inventory = WorldDoubles.Inventory((TestPlayer) client.Player);
+            inventory.Items[eInventorySlot.FirstBackpack] = Item(new() { Name = "Protector's Wrap", Level = 11, Object_Type = (int) eObjectType.Magical, Item_Type = (int) eInventorySlot.RightRing, Model = 103 });
+            inventory.Items[eInventorySlot.FirstBackpack + 1] = Item(new() { Name = "dirk", Level = 3, Object_Type = (int) eObjectType.Piercing, Item_Type = (int) eInventorySlot.LeftHandWeapon, Hand = 2 });
+            inventory.Items[eInventorySlot.FirstBackpack + 2] = Item(new() { Name = "Personal Bind Recall Stone", Object_Type = (int) eObjectType.Magical, Item_Type = (int) eInventorySlot.FirstBackpack });
+
+            InventoryPercept percept = (InventoryPercept) PerceptProjection.Project(client, SendInventorySlotsUpdate, [new List<eInventorySlot> { eInventorySlot.FirstBackpack, eInventorySlot.FirstBackpack + 1, eInventorySlot.FirstBackpack + 2 }]);
+
+            Assert.That(percept.Slots.Select(static slot => slot.Item.ItemType), Is.EqualTo(new[] { 36, 11, 40 }));
         }
 
         [Test]
@@ -1154,9 +1253,9 @@ namespace DOL.GS.Tests
         {
             GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
             MerchantTradeItems trade = new(null);
-            DbItemTemplate shortSword = new() { Name = "short sword", Level = 1, DPS_AF = 16, SPD_ABS = 30, Hand = 2, Type_Damage = 2, Object_Type = (int) eObjectType.Blades, Weight = 20, Price = 150, Model = 444 };
-            DbItemTemplate broadsword = new() { Name = "broadsword", Level = 3, DPS_AF = 26, SPD_ABS = 38, Type_Damage = 2, Object_Type = (int) eObjectType.Blades, Weight = 30, Price = 350, Model = 447 };
-            DbItemTemplate arrows = new() { Name = "arrows", Level = 1, SPD_ABS = 2, Object_Type = (int) eObjectType.Arrow, Weight = 1, PackSize = 20, Price = 12, Model = 1500 };
+            DbItemTemplate shortSword = new() { Name = "short sword", Level = 1, DPS_AF = 16, SPD_ABS = 30, Hand = 2, Type_Damage = 2, Object_Type = (int) eObjectType.Blades, Item_Type = (int) eInventorySlot.LeftHandWeapon, Weight = 20, Price = 150, Model = 444 };
+            DbItemTemplate broadsword = new() { Name = "broadsword", Level = 3, DPS_AF = 26, SPD_ABS = 38, Type_Damage = 2, Object_Type = (int) eObjectType.Blades, Item_Type = (int) eInventorySlot.RightHandWeapon, Weight = 30, Price = 350, Model = 447 };
+            DbItemTemplate arrows = new() { Name = "arrows", Level = 1, SPD_ABS = 2, Object_Type = (int) eObjectType.Arrow, Item_Type = (int) eInventorySlot.FirstBackpack, Weight = 1, PackSize = 20, Price = 12, Model = 1500 };
             trade.AddTradeItem(0, eMerchantWindowSlot.FirstInPage, shortSword);
             trade.AddTradeItem(0, (eMerchantWindowSlot) 2, arrows);
             trade.AddTradeItem(1, (eMerchantWindowSlot) 1, broadsword);
@@ -1167,10 +1266,10 @@ namespace DOL.GS.Tests
             Assert.That(percept.Window, Is.EqualTo(eMerchantWindowType.Normal));
             Assert.That(percept.Items, Is.EqualTo(new MerchantItem[]
             {
-                new(0, 0, 1, 16, 30, 1, 2, 2, (int) eObjectType.Blades, true, 20, 150, 444, "short sword"),
+                new(0, 0, 1, 16, 30, 1, 2, 2, (int) eObjectType.Blades, (int) eInventorySlot.LeftHandWeapon, true, 20, 150, 444, "short sword"),
                 // A pack's count and its whole weight.
-                new(0, 2, 1, 0, 2, 20, 0, 0, (int) eObjectType.Arrow, true, 20, 12, 1500, "arrows"),
-                new(1, 1, 3, 26, 38, 1, 0, 2, (int) eObjectType.Blades, false, 30, 350, 447, "broadsword")
+                new(0, 2, 1, 0, 2, 20, 0, 0, (int) eObjectType.Arrow, (int) eInventorySlot.FirstBackpack, true, 20, 12, 1500, "arrows"),
+                new(1, 1, 3, 26, 38, 1, 0, 2, (int) eObjectType.Blades, (int) eInventorySlot.RightHandWeapon, false, 30, 350, 447, "broadsword")
             }));
         }
 
@@ -1225,6 +1324,16 @@ namespace DOL.GS.Tests
             npc.Region = zone.ZoneRegion;
             npc.Place(zone.XOffset + 3000, zone.YOffset + 3000, 1000);
             return npc;
+        }
+
+        // Named and placed before it's active, since a World object that's active sends itself again on every change.
+        private static T WorldObjectIn<T>(Zone zone, T worldObject, string name) where T : GameObject
+        {
+            worldObject.Name = name;
+            worldObject.CurrentRegion = zone.ZoneRegion;
+            (worldObject.X, worldObject.Y, worldObject.Z) = (zone.XOffset + 3000, zone.YOffset + 3000, 1000);
+            worldObject.ObjectState = GameObject.eObjectState.Active;
+            return worldObject;
         }
 
         private static GameMine Mine(Zone zone)

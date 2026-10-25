@@ -129,6 +129,23 @@ namespace DOL.GS.Tests
             }
         }
 
+        // Every update while swimming across the river, in and out of the water included. As when running, only the position, speed and heading change, and the swimming flag is set.
+        [Test]
+        public void EverySwimmingPositionUpdate_ShouldMatchCapture()
+        {
+            CapturedPacket[] swimming = ClientCaptures.WhilePlaying(ClientCaptures.SWIM_STRAIGHT, eClientPackets.PositionUpdate).Where(static p => p.Data[26] == (byte) PlayerPositionUpdateHandler.StateFlags.SWIMMING).ToArray();
+            Assert.That(swimming, Has.Length.GreaterThan(80));
+
+            foreach (CapturedPacket captured in swimming)
+            {
+                byte[] data = captured.Data;
+                Vector3 position = new(BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(0)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(4)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(8)));
+                ushort heading = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(30));
+
+                AssertMatches(ClientPackets1127.PositionUpdate(position, 207, heading, ClientCaptures.Speed(captured), 100, captured.SessionId, PlayerPositionUpdateHandler.StateFlags.SWIMMING, PlayerPositionUpdateHandler.ActionFlags.TORCH), captured);
+            }
+        }
+
         // Once the Human targeted the NPC, every position update carries its object ID and the target-in-view flags.
         [Test]
         public void PositionUpdateWithATarget_ShouldMatchCapture()

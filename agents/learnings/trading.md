@@ -44,7 +44,7 @@ const sword = agent.inventory.backpack.find(({ item }) => item.name === "falcata
 return sword ? await equip(agent, sword.slot, SLOT.rightHand) : "no falcata in the backpack";
 ```
 
-The leather pieces go to `SLOT.head`, `SLOT.hands`, `SLOT.feet`, `SLOT.torso`, `SLOT.legs` and `SLOT.arms`. A merchant's window doesn't say which slot a piece is for: its name does (helm, gloves, boots, jerkin, leggings, sleeves).
+An item's `itemType`, in the Inventory and in a merchant's window, is the slot it's made for, in the same numbers as `SLOT`: an armour piece's goes straight to `equip`. Read it rather than the name: a "Wrap" is a ring, but "Fist Wraps" are a weapon. A ring (35 or 36) fits either ring slot, a wrist item (33 or 34) either wrist, and a left-hand weapon (11) either hand; 40 is backpack only.
 
 ## Dialogs and Healers
 

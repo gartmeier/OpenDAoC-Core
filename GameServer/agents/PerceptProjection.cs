@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using DOL.AI.Brain;
 using DOL.Database;
+using DOL.GS.Keeps;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerRules;
 using DOL.GS.Spells;
@@ -47,6 +48,7 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendMessage) => Message(client, (string) args[0], (eChatType) args[1], (eChatLoc) args[2]),
                 nameof(IPacketLib.SendPlayerCreate) => PlayerCreate(client, (GamePlayer) args[0]),
                 nameof(IPacketLib.SendNPCCreate) => NpcCreate(client, (GameNPC) args[0]),
+                nameof(IPacketLib.SendObjectCreate) => ObjectCreate(client, (GameObject) args[0]),
                 nameof(IPacketLib.SendObjectUpdate) => ObjectUpdate(client, (GameObject) args[0]),
                 nameof(IPacketLib.SendObjectDelete) => ObjectDelete(args[0]),
                 nameof(IPacketLib.SendObjectRemove) => ObjectRemove((GameObject) args[0]),
@@ -235,6 +237,41 @@ namespace DOL.GS.Agents
                 },
                 Name: Encoded(name),
                 GuildName: Encoded(guildName));
+        }
+
+        // Mirrors `PacketLib176.SendObjectCreate`, which no later library overrides. The server sends it for every World object, and an NPC goes through `SendNPCCreate` instead.
+        private static ObjectCreatePercept ObjectCreate(GameClient client, GameObject gameObject)
+        {
+            GamePlayer viewer = client.Player;
+
+            if (gameObject == null || !gameObject.IsVisibleTo(viewer))
+                return null;
+
+            GameStaticItem staticItem = gameObject as GameStaticItem;
+            string name = gameObject.Name ?? string.Empty;
+
+            // Loot on the ground keeps its own name.
+            if (staticItem is not null and not WorldInventoryItem && LanguageMgr.GetTranslation(client, staticItem) is DbLanguageGameObject translation && !string.IsNullOrEmpty(translation.Name))
+                name = translation.Name;
+
+            if (name.Length > 48)
+                name = name[..48];
+
+            return new ObjectCreatePercept(
+                X: (int) (uint) gameObject.X,
+                Y: (int) (uint) gameObject.Y,
+                Z: (ushort) gameObject.Z,
+                ObjectId: gameObject.ObjectID,
+                Heading: gameObject.Heading,
+                Model: gameObject.Model,
+                Realm: (PacketRealm) ((byte) gameObject.Realm & 0x03),
+                // The packet has 17 bits for it: the low 16, then the next one among other bits.
+                Emblem: staticItem == null ? 0 : staticItem.Emblem & 0x01FFFF,
+                Underwater: gameObject.IsUnderwater,
+                KeepBanner: gameObject is GameKeepBanner,
+                Yours: staticItem is GameStaticItemTimed timed && timed.IsOwner(viewer),
+                Name: Encoded(name),
+                DoorId: gameObject is GameDoorBase door ? door.DoorId : null);
         }
 
         // Mirrors `PacketLib168.SendObjectUpdate`, which no later library overrides. Sent for NPCs, and for other objects the server updates the same way.
@@ -692,6 +729,7 @@ namespace DOL.GS.Agents
                 Hand: hand,
                 DamageType: damageAndObjectType >> 6,
                 ObjectType: damageAndObjectType & 0x3F,
+                ItemType: item.Item_Type,
                 Weight: (ushort) item.Weight,
                 Condition: item.ConditionPercent,
                 Durability: item.DurabilityPercent,
@@ -889,6 +927,7 @@ namespace DOL.GS.Agents
                 Hand: item.Object_Type == (int) eObjectType.GardenObject ? 0 : (byte) (item.Hand << 6) >> 6,
                 DamageType: damageAndObjectType >> 6,
                 ObjectType: damageAndObjectType & 0x3F,
+                ItemType: item.Item_Type,
                 Usable: player.HasAbilityToUseItem(item),
                 Weight: weight,
                 Price: (uint) item.Price,

@@ -149,7 +149,7 @@ export interface AnswerDialogPrimitive {
   accept: boolean;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -248,6 +248,23 @@ export interface NpcCreatePercept {
   questIndicator: eQuestIndicator;
   name: string;
   guildName: string;
+}
+
+export interface ObjectCreatePercept {
+  kind: "objectCreate";
+  x: number;
+  y: number;
+  z: number;
+  objectId: number;
+  heading: number;
+  model: number;
+  realm: PacketRealm;
+  emblem: number;
+  underwater: boolean;
+  keepBanner: boolean;
+  yours: boolean;
+  name: string;
+  doorId?: number;
 }
 
 export interface ObjectUpdatePercept {
@@ -512,6 +529,7 @@ export interface MerchantItem {
   hand: number;
   damageType: number;
   objectType: number;
+  itemType: number;
   usable: boolean;
   weight: number;
   price: number;
@@ -523,6 +541,7 @@ export interface RouteCorner {
   x: number;
   y: number;
   z: number;
+  swim: boolean;
 }
 
 export type StopReason = "Stop" | "Replaced" | "MovedByServer" | "UnableToMove" | "Unreachable";
@@ -564,6 +583,7 @@ export interface InventoryItem {
   hand: number;
   damageType: number;
   objectType: number;
+  itemType: number;
   weight: number;
   condition: number;
   durability: number;

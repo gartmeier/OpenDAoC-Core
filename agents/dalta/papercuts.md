@@ -18,11 +18,6 @@ When Return Blade slowed a rock, only the chat said so ("can't attack as fast as
 `train(agent, "Celtic Dual", 3)` sends `/train Celtic Dual 3`, which the server ignores without a word, so it fails with `notTrained`. Sending `/train "Celtic Dual" 3` myself worked.
 Needed: the porcelain quotes the line name.
 
-## Routes stop at X≈347100 east of Howth (2026-10-25)
-
-Every `runTo` into X:349000–358000 Y:590000–607000 (large eirebugs, cluricaun trips, sheevra) ends `unreachable` at exactly X:347100 Z:4613, from the north, the west and the south. A Human could walk there, as far as I know. Maybe the navmesh is missing tiles there.
-Needed: a navmesh there, or to know it's not walkable.
-
 ## `kill` times out on the run to a far Mob (2026-10-25)
 
 `kill` starts its 30 s `noDamage` clock before running to the Mob, so a Mob more than ~5500 units away failed with `noDamage` while I was still running, every time (`grind` then tried again from closer and won).
@@ -39,26 +34,14 @@ Needed: a Percept with the text of custom text windows.
 The backpack has a Personal Bind Recall Stone, which a Human uses (right-click or a quickbar slot) to go back to the Bind point. A Kill Task loop that runs 16000 units each way could recall after the kill instead. There's no Primitive to use an item, and no `/use` command on the server.
 Needed: a `useItem` Primitive for a backpack or equipment slot.
 
-## Routes stop at the shore of Lough Derg (2026-10-25)
-
-Every `runTo` to the east half of Lough Derg (dergan enchanters at X:358135 Y:537884 were in view, 3500 units off) ends `unreachable` on the water line at Z:4614: at X:353270 Y:541520 and X:354768 Y:542765 from the south, X:359632 Y:516000 in the middle, X:358502 Y:511619 in the north. A Human would swim across, or walk round. The Mind can only `moveTo` along the navmesh, which seems to have no water.
-Workaround: hunt elsewhere (Connacht).
-Needed: swimming in the navmesh, or a way to move straight to a point.
-
-## The grave can't be targeted (2026-10-25)
-
-After dying, "Return to /pray at your grave to regain experience." I ran to where I died and typed `/pray`: "You need to target a grave at which to pray!". The grave never showed up in Surroundings, so there was no object ID to `target`.
-Needed: the grave as an object in Surroundings (it's a GameGravestone), so it can be targeted.
-
 ## A `/train` right after another is sometimes ignored (2026-10-25)
 
 At level 18, `trainBlades` sent `/train Blades 18`, then `/train "Parry" 12` and `/train "Celtic Dual" 12` one after the other, each waiting for its spec to change. Blades and Celtic Dual trained, Parry didn't, with no message at all; the same command a minute later worked.
 Workaround: `trainBlades` now waits a second before each line and tries twice.
 Needed: an answer from the server (or a Percept) when a `/train` is refused, so the Mind knows why.
 
-## An item doesn't say which slot it goes in (2026-10-25)
+## Constitution loss doesn't show anywhere (2026-10-25)
 
-Three "Wraps" dropped (Protector's L11, Speedy L10, Bluntbender L16). I took them for cloaks and tried the Protector's Wrap in the cloak, jewel, neck, waist and both wrist slots; the server said "The Protector's Wrap can't go there!" each time. I wrote it down as fitting no slot and sold all three. They were rings: a Human sees that from the item's icon and its slot in the examine window.
-`InventoryItem` has `objectType`, `hand` and `model`, but not the item type, the slot the server checks against in `CheckItemSlotRestriction`.
-Workaround: the name says the slot (see `from-source.md`), and a ring has model 103.
-Needed: the item type (its equipment slot) on each `InventoryItem`, as the client gets it.
+At level 20 I let an alp luachra (L30) kill me in Basar and released. Chat said "You've lost some constitution, go to a healer to have it restored!" and "This is your first death for this level. Your experience and constitution losses are greatly reduced." After the release `agent.self.effects` held only Resurrection Illness (60 s); nothing for the lost Constitution, and Self has no stats to compare against.
+Workaround: remember the chat line and visit a healer.
+Needed: my stats (or the lost Constitution) as the client's character sheet shows them.
