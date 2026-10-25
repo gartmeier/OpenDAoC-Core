@@ -7,6 +7,10 @@ import { grind, type GrindOptions } from "./grind.ts";
 export const EIMILE = { name: "Sentinel Eimile", x: 352314, y: 553250, z: 5100 };
 /** Sentinel Ornora in Tir na mBeo (Lough Derg), by the Healer Ionhar. */
 export const ORNORA = { name: "Sentinel Ornora", x: 345307, y: 526666, z: 5495 };
+/** Sentinel Casidhe in Tir Urphost (Cliffs of Moher). Task Mob at levels 16–17: bocan, camp at BOCANS. */
+export const CASIDHE = { name: "Sentinel Casidhe", x: 248097, y: 437181, z: 5711 };
+/** Bocans L15 at X:263700–266300 Y:429000–431500, ~16000 east of Casidhe. Ghoulies L20–22 2000 north: approach from the south-west. */
+export const BOCANS = [{ x: 264500, y: 430000, z: 5500 }, { x: 265800, y: 430300, z: 5500 }];
 
 /**
  * Goes to the task guard, hands in a finished Kill Task (talking to the guard does it) and asks for a new one.

@@ -37,4 +37,5 @@ Game rules learned by reading the server's source rather than by playing, each w
 ## Kill Task Mobs (`quests/Tasks/KillTask.cs` `GetRandomMob`, `world/Zone.cs` `GetNPCsOfZone`)
 
 - The guard takes the first NPC of level L−2 to L in the zone, and gives no task ("couldn't find any mob kill order") if that NPC's name has a capital letter: a named Mob such as Connacht's Follower of Ultan (14) or Daewain (15). That's why Connacht gave none at level 14. The Mob is looked up in *your* current zone.
+- In play, Cliffs of Moher's first L−2..L NPC at levels 16 and 17 was the bocan (L15); its task paid 64‰ at 16 and 63‰ at 17, about twice the formula below, so the server rate seems to be ×2.
 - Task XP (`quests/Tasks/AbstractTask.cs`): half the XP of your level spread over level − 1 tasks, i.e. `XPNeeded × 0.5 / (level − 1)` per task (about 33‰ at level 16, before any server rate). Money: 1542c at 16, 1790c at 17 (`MoneyReward`).

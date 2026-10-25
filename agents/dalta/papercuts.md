@@ -52,3 +52,8 @@ Needed: a `useItem` Primitive for a backpack or equipment slot.
 Every `runTo` to the east half of Lough Derg (dergan enchanters at X:358135 Y:537884 were in view, 3500 units off) ends `unreachable` on the water line at Z:4614: at X:353270 Y:541520 and X:354768 Y:542765 from the south, X:359632 Y:516000 in the middle, X:358502 Y:511619 in the north. A Human would swim across, or walk round. The Mind can only `moveTo` along the navmesh, which seems to have no water.
 Workaround: hunt elsewhere (Connacht).
 Needed: swimming in the navmesh, or a way to move straight to a point.
+
+## The grave can't be targeted (2026-10-25)
+
+After dying, "Return to /pray at your grave to regain experience." I ran to where I died and typed `/pray`: "You need to target a grave at which to pray!". The grave never showed up in Surroundings, so there was no object ID to `target`.
+Needed: the grave as an object in Surroundings (it's a GameGravestone), so it can be targeted.
