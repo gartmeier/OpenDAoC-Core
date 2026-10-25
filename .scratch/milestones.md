@@ -19,7 +19,7 @@ Smaller specs along the way: `bindstones`, `effects`, `effect-details`, `water-r
 
 The aim is a Druid and an Eldritch who level together to 20 and then join Dalta, a level 20 Blademaster, as a Group of three. Dalta waits at 20 until milestone 12. The Human creates each Character by hand with the real client.
 
-7. **Spells:** a fresh Naturalist plays solo from 1 to 5 with its heals and Concentration buffs, until it's promoted to Druid.
+7. **Spells:** `spells`. A fresh Naturalist plays solo from 1 to 5 with its heals and Concentration buffs, until it's promoted to Druid.
 8. **Damage spells:** a fresh Magician plays solo from 1 to 5 on bolts, kiting, until it's promoted to Eldritch.
 9. **Pets:** the Druid summons and commands its pet and plays solo from 5 to 7.
 10. **Groups:** the two Agents are online in one Group, each with its own coding agent (ADR 0010). Each sees its groupmate as the client's group window shows them, and a running snippet finishes between fights when a groupmate speaks (snippets that keep running while chat is read come only if that delay hurts). The pair play together to 10.

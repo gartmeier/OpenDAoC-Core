@@ -40,6 +40,10 @@ _Avoid_: skill, special attack
 Magic a Character casts from one of its spell lines, such as a bolt, a heal or a buff.
 _Avoid_: skill
 
+**Power**:
+What a Character spends to cast Spells, refilled by resting.
+_Avoid_: mana
+
 **Concentration buff**:
 A buff Spell that lasts until its caster cancels it and uses part of the caster's concentration while it's up. It turns off while the Character wearing it is too far from the caster and comes back on when they're close again; it doesn't end.
 _Avoid_: conc, const, permanent buff
@@ -97,7 +101,7 @@ One thing the Harness tells the Mind; only what a real game client would know, w
 _Avoid_: event, observation
 
 **Self**:
-What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere, which Effects are on it, how much Constitution it has lost and which Dialog is open, built from Percepts. Only that a Dialog was answered comes from the Primitives it sent, as a client closes the window on the click.
+What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere, which Effects are on it, how much Power it has, which Concentration buffs it keeps up and on whom, how much Constitution it has lost and which Dialog is open, built from Percepts. Only that a Dialog was answered comes from the Primitives it sent, as a client closes the window on the click.
 _Avoid_: player, status, me
 
 **Surroundings**:
