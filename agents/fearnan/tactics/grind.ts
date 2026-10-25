@@ -21,6 +21,32 @@ export async function healSelf(agent: Agent, below = 70): Promise<void> {
   }
 }
 
+/** Casts every Concentration buff it has and doesn't keep up, the best of each kind, on itself. */
+export async function buffSelf(agent: Agent): Promise<string[]> {
+  const me = agent.self.objectId;
+  if (me === undefined) return [];
+
+  const cut = (name: string) => (name.length > 14 ? `${name.slice(0, 12)}..` : name);
+  const kind = (description: string) => description.replace(/\d+/g, "#");
+  const best = new Map<string, (typeof agent.self.skills)[number]>();
+
+  for (const spell of agent.self.skills.filter((skill) => skill.page === "Spells")) {
+    if (!spell.details?.concentrationCost) continue;
+    const other = best.get(kind(spell.details.description));
+    if (!other || spell.level > other.level) best.set(kind(spell.details.description), spell);
+  }
+
+  const cast: string[] = [];
+  for (const buff of best.values()) {
+    if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name))) continue;
+    await agent.send({ name: "target", objectId: me });
+    const reply = await agent.sendAndWait({ name: "castSpell", spell: buff.name }, (percept) =>
+      percept?.kind === "message" && /You cast a|interrupt|must wait|requires|can't cast|enough power/.test(percept.text) ? percept.text : undefined, 10_000);
+    cast.push(`${buff.name}: ${reply ?? "no answer"}`);
+  }
+  return cast;
+}
+
 /** Fights back whoever attacks it. */
 async function fightBack(agent: Agent): Promise<Outcome | undefined> {
   const me = agent.self.objectId;
@@ -50,6 +76,8 @@ export async function grind(agent: Agent, minutes: number, stopAtLevel: number, 
       if (fought.ok) kills++;
       continue;
     }
+
+    await buffSelf(agent);
 
     if (agent.self.healthPercent < 100 || agent.self.powerPercent < 100) {
       await healSelf(agent);
