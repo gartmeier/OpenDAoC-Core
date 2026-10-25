@@ -4,7 +4,7 @@ Game rules learned by reading the server's source rather than by playing, each w
 
 ## Kill Tasks (`KillTask.cs`)
 
-- Kill Tasks stop at level 20.
+- Kill Tasks stop at level 20. In play, though, Casidhe still gave one right after reaching level 20 (vindictive bocan, a red L20–22 Mob), so the limit seems to be above 20, not at it.
 - The number of tasks per level equals your level. You can have one at a time, across all guards.
 - A task expires after 2 hours.
 - The task Mob is the first NPC of level L−2 to L in the zone's internal order, not the nearest one.
