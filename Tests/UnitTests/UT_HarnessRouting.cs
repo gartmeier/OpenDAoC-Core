@@ -400,7 +400,7 @@ namespace DOL.GS.Tests
             Assert.That(_navmesh.Filters, Has.All.EqualTo((EDtPolyFlags.Walk | EDtPolyFlags.Door, EDtPolyFlags.BlockingDoor | EDtPolyFlags.Swim | EDtPolyFlags.Jump | EDtPolyFlags.Disabled))
                 .Or.EqualTo((EDtPolyFlags.Walk | EDtPolyFlags.Door | EDtPolyFlags.Swim, EDtPolyFlags.BlockingDoor | EDtPolyFlags.Jump | EDtPolyFlags.Disabled)));
             Assert.That(_navmesh.OverLand.Count(), Is.EqualTo(1));
-            Assert.That(_navmesh.Asked.Count(static asked => asked.Swims), Is.EqualTo(1));
+            Assert.That(_navmesh.Asked.Count(static asked => asked.Swim), Is.EqualTo(1));
         }
 
         // Navmeshes are per zone: the route goes to the border, then on in the next zone, as the server's NPC pathing does.
@@ -484,12 +484,29 @@ namespace DOL.GS.Tests
         private static readonly Vector3 FarShore = new(31500, 30000, 2150);
         private static readonly (Vector3, EDtPolyFlags)[] AcrossTheLake = [(Start, EDtPolyFlags.Walk), (Shore, EDtPolyFlags.Swim), (FarShore, EDtPolyFlags.Walk), (Target, 0)];
 
-        // Swimming the lake takes 1000 + 1000 × 191/85 ≈ 3247 units' worth of running. Round it via (31000, 32000) is about 4472, via `Corner` about 2828.
+        // Swimming the lake takes 1000 + 1000 × 191/85 ≈ 3247 units' worth of running. Round it via `FarRound` is about 4472, via `Corner` about 2828.
+        private static readonly Vector3 FarRound = new(31000, 32000, 2100);
+
+        // A Mob standing in the lake. Over land the route stops at the shore.
+        private static readonly Vector3 InTheLake = new(31000, 30000, 2000);
+
+        private void IntoTheLake()
+        {
+            _navmesh.Routes = static asked => [asked.Start, Shore];
+            _navmesh.Status = PathfindingStatus.PartialPathFound;
+            _navmesh.SwimRoutes = static _ => [(Start, EDtPolyFlags.Walk), (Shore, EDtPolyFlags.Swim), (InTheLake, 0)];
+        }
+
+        private void AcrossOrFarRound()
+        {
+            _navmesh.Route = [Start, FarRound, Target];
+            _navmesh.SwimRoutes = static _ => AcrossTheLake;
+        }
+
         [Test]
         public void MoveTo_ShouldSwimAcross_WhereThatsFasterThanGoingRound()
         {
-            _navmesh.Route = [Start, new(31000, 32000, 2100), Target];
-            _navmesh.SwimRoutes = static _ => AcrossTheLake;
+            AcrossOrFarRound();
 
             _movement.MoveTo(Target, null, 0);
             RunToTheEnd();
@@ -531,7 +548,6 @@ namespace DOL.GS.Tests
         [Test]
         public void MoveTo_ShouldSwim_WhereOnlySwimmingReachesTheTarget()
         {
-            // Over land the route stops at the shore.
             _navmesh.Routes = static asked => [asked.Start, Shore];
             _navmesh.Status = PathfindingStatus.PartialPathFound;
             _navmesh.SwimRoutes = static _ => AcrossTheLake;
@@ -543,23 +559,24 @@ namespace DOL.GS.Tests
             Assert.That(_client.Perceived.Last(), Is.EqualTo(new ArrivedPercept(Target.X, Target.Y, Target.Z)));
         }
 
-        // The captured client swims at 85 where it runs at 191, 40 below the water's surface, and says so in its state flags (`Tests/Fixtures/Agents/v1127/README.md`, Swimming).
-        // The navmesh's water is 16 below the surface.
+        // The captured client swims at 85 where it runs at 191, 40 below the water's surface, and says so in its state flags, never diving (`Tests/Fixtures/Agents/v1127/README.md`, Swimming).
+        // The navmesh's water is 16 below the surface. Going in, the speed drops to the swim speed at once.
         [Test]
-        public void MoveTo_ShouldSwimAcrossAtSwimSpeed_BelowTheWatersFloor_SayingItSwims()
+        public void MoveTo_ShouldSwimAcrossAtSwimSpeed_BelowTheNavmeshsWater_SayingItSwims()
         {
-            _navmesh.Route = [Start, new(31000, 32000, 2100), Target];
-            _navmesh.SwimRoutes = static _ => AcrossTheLake;
-            _navmesh.Floor = static position => 2000;
+            AcrossOrFarRound();
+            _navmesh.Floor = static _ => 2000;
+            _client.ActionFlags = PlayerPositionUpdateHandler.ActionFlags.TORCH;
 
             _movement.MoveTo(Target, null, 0);
             RunToTheEnd();
 
-            ClientPacket[] swimming = _client.Queued.Where(static packet => Position(packet).X is > 30600 and < 31400).ToArray();
-            Assert.That(swimming, Is.Not.Empty);
-            Assert.That(swimming.Select(StateFlags), Has.All.EqualTo(PlayerPositionUpdateHandler.StateFlags.SWIMMING));
+            ClientPacket[] swimming = _client.Queued.Where(static packet => StateFlags(packet) is PlayerPositionUpdateHandler.StateFlags.SWIMMING).ToArray();
+            Assert.That(swimming.Select(static packet => Position(packet).X), Has.All.InRange(Shore.X, FarShore.X));
+            Assert.That(swimming.Select(static packet => Position(packet).X).Min(), Is.LessThan(Shore.X + 0.233f * 85));
             Assert.That(swimming.Select(Speed), Has.All.EqualTo(85).Within(0.01));
             Assert.That(swimming.Select(static packet => Position(packet).Z), Has.All.EqualTo(1976));
+            Assert.That(_client.Queued.Select(static packet => (PlayerPositionUpdateHandler.ActionFlags) packet.Data[32]), Has.All.EqualTo(PlayerPositionUpdateHandler.ActionFlags.TORCH));
 
             ClientPacket[] running = _client.Queued.Where(static packet => Position(packet).X is > 30100 and < 30400 or > 31600 and < 31900).ToArray();
             Assert.That(running.Select(StateFlags), Has.All.EqualTo((PlayerPositionUpdateHandler.StateFlags) 0));
@@ -567,12 +584,11 @@ namespace DOL.GS.Tests
             Assert.That(running.Select(Speed), Has.Some.EqualTo(GamePlayer.PLAYER_BASE_SPEED).Within(0.01));
         }
 
-        // A Swim leg's floor is the water's, never the ground under it.
+        // A Swim leg's floor is the navmesh's water, never the ground under it.
         [Test]
         public void MoveTo_ShouldTakeTheFloorOfASwimLeg_FromTheWater()
         {
-            _navmesh.Route = [Start, new(31000, 32000, 2100), Target];
-            _navmesh.SwimRoutes = static _ => AcrossTheLake;
+            AcrossOrFarRound();
 
             _movement.MoveTo(Target, null, 0);
             RunToTheEnd();
@@ -580,12 +596,24 @@ namespace DOL.GS.Tests
             Assert.That(_navmesh.Filters, Has.Some.EqualTo((EDtPolyFlags.Swim, EDtPolyFlags.BlockingDoor | EDtPolyFlags.Jump | EDtPolyFlags.Disabled)));
         }
 
+        // Where there's no floor, the water lies flat to the far shore, however high the bank there.
+        [Test]
+        public void MoveTo_ShouldKeepToTheWater_WhereThereIsNoFloor()
+        {
+            AcrossOrFarRound();
+
+            _movement.MoveTo(Target, null, 0);
+            RunToTheEnd();
+
+            ClientPacket[] swimming = _client.Queued.Where(static packet => StateFlags(packet) is PlayerPositionUpdateHandler.StateFlags.SWIMMING).ToArray();
+            Assert.That(swimming.Select(static packet => Position(packet).Z), Has.All.EqualTo(Shore.Z - RouteRun.SWIM_DEPTH));
+        }
+
         // Faster or slower, swimming keeps to the same fraction of the running speed. The captured client swam at 124 with a speed buff running at 280.
         [Test]
         public void MoveTo_ShouldSwimFaster_WithASpeedBuff()
         {
-            _navmesh.Route = [Start, new(31000, 32000, 2100), Target];
-            _navmesh.SwimRoutes = static _ => AcrossTheLake;
+            AcrossOrFarRound();
             // 146% of 191 is 278.86, and swimming 124.1.
             _movement.OnMaxSpeed(new(146, false, 0), 0);
 
@@ -595,37 +623,75 @@ namespace DOL.GS.Tests
             Assert.That(_client.Queued.Where(static packet => StateFlags(packet) is PlayerPositionUpdateHandler.StateFlags.SWIMMING).Select(Speed), Has.Some.EqualTo(124.1f).Within(0.1));
         }
 
-        // A Mob standing in a lake: the run ends in the water, and the Character stands there swimming.
+        [Test]
+        public void OnMaxSpeed_ShouldChangeTheSwimSpeed_MidLeg()
+        {
+            AcrossOrFarRound();
+            _movement.MoveTo(Target, null, 0);
+            long now = TickUntilSwimming();
+
+            _movement.OnMaxSpeed(new(146, false, 0), now);
+            now += 2000;
+            _movement.Tick(now);
+
+            Assert.That(StateFlags(_client.Queued.Last()), Is.EqualTo(PlayerPositionUpdateHandler.StateFlags.SWIMMING));
+            Assert.That(Speed(_client.Queued.Last()), Is.EqualTo(124.1f).Within(0.1));
+        }
+
+        // A run stopped in the water leaves the Character swimming there, as the captured client stands in the water.
+        [Test]
+        public void Stop_ShouldLeaveTheCharacterSwimming_InTheWater()
+        {
+            AcrossOrFarRound();
+            _movement.MoveTo(Target, null, 0);
+            long now = TickUntilSwimming();
+
+            _movement.Stop(now + 1000);
+
+            ClientPacket stop = _client.Queued.Last();
+            Assert.That(Speed(stop), Is.Zero);
+            Assert.That(StateFlags(stop), Is.EqualTo(PlayerPositionUpdateHandler.StateFlags.SWIMMING));
+            Assert.That(_movement.StateFlags, Is.EqualTo(PlayerPositionUpdateHandler.StateFlags.SWIMMING));
+        }
+
+        [Test]
+        public void MoveTo_ShouldNotOvershootTheEndOfASwimRoute_AfterAStall()
+        {
+            IntoTheLake();
+            _movement.MoveTo(InTheLake, null, 0);
+            _movement.Tick(0);
+
+            // The game loop stalls for an hour.
+            _movement.Tick(60 * 60 * 1000);
+
+            Assert.That(_client.Perceived.Last(), Is.EqualTo(new ArrivedPercept(InTheLake.X, InTheLake.Y, InTheLake.Z - RouteRun.SWIM_DEPTH)));
+        }
+
+        // A Mob standing in a lake: the run ends in the water, and the Character stands there swimming, which the client's idle position updates say too.
         [Test]
         public void MoveTo_ShouldEndInTheWater_SwimmingThere()
         {
-            Vector3 inTheLake = new(31000, 30000, 2000);
-            _navmesh.Routes = static asked => [asked.Start, Shore];
-            _navmesh.Status = PathfindingStatus.PartialPathFound;
-            _navmesh.SwimRoutes = _ => [(Start, EDtPolyFlags.Walk), (Shore, EDtPolyFlags.Swim), (inTheLake, 0)];
+            IntoTheLake();
 
-            _movement.MoveTo(inTheLake, null, 0);
+            _movement.MoveTo(InTheLake, null, 0);
             RunToTheEnd();
 
             Assert.That(((RoutedPercept) _client.Perceived[0]).Corners.Select(static corner => corner.Swim), Is.EqualTo(new[] { false, true, true }));
             Assert.That(StateFlags(_client.Queued.Last()), Is.EqualTo(PlayerPositionUpdateHandler.StateFlags.SWIMMING));
-            Assert.That(_client.Perceived.Last(), Is.EqualTo(new ArrivedPercept(inTheLake.X, inTheLake.Y, inTheLake.Z - RouteRun.SWIM_DEPTH)));
-            Assert.That(_movement.IsSwimming, Is.True);
+            Assert.That(_client.Perceived.Last(), Is.EqualTo(new ArrivedPercept(InTheLake.X, InTheLake.Y, InTheLake.Z - RouteRun.SWIM_DEPTH)));
+            Assert.That(_movement.StateFlags, Is.EqualTo(PlayerPositionUpdateHandler.StateFlags.SWIMMING));
         }
 
         [Test]
         public void MoveTo_ShouldEndWithinTheDistance_InTheWater()
         {
-            Vector3 inTheLake = new(31000, 30000, 2000);
-            _navmesh.Routes = static asked => [asked.Start, Shore];
-            _navmesh.Status = PathfindingStatus.PartialPathFound;
-            _navmesh.SwimRoutes = _ => [(Start, EDtPolyFlags.Walk), (Shore, EDtPolyFlags.Swim), (inTheLake, 0)];
+            IntoTheLake();
 
-            _movement.MoveTo(inTheLake, 100, 0);
+            _movement.MoveTo(InTheLake, 100, 0);
             RunToTheEnd();
 
             RoutedPercept routed = (RoutedPercept) _client.Perceived[0];
-            Assert.That(routed.Corners.Last().X, Is.EqualTo(inTheLake.X - 100).Within(0.01));
+            Assert.That(routed.Corners.Last().X, Is.EqualTo(InTheLake.X - 100).Within(0.01));
             Assert.That(routed.Corners.Last().Swim, Is.True);
             Assert.That(_movement.IsSwimming, Is.True);
         }
@@ -670,18 +736,26 @@ namespace DOL.GS.Tests
         [Test]
         public void OnJump_ShouldEndSwimming()
         {
-            Vector3 inTheLake = new(31000, 30000, 2000);
-            _navmesh.Routes = static asked => [asked.Start, Shore];
-            _navmesh.Status = PathfindingStatus.PartialPathFound;
-            _navmesh.SwimRoutes = _ => [(Start, EDtPolyFlags.Walk), (Shore, EDtPolyFlags.Swim), (inTheLake, 0)];
-            _movement.MoveTo(inTheLake, null, 0);
+            IntoTheLake();
+            _movement.MoveTo(InTheLake, null, 0);
             RunToTheEnd();
 
             _movement.OnJump(new(40000, 40000, 3000, 0, 0, 0));
 
-            Assert.That(_movement.IsSwimming, Is.False);
+            Assert.That(_movement.StateFlags, Is.EqualTo((PlayerPositionUpdateHandler.StateFlags) 0));
         }
 
+        // Ticks the client every 33 ms until its last position update says it swims, and gives the time then.
+        private long TickUntilSwimming()
+        {
+            long now = 0;
+
+            for (; now < 600000 && (_client.Queued.Count == 0 || StateFlags(_client.Queued.Last()) is not PlayerPositionUpdateHandler.StateFlags.SWIMMING); now += 33)
+                _movement.Tick(now);
+
+            Assert.That(_movement.IsRunning, Is.True);
+            return now;
+        }
         // Ticks the client every 33 ms until the run ends, and gives the position of each position update it sent.
         private List<Vector3> RunToTheEnd()
         {
@@ -771,7 +845,7 @@ namespace DOL.GS.Tests
             public Func<Vector3, float?> Floor { get; set; } = static _ => null;
             public List<Asked> Asked { get; } = [];
             // Those asked with water not allowed.
-            public IEnumerable<Asked> OverLand => Asked.Where(static asked => !asked.Swims);
+            public IEnumerable<Asked> OverLand => Asked.Where(static asked => !asked.Swim);
             // [include, exclude] of every query.
             public List<(EDtPolyFlags, EDtPolyFlags)> Filters { get; } = [];
 
@@ -789,12 +863,18 @@ namespace DOL.GS.Tests
                 if (Status is PathfindingStatus.NoPathFound or PathfindingStatus.BufferTooSmall)
                     return new(Status, Status is PathfindingStatus.BufferTooSmall ? nodes.Length + 1 : 0);
 
-                (Vector3 Position, EDtPolyFlags Flags)[] route = asked.Swims && SwimRoutes != null ? SwimRoutes(asked) : Routes(asked).Select(static node => (node, EDtPolyFlags.Walk)).ToArray();
+                (Vector3 Position, EDtPolyFlags Flags)[] route = asked.Swim && SwimRoutes != null ? SwimRoutes(asked) : OverLandAll(Routes(asked));
 
                 for (int i = 0; i < route.Length; i++)
                     nodes[i] = new(route[i].Position, route[i].Flags);
 
                 return new(Status, route.Length);
+            }
+
+            // Every node on walkable ground, but the end, which goes into no polygon, as the server's pathfinding gives it.
+            private static (Vector3, EDtPolyFlags)[] OverLandAll(Vector3[] route)
+            {
+                return route.Select((node, i) => (node, i < route.Length - 1 ? EDtPolyFlags.Walk : 0)).ToArray();
             }
 
             public override Vector3? GetClosestPoint(Zone zone, Vector3 position, float xRange, float yRange, float zRange, EDtPolyFlags[] filters)
@@ -810,8 +890,8 @@ namespace DOL.GS.Tests
             }
         }
 
-        // `Swims` when water was allowed.
-        private readonly record struct Asked(ushort Zone, Vector3 Start, Vector3 End, bool Swims);
+        // `Swim` when water was allowed.
+        private readonly record struct Asked(ushort Zone, Vector3 Start, Vector3 End, bool Swim);
 
         private sealed class FakeClient : IMovingClient
         {

@@ -23,7 +23,7 @@ namespace DOL.GS.Agents
         // The same, across water too.
         private static readonly EDtPolyFlags[] _swimFilters = [EDtPolyFlags.Walk | EDtPolyFlags.Door | EDtPolyFlags.Swim, EDtPolyFlags.BlockingDoor | EDtPolyFlags.Jump | EDtPolyFlags.Disabled];
 
-        // Only water, for the floor of a Swim leg.
+        // Only the water, under a Swim leg.
         private static readonly EDtPolyFlags[] _waterFilters = [EDtPolyFlags.Swim, _swimFilters[1]];
 
         // Only the doors.
@@ -62,6 +62,8 @@ namespace DOL.GS.Agents
         private readonly IPathfindingMgr _pathfinding;
         private readonly Region _region;
         private readonly WrappedPathfindingNode[] _nodes = new WrappedPathfindingNode[DetourNavMeshQuery.MAX_POLY];
+        // Those of the route being worked out: over land only, or swimming too.
+        private EDtPolyFlags[] _filters;
 
         public Router(IPathfindingMgr pathfinding, Region region)
         {
@@ -83,7 +85,7 @@ namespace DOL.GS.Agents
         }
 
         /// <summary>
-        /// The Z of the ground under a position on a route, or of the water's floor on a Swim leg (`swim`), or null where there's no navmesh or none near it.
+        /// The Z of the ground under a position on a route, or of the navmesh's water on a Swim leg (`swim`), or null where there's no navmesh or none near it.
         /// </summary>
         public float? FloorAt(Vector3 position, bool swim)
         {
@@ -97,9 +99,10 @@ namespace DOL.GS.Agents
 
         private Route Find(Vector3 start, Vector3 target, EDtPolyFlags[] filters)
         {
-            Corners corners = new(start);
+            _filters = filters;
+            RouteBuilder corners = new(start);
 
-            if (WalkableNear(ZoneAt(target), target, WALKABLE_RANGE, WALKABLE_RANGE, filters) is not Vector3 end)
+            if (WalkableNear(ZoneAt(target), target, WALKABLE_RANGE, WALKABLE_RANGE) is not Vector3 end)
                 return corners.ToRoute(false);
 
             // The target's Z need only be roughly right: the nearest walkable point may be well above or below it.
@@ -114,15 +117,15 @@ namespace DOL.GS.Agents
                 Vector3 legEnd = end;
                 Vector3 entry = default;
 
-                if (!lastZone && (crossings == MAX_CROSSINGS || !TryCrossing(zone, position, end, filters, out legEnd, out entry)))
+                if (!lastZone && (crossings == MAX_CROSSINGS || !TryCrossing(zone, position, end, out legEnd, out entry)))
                 {
                     reachesTarget = false;
                     break;
                 }
 
                 if (!HasNavmesh(zone))
-                    corners.Add(legEnd);
-                else if (!TryLeg(zone, position, legEnd, filters, corners))
+                    corners.Continue(legEnd);
+                else if (!TryLeg(zone, position, legEnd, corners))
                 {
                     reachesTarget = false;
                     break;
@@ -131,7 +134,7 @@ namespace DOL.GS.Agents
                 if (lastZone)
                     break;
 
-                corners.Add(entry);
+                corners.Continue(entry);
                 position = entry;
             }
 
@@ -140,37 +143,37 @@ namespace DOL.GS.Agents
 
         // Adds the route through `zone` from `position` to `legEnd`, both in it, stepping through a door where the navmesh leaves a gap at it (see `TryDoorStep`).
         // Returns whether it got to `legEnd`. Where it gets no further, the route ends as close as it could.
-        private bool TryLeg(Zone zone, Vector3 position, Vector3 legEnd, EDtPolyFlags[] filters, Corners corners)
+        private bool TryLeg(Zone zone, Vector3 position, Vector3 legEnd, RouteBuilder corners)
         {
-            if (WalkableNear(zone, position, WALKABLE_RANGE, WALKABLE_RANGE, filters) is not Vector3 from)
+            if (WalkableNear(zone, position, WALKABLE_RANGE, WALKABLE_RANGE) is not Vector3 from)
                 return false;
 
             corners.Snap(from);
             int start = corners.Count;
 
-            if (TryPath(zone, from, legEnd, filters, corners))
+            if (TryPath(zone, from, legEnd, corners))
                 return true;
 
-            Corners throughDoor = new(from);
+            RouteBuilder throughDoor = new(from);
 
-            if (!TryDoorStep(zone, from, legEnd, filters, throughDoor))
+            if (!TryDoorStep(zone, from, legEnd, throughDoor))
                 return false;
 
             corners.RemoveFrom(start);
-            corners.Add(throughDoor);
+            corners.Append(throughDoor);
             return true;
         }
 
         // Where the navmesh doesn't join a door to the ground on one side of it, a route can't get through: into such ground at the door nearest `legEnd`, or out of it at the door nearest `from`.
         // So the route goes from `from` towards that door, and from `legEnd` back towards it. Where the two meet within `DOOR_STEP` of each other and of the door, it steps across in a straight line, as a Human's client walks through the doorway.
         // A door is never stepped through anywhere else.
-        private bool TryDoorStep(Zone zone, Vector3 from, Vector3 legEnd, EDtPolyFlags[] filters, Corners corners)
+        private bool TryDoorStep(Zone zone, Vector3 from, Vector3 legEnd, RouteBuilder corners)
         {
             int start = corners.Count;
 
             foreach (Vector3 near in new[] { legEnd, from })
             {
-                if (_pathfinding.GetClosestPoint(zone, near, DOOR_RANGE, DOOR_RANGE, DOOR_HEIGHT_RANGE, _doorFilters) is Vector3 door && TryDoorStep(zone, from, legEnd, door, filters, corners))
+                if (_pathfinding.GetClosestPoint(zone, near, DOOR_RANGE, DOOR_RANGE, DOOR_HEIGHT_RANGE, _doorFilters) is Vector3 door && TryDoorStep(zone, from, legEnd, door, corners))
                     return true;
 
                 corners.RemoveFrom(start);
@@ -179,34 +182,34 @@ namespace DOL.GS.Agents
             return false;
         }
 
-        private bool TryDoorStep(Zone zone, Vector3 from, Vector3 legEnd, Vector3 door, EDtPolyFlags[] filters, Corners corners)
+        private bool TryDoorStep(Zone zone, Vector3 from, Vector3 legEnd, Vector3 door, RouteBuilder corners)
         {
-            Corners back = new(legEnd);
-            TryPath(zone, legEnd, door, filters, back);
+            RouteBuilder back = new(legEnd);
+            TryPath(zone, legEnd, door, back);
             Vector3 farSide = back.Last;
-            TryPath(zone, from, door, filters, corners);
+            TryPath(zone, from, door, corners);
             Vector3 nearSide = corners.Last;
 
             if (Vector3.Distance(nearSide, farSide) > DOOR_STEP || Vector3.Distance(nearSide, door) > DOOR_STEP || Vector3.Distance(farSide, door) > DOOR_STEP)
                 return false;
 
-            corners.Add(farSide);
-            return TryPath(zone, farSide, legEnd, filters, corners);
+            corners.Continue(farSide);
+            return TryPath(zone, farSide, legEnd, corners);
         }
 
         // Adds the navmesh's route from `from` to `to`, in one zone. One query gives at most `MAX_POLY` corners, so a long route is worked out on from where each query got to.
         // Returns whether it got to `to`. Where a query gets no further, the route ends as close as it could.
-        private bool TryPath(Zone zone, Vector3 from, Vector3 to, EDtPolyFlags[] filters, Corners corners)
+        private bool TryPath(Zone zone, Vector3 from, Vector3 to, RouteBuilder corners)
         {
             for (int queries = 0; queries < MAX_QUERIES_PER_LEG; queries++)
             {
-                PathfindingResult result = _pathfinding.GetPathStraight(zone, from, to, filters, _nodes);
+                PathfindingResult result = _pathfinding.GetPathStraight(zone, from, to, _filters, _nodes);
 
                 if (result.Status is not (PathfindingStatus.PathFound or PathfindingStatus.PartialPathFound) || result.NodeCount == 0)
                     return false;
 
                 for (int i = 0; i < result.NodeCount; i++)
-                    corners.Add(_nodes[i]);
+                    corners.Follow(_nodes[i]);
 
                 // The server's pathfinding reports a query cut short by the corner limit as found, so only where it ended says whether it got there.
                 Vector3 last = _nodes[result.NodeCount - 1].Position;
@@ -234,13 +237,13 @@ namespace DOL.GS.Agents
         }
 
         // The walkable point nearest `position` in `zone`, within `range` in X and Y and `heightRange` in Z, or `position` itself in a zone without a navmesh.
-        private Vector3? WalkableNear(Zone zone, Vector3 position, float range, float heightRange, EDtPolyFlags[] filters)
+        private Vector3? WalkableNear(Zone zone, Vector3 position, float range, float heightRange)
         {
-            return HasNavmesh(zone) ? _pathfinding.GetClosestPoint(zone, position, range, range, heightRange, filters) : position;
+            return HasNavmesh(zone) ? _pathfinding.GetClosestPoint(zone, position, range, range, heightRange, _filters) : position;
         }
 
         // Where the straight line from `position` to `target` leaves `zone`: the walkable points just inside it (`exit`) and just inside the next zone (`entry`).
-        private bool TryCrossing(Zone zone, Vector3 position, Vector3 target, EDtPolyFlags[] filters, out Vector3 exit, out Vector3 entry)
+        private bool TryCrossing(Zone zone, Vector3 position, Vector3 target, out Vector3 exit, out Vector3 entry)
         {
             Vector3 inside = position;
             Vector3 outside = target;
@@ -259,13 +262,13 @@ namespace DOL.GS.Agents
             exit = default;
             entry = default;
 
-            if (WalkableNear(zone, inside - direction * BORDER_MARGIN, BORDER_RANGE, BORDER_HEIGHT_RANGE, filters) is not Vector3 walkableExit)
+            if (WalkableNear(zone, inside - direction * BORDER_MARGIN, BORDER_RANGE, BORDER_HEIGHT_RANGE) is not Vector3 walkableExit)
                 return false;
 
             Vector3 over = outside + direction * BORDER_MARGIN;
             Zone next = ZoneAt(over);
 
-            if (next == null || WalkableNear(next, over, BORDER_RANGE, BORDER_HEIGHT_RANGE, filters) is not Vector3 walkableEntry)
+            if (next == null || WalkableNear(next, over, BORDER_RANGE, BORDER_HEIGHT_RANGE) is not Vector3 walkableEntry)
                 return false;
 
             (exit, entry) = (walkableExit, walkableEntry);
@@ -279,25 +282,9 @@ namespace DOL.GS.Agents
                 return route.ReachesTarget;
 
             if (route.ReachesTarget)
-                return Time(route) < Time(other);
+                return route.Effort < other.Effort;
 
-            return DistanceInXY(route.Corners[^1], target) < DistanceInXY(other.Corners[^1], target);
-        }
-
-        // How long the route takes, in seconds at a running speed of 1: a Swim leg takes longer than a leg as long over land.
-        private static float Time(Route route)
-        {
-            float time = 0;
-
-            for (int i = 1; i < route.Corners.Length; i++)
-                time += DistanceInXY(route.Corners[i - 1], route.Corners[i]) / (route.Swims[i - 1] ? RouteRun.SWIM_SPEED : 1);
-
-            return time;
-        }
-
-        private static float DistanceInXY(Vector3 from, Vector3 to)
-        {
-            return new Vector2(to.X - from.X, to.Y - from.Y).Length();
+            return Route.DistanceInXY(route.Corners[^1].Position, target) < Route.DistanceInXY(other.Corners[^1].Position, target);
         }
 
         // The route with `within` taken off its end, measured in X and Y as the run is. A route no longer than that is only its start.
@@ -307,108 +294,126 @@ namespace DOL.GS.Agents
 
             for (int i = route.Corners.Length - 1; i > 0; i--)
             {
-                Vector3 from = route.Corners[i - 1];
-                Vector3 to = route.Corners[i];
-                float leg = DistanceInXY(from, to);
+                Route.Corner from = route.Corners[i - 1];
+                Route.Corner to = route.Corners[i];
+                float leg = Route.DistanceInXY(from.Position, to.Position);
 
                 if (leg > left)
                 {
-                    Vector3[] trimmed = route.Corners[..(i + 1)];
-                    trimmed[i] = Vector3.Lerp(to, from, left / leg);
-                    bool[] swims = route.Swims[..(i + 1)];
+                    Route.Corner[] trimmed = route.Corners[..(i + 1)];
                     // The new end is on the leg into it.
-                    swims[i] = swims[i - 1];
-                    return new(trimmed, swims, true);
+                    trimmed[i] = new(Vector3.Lerp(to.Position, from.Position, left / leg), from.Swim);
+                    return new(trimmed, true);
                 }
 
                 left -= leg;
             }
 
-            return new([route.Corners[0]], [route.Swims[0]], true);
+            return new([route.Corners[0]], true);
         }
 
         /// <summary>
-        /// A route as it's worked out: its corners, and whether the route swims from each on.
+        /// A route as it's worked out, corner by corner, each knowing whether the route swims on from it.
+        /// A corner where the route already is isn't added again, but what it says about the route on from there counts.
         /// </summary>
-        private sealed class Corners
+        private sealed class RouteBuilder
         {
-            private readonly List<Vector3> _positions;
-            private readonly List<bool> _swims;
-            // The corners from which the route snaps to the nearest walkable point.
+            private readonly List<Route.Corner> _corners;
+            // The corners from which the route steps to the nearest walkable point (`Snap`).
             private readonly List<int> _snaps = [];
 
-            public Corners(Vector3 first)
+            public RouteBuilder(Vector3 first)
             {
-                _positions = [first];
-                _swims = [false];
+                _corners = [new(first, false)];
             }
 
-            public int Count => _positions.Count;
+            public int Count => _corners.Count;
 
-            public Vector3 Last => _positions[^1];
+            public Vector3 Last => _corners[^1].Position;
 
-            // A corner the route got to some other way than along the navmesh, such as the nearest walkable point or a door step: it goes on as it came in.
-            public void Add(Vector3 position)
+            // A corner the route got to some other way than along the navmesh, such as a zone border or a door step: it goes on as it came in.
+            public void Continue(Vector3 position)
             {
-                Add(position, _swims[^1]);
+                Add(new(position, _corners[^1].Swim));
             }
 
-            // A corner of the navmesh's route, which gives the flags of the polygon the route goes on into from it. The end of a query's route goes into none, and it goes on as it came in.
-            public void Add(WrappedPathfindingNode node)
+            // A corner of the navmesh's route. Its flags are the polygon's the route goes on into, and the end of a query's route goes into none, so it goes on as it came in.
+            public void Follow(WrappedPathfindingNode node)
             {
-                Add(node.Position, node.Flags == 0 ? _swims[^1] : node.Flags.HasFlag(EDtPolyFlags.Swim));
+                Add(new(node.Position, node.Flags == 0 ? _corners[^1].Swim : node.Flags.HasFlag(EDtPolyFlags.Swim)));
+            }
+
+            // The nearest walkable point to where the route is, a step from it. The step swims if the route swims on from that point, which the navmesh says only later.
+            public void Snap(Vector3 position)
+            {
+                if (Last != position)
+                    _snaps.Add(_corners.Count - 1);
+
+                Continue(position);
             }
 
             // All of `other`'s corners after its first.
-            public void Add(Corners other)
+            public void Append(RouteBuilder other)
             {
                 for (int i = 1; i < other.Count; i++)
-                    Add(other._positions[i], other._swims[i]);
-            }
-
-            // The nearest walkable point to where the route is, a step from it. The step swims if the route goes on swimming from there.
-            public void Snap(Vector3 position)
-            {
-                if (_positions[^1] != position)
-                    _snaps.Add(_positions.Count - 1);
-
-                Add(position);
+                    Add(other._corners[i]);
             }
 
             public void RemoveFrom(int index)
             {
-                _positions.RemoveRange(index, _positions.Count - index);
-                _swims.RemoveRange(index, _swims.Count - index);
+                _corners.RemoveRange(index, _corners.Count - index);
+                // A snap from the corner before `index` stepped to a corner that's gone.
                 _snaps.RemoveAll(snap => snap >= index - 1);
             }
 
             public Route ToRoute(bool reachesTarget)
             {
-                bool[] swims = _swims.ToArray();
+                Route.Corner[] corners = _corners.ToArray();
 
                 foreach (int snap in _snaps)
-                    swims[snap] = swims[snap + 1];
+                    corners[snap] = corners[snap] with { Swim = corners[snap + 1].Swim };
 
-                return new(_positions.ToArray(), swims, reachesTarget);
+                return new(corners, reachesTarget);
             }
 
-            // Leaves out a corner where the route already is. The navmesh says more about where it goes on from there than the corner already does.
-            private void Add(Vector3 position, bool swim)
+            private void Add(Route.Corner corner)
             {
-                if (_positions[^1] != position)
-                {
-                    _positions.Add(position);
-                    _swims.Add(swim);
-                }
+                if (Last != corner.Position)
+                    _corners.Add(corner);
                 else
-                    _swims[^1] = swim;
+                    _corners[^1] = corner;
             }
         }
     }
 
     /// <summary>
-    /// The corners a run goes through, all global, the first where the Character is. `Swims` says, for each corner, whether the route swims from it on, and for the last one whether it ends in the water.
-    /// `ReachesTarget` is false when it can't get to the target and ends as close as it could.
+    /// The corners a run goes through, the first where the Character is. `ReachesTarget` is false when it can't get to the target and ends as close as it could.
     /// </summary>
-    public sealed record Route(Vector3[] Corners, bool[] Swims, bool ReachesTarget);
+    public sealed record Route(Route.Corner[] Corners, bool ReachesTarget)
+    {
+        // How long the route takes, as far as running would take as long (`RouteRun.Effort`).
+        public float Effort
+        {
+            get
+            {
+                float effort = 0;
+
+                for (int i = 1; i < Corners.Length; i++)
+                    effort += RouteRun.Effort(DistanceInXY(Corners[i - 1].Position, Corners[i].Position), Corners[i - 1].Swim);
+
+                return effort;
+            }
+        }
+
+        // Only X and Y count, as in the server's speed check.
+        public static float DistanceInXY(Vector3 from, Vector3 to)
+        {
+            return new Vector2(to.X - from.X, to.Y - from.Y).Length();
+        }
+
+        /// <summary>
+        /// A corner of a route, global. `Swim` when the route swims from it on, across water on the surface; on the last corner, when the route ends in the water.
+        /// </summary>
+        public readonly record struct Corner(Vector3 Position, bool Swim);
+    }
 }

@@ -491,7 +491,7 @@ namespace DOL.GS.Agents
         public ClientPacket PositionUpdate()
         {
             GamePlayer player = Player;
-            PlayerPositionUpdateHandler.StateFlags stateFlags = player.IsSitting ? PlayerPositionUpdateHandler.StateFlags.SITTING : _movement.IsSwimming ? PlayerPositionUpdateHandler.StateFlags.SWIMMING : 0;
+            PlayerPositionUpdateHandler.StateFlags stateFlags = player.IsSitting ? PlayerPositionUpdateHandler.StateFlags.SITTING : _movement.StateFlags;
             return ClientPackets1127.PositionUpdate(new Vector3(player.X, player.Y, player.Z), player.CurrentZone.ID, _queuedHeading ?? player.Heading, 0, HealthByte, SessionID, stateFlags, ActionFlags, _targetId);
         }
 
