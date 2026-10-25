@@ -344,7 +344,8 @@ namespace DOL.GS.Commands
                         for (freeslot = firstAccountSlot; freeslot < firstAccountSlot + 8; freeslot++)
                         {
                             bool found = false;
-                            foreach (DbCoreCharacter ch in acc.Characters)
+                            // 'Characters' is null for an account with no characters
+                            foreach (DbCoreCharacter ch in acc.Characters ?? [])
                             {
                                 if (ch.Realm == cha.Realm && ch.AccountSlot == freeslot)
                                 {
