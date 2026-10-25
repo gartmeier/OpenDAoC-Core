@@ -23,11 +23,6 @@ Needed: the porcelain quotes the line name.
 After dying, "You've lost some constitution, go to a healer". `talkTo` the Healer Ionhar cured resurrection sickness, then the server sent its "It will cost ... Do you accept?" custom dialog (`Healer.cs`, `SendCustomDialog`), which reached the Mind as nothing and has no Primitive to accept. Max health stayed 172 instead of 179.
 Needed: a Percept for custom dialogs (text) and a Primitive to accept or decline them.
 
-## Routes stop at X≈347100 east of Howth (2026-10-25)
-
-Every `runTo` into X:349000–358000 Y:590000–607000 (large eirebugs, cluricaun trips, sheevra) ends `unreachable` at exactly X:347100 Z:4613, from the north, the west and the south. A Human could walk there, as far as I know. Maybe the navmesh is missing tiles there.
-Needed: a navmesh there, or to know it's not walkable.
-
 ## `kill` times out on the run to a far Mob (2026-10-25)
 
 `kill` starts its 30 s `noDamage` clock before running to the Mob, so a Mob more than ~5500 units away failed with `noDamage` while I was still running, every time (`grind` then tried again from closer and won).
@@ -43,12 +38,6 @@ Needed: a Percept with the text of custom text windows.
 
 The backpack has a Personal Bind Recall Stone, which a Human uses (right-click or a quickbar slot) to go back to the Bind point. A Kill Task loop that runs 16000 units each way could recall after the kill instead. There's no Primitive to use an item, and no `/use` command on the server.
 Needed: a `useItem` Primitive for a backpack or equipment slot.
-
-## Routes stop at the shore of Lough Derg (2026-10-25)
-
-Every `runTo` to the east half of Lough Derg (dergan enchanters at X:358135 Y:537884 were in view, 3500 units off) ends `unreachable` on the water line at Z:4614: at X:353270 Y:541520 and X:354768 Y:542765 from the south, X:359632 Y:516000 in the middle, X:358502 Y:511619 in the north. A Human would swim across, or walk round. The Mind can only `moveTo` along the navmesh, which seems to have no water.
-Workaround: hunt elsewhere (Connacht).
-Needed: swimming in the navmesh, or a way to move straight to a point.
 
 ## The grave can't be targeted (2026-10-25)
 
@@ -73,10 +62,3 @@ Needed: the item type (its equipment slot) on each `InventoryItem`, as the clien
 At level 20 I let an alp luachra (L30) kill me in Basar and released. Chat said "You've lost some constitution, go to a healer to have it restored!" and "This is your first death for this level. Your experience and constitution losses are greatly reduced." After the release `agent.self.effects` held only Resurrection Illness (60 s); nothing for the lost Constitution, and Self has no stats to compare against.
 Workaround: remember the chat line and visit a healer.
 Needed: my stats (or the lost Constitution) as the client's character sheet shows them.
-
-## `kill` ends `ok` while the Mob still has under 1% health (2026-10-25)
-
-A level 18 fishing bear went 20% → 6% → 0%, and `kill` returned `ok` with the bear still "attacking you, health 0%". `kill` turned attack off, the bear kept hitting, and I died standing there from 55% health. The server floors `Health * 100 / MaxHealth` (`GameObject.HealthPercent`), so a Mob with a few HP left shows 0% while alive, and `kill`'s `fightNews` takes an `objectUpdate` with `healthPercent === 0` as `mobDied`.
-Workaround: after `kill`, check the Mob is gone from Surroundings (or dead) before moving on.
-Needed: `kill` should end on the Mob's death (its `objectRemove` with object type 0), not on 0%.
-Fixed (2026-10-25): `kill` now ends only on the Mob's `objectRemove` type 0; an `objectUpdate` at 0% is just news.

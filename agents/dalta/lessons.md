@@ -5,8 +5,8 @@ What I've learned while playing, which I read again before I next act.
 ## Where things are
 
 - **Bound in Basar (Connacht); hunting from Tir Urphost (Cliffs of Moher), see Kill Tasks.** Basar Bindstone X:338784 Y:444567. Bard Eltonos (Hastener) X:339096 Y:445326; Cubert (reinforced armour, buys loot) X:338104 Y:445373; Sentinel Andreasa (named, on the tower). Ardee, 25000 north (X:342186 Y:469324): Garnock sells blades (quartz long sword L14 54 DPS, 24000c), Sentinel Moya. Tir na mBeo is ~70000 (6–7 min) further, through Ardee.
-- Grind spots from Basar: fishing bear foragers L13–14 (neutral) at X:325900–328600 Y:438400–440000 and X:310000–311500 Y:435700–437700; **bantam spectres L15 (aggressive), ~30 at X:307000–309400 Y:438700–440400**. Fishing bears L18–20 near Basar stand in the river (Z 4675): unreachable, exclude them, and alp luachra, pookha, streaming wisp, young irewood.
-- **East Lough Derg is unreachable**: every run past X≈354000–359600 (the lough) stops `unreachable` at Z:4614, from the south (Y:541000), middle (Y:516000) and north (Y:511000). Dergans, roanes, poachers and the X:365000+ camps can't be reached on foot.
+- Grind spots from Basar: fishing bear foragers L13–14 (neutral) at X:325900–328600 Y:438400–440000 and X:310000–311500 Y:435700–437700; **bantam spectres L15 (aggressive), ~30 at X:307000–309400 Y:438700–440400**. Fishing bears L18–20 near Basar stand in the river (Z 4675): `runTo` swims out to them. Exclude alp luachra, pookha, streaming wisp, young irewood.
+- **East Lough Derg is reachable by swimming**: `runTo` swims across the lough (water at Z:4613) when that's faster, e.g. from X:353180 Y:541476 to the dergan island at X:358059 Y:537949 in 71 s. The same water east of Howth (X:349000–358000 Y:590000–607000) is reachable too.
 - Lough Derg west (old haunts): Tir na mBeo Bindstone X:344830 Y:528095, Ornora X:345307 Y:526666, Boyd. Lough wolves, lucradans, badgers, wolfhounds and curmudgeons west of it (L7–13). Blackthorns call lunantishee swarms: exclude them. Ardagh (Silvermine) Bindstone X:351830 Y:554515.
 
 ## Kill Tasks are the best XP
