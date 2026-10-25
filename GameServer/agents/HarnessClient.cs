@@ -51,6 +51,8 @@ namespace DOL.GS.Agents
         private bool _attacking;
         // The skill list the server last sent, which the client's icons stand for and the server reads their indexes against.
         private SkillEntry[] _skills = [];
+        // The concentration list the server last sent, which the concentration window shows and the server reads its indexes against.
+        private ConcentrationBuff[] _concentration = [];
         // The Dialog the client shows, until it answers it. The server keeps no copy of its text to send a new Mind.
         private DialogPercept _openDialog;
         private AgentTrace _trace;
@@ -161,6 +163,7 @@ namespace DOL.GS.Agents
             int effectsCount = 0;
             packetLib.SendUpdateIcons(ref effectsCount, true);
             packetLib.SendUpdatePoints();
+            packetLib.SendConcentrationList();
             packetLib.SendStatusUpdate();
             packetLib.SendEncumbrance();
 
@@ -231,13 +234,27 @@ namespace DOL.GS.Agents
                 }
             }
 
-            int styleIndex = 0;
+            int index = 0;
 
             switch (primitive)
             {
                 case UseStylePrimitive useStyle:
                 {
-                    if (StyleIndex(useStyle.Style, useStyle.Line, out styleIndex) is string reason)
+                    if (SkillIndex(SkillPage.Styles, useStyle.Style, useStyle.Line, out index) is string reason)
+                        return reason;
+
+                    break;
+                }
+                case CastSpellPrimitive castSpell:
+                {
+                    if (SkillIndex(SkillPage.Spells, castSpell.Spell, null, out index) is string reason)
+                        return reason;
+
+                    break;
+                }
+                case CancelConcentrationPrimitive cancel:
+                {
+                    if (ConcentrationIndex(cancel.Spell, cancel.Target, out index) is string reason)
                         return reason;
 
                     break;
@@ -355,10 +372,11 @@ namespace DOL.GS.Agents
                 SellPrimitive sell => ClientPackets1127.SellRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) sell.Slot),
                 AnswerDialogPrimitive answer => ClientPackets1127.DialogResponse((byte) answer.Code, (ushort) answer.Data1, (ushort) answer.Data2, (ushort) answer.Data3, answer.Accept),
                 // Where the server has the Character, so the position it takes from the packet moves it nowhere.
-                UseStylePrimitive => ClientPackets1127.UseSkill(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) styleIndex),
+                UseStylePrimitive or CastSpellPrimitive => ClientPackets1127.UseSkill(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) index),
                 // As a right-click in the backpack, never the quickbar's click, which on a weapon or horse slot means something else.
                 UseItemPrimitive useItem => ClientPackets1127.UseSlot(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) useItem.Slot,
                     useItem.Second is true ? eUseType.Use2 : eUseType.Use1),
+                CancelConcentrationPrimitive => ClientPackets1127.RemoveConcentrationEffect((byte) index),
                 _ => null
             };
 
@@ -387,21 +405,35 @@ namespace DOL.GS.Agents
             return data is < 0 or > ushort.MaxValue ? $"A Dialog's data is 0 to {ushort.MaxValue}, not {data}." : null;
         }
 
-        // The style's index as the skill handler reads it: its place in the skill list the server last sent, counting from the first entry after the specializations.
-        // Only styles match. Without `line`, the first of that name does, as a Human clicks the first icon they see.
-        private string StyleIndex(string name, string line, out int index)
+        // A style's or a hybrid's spell's index as the skill handler reads it: its place in the skill list the server last sent, counting from the first entry after the specializations.
+        // Only skills on `page` match. Without `line`, the first of that name does, as a Human clicks the first icon they see.
+        private string SkillIndex(SkillPage page, string name, string line, out int index)
         {
-            int found = Array.FindIndex(_skills, skill => skill.Page is SkillPage.Styles && skill.Name == name && (line == null || skill.Line == line));
+            int found = Array.FindIndex(_skills, skill => skill.Page == page && skill.Name == name && (line == null || skill.Line == line));
             index = 0;
+            string kind = page is SkillPage.Styles ? "Style" : "Spell";
 
             if (found < 0)
-                return line == null ? $"{Player.Name} has no Style \"{name}\"." : $"{Player.Name} has no Style \"{name}\" in {line}.";
+                return line == null ? $"{Player.Name} has no {kind} \"{name}\"." : $"{Player.Name} has no {kind} \"{name}\" in {line}.";
 
             // The server's skills packet stops at the 255th entry, so the client never got an icon for one past it.
             if (found >= byte.MaxValue)
                 return $"\"{name}\" is past the first {byte.MaxValue} skills the server sends a client.";
 
             index = found - Math.Max(0, Array.FindIndex(_skills, static skill => skill.Page is not SkillPage.Specialization));
+            return null;
+        }
+
+        // The buff's place in the concentration list the server last sent, with both names cut as the list cuts them. Without `target`, the first of that spell does.
+        private string ConcentrationIndex(string spell, string target, out int index)
+        {
+            string cutSpell = PerceptProjection.ConcentrationName(spell);
+            string cutTarget = target == null ? null : PerceptProjection.ConcentrationName(target);
+            index = Array.FindIndex(_concentration, buff => buff.Spell == cutSpell && (cutTarget == null || buff.Target == cutTarget));
+
+            if (index < 0)
+                return target == null ? $"{Player.Name} keeps up no \"{spell}\"." : $"{Player.Name} keeps up no \"{spell}\" on {target}.";
+
             return null;
         }
 
@@ -443,6 +475,11 @@ namespace DOL.GS.Agents
                 case SkillsPercept skills:
                 {
                     _skills = skills.Skills;
+                    break;
+                }
+                case ConcentrationPercept concentration:
+                {
+                    _concentration = concentration.Buffs;
                     break;
                 }
                 // The client shows the window until it's clicked, and a newer one in its place.

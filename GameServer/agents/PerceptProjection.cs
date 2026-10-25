@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using DOL.AI.Brain;
 using DOL.Database;
+using DOL.GS.Effects;
 using DOL.GS.Keeps;
 using DOL.GS.PacketHandler;
 using DOL.GS.ServerRules;
@@ -56,6 +57,7 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendPlayerJump) => Jump(client, (bool) args[0]),
                 nameof(IPacketLib.SendUpdateMaxSpeed) => MaxSpeed(client),
                 nameof(IPacketLib.SendUpdateIcons) => Effects(client),
+                nameof(IPacketLib.SendConcentrationList) => Concentration(client),
                 nameof(IPacketLib.SendStatusUpdate) => Status(client, args.Length > 0 ? (byte) args[0] : null),
                 nameof(IPacketLib.SendUpdatePoints) => Points(client),
                 nameof(IPacketLib.SendUpdatePlayer) => Player(client),
@@ -482,7 +484,30 @@ namespace DOL.GS.Agents
 
             return new EffectsPercept([.. player.effectListComponent.GetSortedEffects(static effect => effect.EffectType is not eEffect.Pulse)
                 .Where(static effect => effect.Icon != 0)
-                .Select(static effect => new EffectEntry(Encoded(effect.Name), effect.HasPositiveEffect, SecondsLeft(effect), effect is ECSGameSpellEffect spellEffect ? Details(spellEffect.SpellHandler) : null))]);
+                .Select(static effect => new EffectEntry(Encoded(effect.Name), effect.HasPositiveEffect, SecondsLeft(effect), effect is ECSGameSpellEffect spellEffect ? Details(spellEffect.SpellHandler) : null,
+                    effect is ECSImmunityEffect || effect.IsDisabled ? true : null))]);
+        }
+
+        // Mirrors `PacketLib191.SendConcentrationList`, which no later library overrides.
+        private static ConcentrationPercept Concentration(GameClient client)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new ConcentrationPercept([.. player.effectListComponent.GetConcentrationEffects()
+                .Cast<IConcentrationEffect>()
+                .Select(static effect => new ConcentrationBuff(Encoded(ConcentrationName(effect.Name)), Encoded(ConcentrationName(effect.OwnerName)), effect.Concentration))]);
+        }
+
+        // Mirrors `WriteTruncatedName` in `PacketLib191.SendConcentrationList`: a name longer than 14 characters becomes its first 12 and "..".
+        public static string ConcentrationName(string name)
+        {
+            const int MAX_LENGTH = 14;
+            const int TRUNCATE_LENGTH = 12;
+
+            return name.Length > MAX_LENGTH ? $"{name[..TRUNCATE_LENGTH]}.." : name;
         }
 
         // Mirrors `SpellDelve.GetSpellString`, the tooltip the library sends with the bar for each spell's Effect, as the client's tooltip window shows it.
@@ -500,7 +525,8 @@ namespace DOL.GS.Agents
                 CastingSeconds: spell.CastTime / 1000f,
                 MagicType: SpellDelve.GetMagicTypeId(spell) != 0 ? spell.DamageType.ToString() : null,
                 Radius: spell.Radius != 0 ? spell.Radius : null,
-                Description: Encoded(SpellDelve.GetSpellDescription(spellHandler, spell)));
+                Description: Encoded(SpellDelve.GetSpellDescription(spellHandler, spell)),
+                ConcentrationCost: spell.Concentration != 0 ? spell.Concentration : null);
         }
 
         // The client's words for a realm spell's target, as seen in the client, and the server's name for any other.
@@ -529,17 +555,17 @@ namespace DOL.GS.Agents
 
             return new StatusPercept(
                 HealthPercent: player.HealthPercent,
-                ManaPercent: player.ManaPercent,
+                PowerPercent: player.ManaPercent,
                 Sitting: sittingFlag is byte flag ? flag != 0 : player.IsSitting,
                 EndurancePercent: player.EndurancePercent,
                 ConcentrationPercent: player.ConcentrationPercent,
-                MaxMana: (ushort) player.MaxMana,
+                MaxPower: (ushort) player.MaxMana,
                 MaxEndurance: (ushort) player.MaxEndurance,
                 MaxConcentration: (ushort) player.MaxConcentration,
                 MaxHealth: (ushort) player.MaxHealth,
                 Health: (ushort) player.Health,
                 Endurance: (ushort) player.Endurance,
-                Mana: (ushort) player.Mana,
+                Power: (ushort) player.Mana,
                 Concentration: (ushort) player.Concentration);
         }
 
@@ -584,16 +610,19 @@ namespace DOL.GS.Agents
 
             // The library sends each style's tooltip alongside, naming follow-ups among every style the Character's specializations have up to the highest level, as `SpellDelve.GetStyleString` does.
             List<Style> allStyles = [.. player.GetSpecList().SelectMany(spec => spec.PretendStylesForLiving(player, GamePlayer.MAX_LEVEL))];
-            return new SkillsPercept(SkillEntries(player.GetAllUsableSkills(updateInternalCache), allStyles));
+            return new SkillsPercept(SkillEntries(player, player.GetAllUsableSkills(updateInternalCache), allStyles));
         }
 
         // Each skill as the packet lists it: a style with the specialization level it needs and its specialization, which the packet carries as an index (none for 0), anything else with its own level.
-        // A style also has the details its tooltip shows, with follow-ups and opening styles found among `allStyles`.
-        public static SkillEntry[] SkillEntries(IEnumerable<(Skill Skill, Skill Related)> skills, IReadOnlyCollection<Style> allStyles)
+        // A style also has the details its tooltip shows, with follow-ups and opening styles found among `allStyles`. So does a spell, as `caster` would cast it (`DetailDisplayHandler.DelveSpell`).
+        public static SkillEntry[] SkillEntries(GameLiving caster, IEnumerable<(Skill Skill, Skill Related)> skills, IReadOnlyCollection<Style> allStyles)
         {
-            return skills.Select(entry => entry.Skill is Style style
-                ? new SkillEntry(Encoded(style.Name), style.SpecLevelRequirement, SkillPage.Styles, GlobalConstants.GetSpecToInternalIndex(style.Spec) != 0 ? Encoded(style.Spec) : null, Details(style, allStyles))
-                : new SkillEntry(Encoded(entry.Skill.Name), entry.Skill.Level, (SkillPage) entry.Skill.SkillType)).ToArray();
+            return skills.Select(entry => entry.Skill switch
+            {
+                Style style => new SkillEntry(Encoded(style.Name), style.SpecLevelRequirement, SkillPage.Styles, GlobalConstants.GetSpecToInternalIndex(style.Spec) != 0 ? Encoded(style.Spec) : null, Details(style, allStyles)),
+                Spell spell => new SkillEntry(Encoded(spell.Name), spell.Level, (SkillPage) spell.SkillType, SpellDetails: ScriptMgr.CreateSpellHandler(caster, spell, null) is ISpellHandler handler ? Details(handler) : null),
+                Skill skill => new SkillEntry(Encoded(skill.Name), skill.Level, (SkillPage) skill.SkillType)
+            }).ToArray();
         }
 
         // Mirrors `SpellDelve.GetStyleString`, without the icon and the proc, which is a spell's delve of its own.
@@ -973,7 +1002,7 @@ namespace DOL.GS.Agents
                 // fields[34] is always 0.
                 HealthPercent: health & 0x7F,
                 Attacking: (health & 0x80) != 0,
-                ManaPercent: fields[36],
+                PowerPercent: fields[36],
                 EndurancePercent: fields[37]);
         }
 

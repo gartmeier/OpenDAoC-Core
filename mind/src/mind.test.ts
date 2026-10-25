@@ -197,6 +197,15 @@ test("every result ends with what the Agent believes about itself, what's near i
   );
 });
 
+test("the summary gives Power after endurance, for a Character that has Power", async () => {
+  const t = new TestMind();
+  await t.perceive(ownPosition(296000, 642000, 4848), status(80, { health: 40, maxHealth: 50, endurancePercent: 90, powerPercent: 25, power: 3, maxPower: 12 }));
+
+  const { text } = await t.mind.executeCode({ code: `return 1;` });
+
+  expect(text).toContain("Health 80% (40/50), endurance 90%, power 25% (3/12), standing at X:296000 Y:642000 Z:4848.");
+});
+
 test("the summary lists a World object near the Agent, such as its Grave", async () => {
   const t = new TestMind();
   await t.perceive(ownPosition(296000, 642000, 4848), objectCreate(300, "Greeen's Grave", 296000, 642300, 4848));

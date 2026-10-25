@@ -14,6 +14,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `use-item.tsv` is 81 s of the same Character, already in the world at a quiet spot in Hibernia, using its Personal Bind Recall Stone in backpack slot 40: from the backpack, from the quickbar, while moving, once more until it teleports to its Bind point, then three times there on the stone's reuse timer. Recorded with `/agent capture agent2` on 2026-10-25, unmodified apart from its first line. See Using an item.
 - `login-next-to-agent.tsv` is 189 s of the same Character next to the Agent Greeen, who is already in the world. The Human says `come` and types `/speed 0` with Greeen targeted, quits to the character screen with `/q`, logs back in next to Greeen, says `come`, types `/speed 191`, says `come` three more times and types `/jump greeen to vue`. The first 189 s of a recording with `/agent capture admin` on 2026-10-21, taken while it was still running, otherwise unmodified. See Players already in the world.
 - `swim-straight.tsv`, `swim-turn.tsv` and `swim-stop-sit-stand.tsv` are 43 s, 31 s and 54 s of the same Character, unbuffed, at a river in zone 207. In the first it runs down the bank, swims straight across and runs up the other bank. In the second it swims in, turns about while swimming, and swims back out. In the third it swims in and stops in the water, sits, stands, swims on and runs out. Recorded with `/agent capture agent2` on 2026-10-25, unmodified. See Swimming.
+- `cast-heal.tsv` and `cast-buffs.tsv` are 13 s and 19 s of account `druid`'s Character Fearnan, a Naturalist, already in the world at Connla. In the first, at level 1, it casts Minor Revigoration twice. In the second, at level 2, it casts Minor Revigoration and Minor Bark Skin on another and on itself, then cancels two buffs in the concentration window. Recorded with `/agent capture druid` on 2026-10-25, unmodified apart from their first lines. See Spells.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
 ## Format
@@ -215,6 +216,24 @@ From `use-item.tsv`. The Human, possessing Dalta with nothing targeted, used the
 
 Full packet, the use from the backpack: `0018 0045 0001 0000 0071 60EFA648 14911049 8F0EAB45 00000000 0C00 0000 28 01 0000 5264`.
 
+## Spells
+
+From `cast-heal.tsv` and `cast-buffs.tsv`. The Human played Fearnan, a Naturalist (object ID 0x4549), standing in one spot, and clicked spells on the quickbar. No markers were said: the parts are told apart by their packets.
+
+| Capture | ms | Part |
+|---------|----|------|
+| `cast-heal.tsv`, level 1 | 2960, 8027 | Minor Revigoration, with Fearnan already targeting itself |
+| `cast-buffs.tsv`, level 2 | 3931, 5664 | targets itself (0x4549), then another object (0x2CCE) |
+| | 6165, 8264 | Minor Revigoration, then Minor Bark Skin, on 0x2CCE. A line of sight check response (0xD0) follows the first |
+| | 11464, 11831, 13698 | targets itself, then the same two spells on itself |
+| | 18064, 18631 | cancels two buffs in the concentration window |
+
+- **A hybrid's spell is a skill (0xBB).** It's sent exactly as a style is: the same 24 bytes, flags `A000` with something targeted, type `01`, and the index counting from the first entry after the specializations. Minor Revigoration was 6 and Minor Bark Skin 7. No 0xD5 was sent: that's for list casters.
+- **Line of sight check response (0xD0).** Parameter 0xFFFF, 8 bytes: the caster's object ID, the target's, then 4 bytes. It answers the server's check before a spell on someone else lands. The Harness doesn't answer it.
+- **Remove concentration effect (0x76).** Parameter 0x0000, 4 bytes: the index in the concentration list, then `00 72 04`, the same both times, which `RemoveConcentrationEffectHandler` doesn't read. Both clicks were index 0: once the first buff was gone, the second moved up.
+
+Full packet, the first cancel: `0004 01F0 0005 0000 B076 00 00 72 04 7775`.
+
 ## Fields that vary between captures
 
 These hold for every packet:
@@ -224,7 +243,7 @@ These hold for every packet:
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
 
-Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79, 0xB5, 0xBB and 0x71; 0xFFFE for 0xFC; 0xFFFF for the rest.
+Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79, 0xB5, 0xBB, 0x71 and 0x76; 0xFFFE for 0xFC; 0xFFFF for the rest.
 
 Packet data, by data offset:
 

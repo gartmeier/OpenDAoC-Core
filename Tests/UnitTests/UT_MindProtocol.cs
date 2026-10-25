@@ -120,6 +120,45 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Read_ShouldReadACastSpellPrimitive()
+        {
+            Assert.That(Read("""{"type":"primitive","id":30,"primitive":{"name":"castSpell","spell":"Minor Revigoration"}}"""), Is.EqualTo(new PrimitiveMessage(30, new CastSpellPrimitive("Minor Revigoration"))));
+        }
+
+        [Test]
+        public void Read_ShouldReadACancelConcentrationPrimitive_WithOrWithoutATarget()
+        {
+            Assert.That(Read("""{"type":"primitive","id":31,"primitive":{"name":"cancelConcentration","spell":"Minor Bark Skin"}}"""), Is.EqualTo(new PrimitiveMessage(31, new CancelConcentrationPrimitive("Minor Bark Skin"))));
+            Assert.That(Read("""{"type":"primitive","id":32,"primitive":{"name":"cancelConcentration","spell":"Minor Bark Skin","target":"Vue"}}"""),
+                Is.EqualTo(new PrimitiveMessage(32, new CancelConcentrationPrimitive("Minor Bark Skin", "Vue"))));
+        }
+
+        [Test]
+        public void Write_ShouldWriteAConcentrationPercept()
+        {
+            Assert.That(Write(new PerceptMessage(17, 2800, new ConcentrationPercept([new("Minor Bark S..", "Fearnan", 1)]))),
+                Does.EndWith("""{"kind":"concentration","buffs":[{"spell":"Minor Bark S..","target":"Fearnan","cost":1}]}}"""));
+        }
+
+        [Test]
+        public void Write_ShouldWriteAStatusPercept_WithItsPower()
+        {
+            Assert.That(Write(new PerceptMessage(18, 2900, new StatusPercept(45, 10, false, 90, 20, 30, 100, 15, 120, 54, 90, 3, 3))),
+                Does.EndWith("""{"kind":"status","healthPercent":45,"powerPercent":10,"sitting":false,"endurancePercent":90,"concentrationPercent":20,"maxPower":30,"maxEndurance":100,"maxConcentration":15,"maxHealth":120,"health":54,"endurance":90,"power":3,"concentration":3}}"""));
+        }
+
+        [Test]
+        public void Write_ShouldWriteASpellsDetailsInItsSkillsEntry_AndWhetherAnEffectIsDisabled()
+        {
+            SpellDetails barkSkin = new(2, null, null, "Realm", 1000, 3, null, null, "Increases the target's armor factor by 12.", ConcentrationCost: 1);
+
+            Assert.That(Write(new PerceptMessage(19, 3000, new SkillsPercept([new("Minor Bark Skin", 2, SkillPage.Spells, SpellDetails: barkSkin)]))),
+                Does.EndWith("""{"name":"Minor Bark Skin","level":2,"page":"Spells","spellDetails":{"level":2,"target":"Realm","range":1000,"castingSeconds":3,"description":"Increases the target's armor factor by 12.","concentrationCost":1}}]}}"""));
+            Assert.That(Write(new PerceptMessage(20, 3100, new EffectsPercept([new("Minor Bark Skin", true, Disabled: true)]))),
+                Does.EndWith("""{"kind":"effects","effects":[{"name":"Minor Bark Skin","positive":true,"disabled":true}]}}"""));
+        }
+
+        [Test]
         public void Read_ShouldReadAnAnswerDialogPrimitive_WithItsCodeAsAName()
         {
             Assert.That(Read("""{"type":"primitive","id":27,"primitive":{"name":"answerDialog","code":"CustomDialog","data1":257,"data2":1,"data3":0,"accept":true}}"""),
@@ -177,6 +216,8 @@ namespace DOL.GS.Tests
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"attack"}}""", "on")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"command"}}""", "text")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"useStyle","line":"Blades"}}""", "style")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"castSpell"}}""", "spell")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"cancelConcentration","target":"Vue"}}""", "spell")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"answerDialog","code":"CustomDialog","data1":257,"data2":1,"data3":0}}""", "accept")]
         public void Read_ShouldSayWhy_ForAPrimitiveWithoutItsField(string json, string field)
         {

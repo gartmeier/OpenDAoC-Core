@@ -197,3 +197,16 @@ Acceptance: Fearnan goes from 1 to 5 in a new Claude Code session. It heals itse
 - **Milestone ladder:** `.scratch/milestones.md`. This spec is milestone 7.
 
 ## Comments
+
+**2026-10-25 (agent):** Implemented, not yet tested in game. Where it differs from or adds to the spec above:
+
+- **Captured on 2026-10-25** as `cast-heal.tsv` and `cast-buffs.tsv`, with a Spells section in the fixtures README. A Naturalist's cast is the skill packet byte for byte as a style's: Minor Revigoration was index 6 and Minor Bark Skin 7. The cancel (0x76) is the index and then `00 72 04`, which the handler doesn't read and the builder writes as captured.
+- **A Spell's tooltip is `spellDetails`, not `details`.** `details` stays a Style's `StyleDetails`, which Dalta's Tactics and the styles Learning read as such. An Effect's tooltip is still `details`, with the same `SpellDetails` shape, which gains `concentrationCost`.
+- **Self's names:** `power`, `maxPower` and `powerPercent`; `concentration` is what's left, as the status packet carries it (the server's maximum less what's used), out of `maxConcentration`; the list is `concentrationBuffs`.
+- **Concentration names are cut as the client shows them,** "Minor Bark Skin" to "Minor Bark S..". `cancelConcentration` cuts the names it's given the same way, so a whole name works.
+- **`disabled` is the buff bar's mark,** which the server also sets on an immunity. It's absent when not set.
+- **Beyond the spec:**
+  - `playerPosition`'s `manaPercent` is `powerPercent` too, so no `mana` is left in the protocol.
+  - The Journal's status line shows Power and concentration, and an Effect's line says when it's disabled.
+  - The fighting Learning's Resting paragraph mentions Power.
+- **The Learning hasn't been run in a fight.** Its message texts are the server's, and its snippets typecheck. Fearnan's run is the test.

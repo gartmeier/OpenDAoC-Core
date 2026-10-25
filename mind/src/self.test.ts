@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import type { JumpPercept, MovedPercept, OwnPositionPercept, Percept, PerceptMessage } from "./protocol.ts";
 import { ownPositionIn, Self } from "./self.ts";
 import { FakeClock } from "./test-agent.ts";
-import { dialog, died, effects, player, points, revived, skills, spec, stats, status } from "./test-percepts.ts";
+import { concentration, dialog, died, effects, player, points, revived, skills, spec, stats, status } from "./test-percepts.ts";
 
 function message(percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs: 1000, percept };
@@ -192,6 +192,28 @@ test("takes its health, endurance and whether it sits from the status Percept", 
   expect(agentSelf.sitting).toBe(true);
 });
 
+test("takes its Power and the concentration it has left from the status Percept", () => {
+  const agentSelf = selfAt(296600, 642629, 4848);
+
+  agentSelf.perceive(message(status(100, { powerPercent: 25, power: 3, maxPower: 12, concentration: 16, maxConcentration: 18 })));
+
+  expect(agentSelf.powerPercent).toBe(25);
+  expect(agentSelf.power).toBe(3);
+  expect(agentSelf.maxPower).toBe(12);
+  expect(agentSelf.concentration).toBe(16);
+  expect(agentSelf.maxConcentration).toBe(18);
+});
+
+test("knows no Concentration buffs before the server says, then each it keeps up from the latest concentration Percept", () => {
+  const agentSelf = new Self(new FakeClock());
+  expect(agentSelf.concentrationBuffs).toEqual([]);
+
+  agentSelf.perceive(message(concentration({ spell: "Minor Bark S..", target: "Fearnan", cost: 1 }, { spell: "Strength of ..", target: "Fearnan", cost: 1 })));
+  agentSelf.perceive(message(concentration({ spell: "Strength of ..", target: "Fearnan", cost: 1 })));
+
+  expect(agentSelf.concentrationBuffs).toEqual([{ spell: "Strength of ..", target: "Fearnan", cost: 1 }]);
+});
+
 test("takes its level and class from the player Percept, and its experience and spec points from the points Percept", () => {
   const agentSelf = selfAt(296600, 642629, 4848);
 
@@ -279,6 +301,17 @@ test("keeps a spell Effect's details, and none for an ability's", () => {
   expect(agentSelf.effects.map(({ name, details }) => ({ name, details }))).toEqual([
     { name: "Speed of the Realm", details },
     { name: "Sprint", details: undefined },
+  ]);
+});
+
+test("knows which Effects the server switched off, as a weaker buff a better one replaced", () => {
+  const agentSelf = new Self(new FakeClock());
+
+  agentSelf.perceive(message(effects({ name: "Minor Bark Skin", positive: true, disabled: true }, { name: "Lesser Bark Skin", positive: true })));
+
+  expect(agentSelf.effects.map(({ name, disabled }) => ({ name, disabled }))).toEqual([
+    { name: "Minor Bark Skin", disabled: true },
+    { name: "Lesser Bark Skin", disabled: false },
   ]);
 });
 

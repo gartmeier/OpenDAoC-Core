@@ -12,6 +12,8 @@ export function summarize({ self, surroundings, inventory }: Agent, character: s
   const position = self.position;
   const where = position ? `at ${at(position)}` : "somewhere the server hasn't said yet";
   const specPoints = self.specPoints === 1 ? "1 spec point" : `${self.specPoints} spec points`;
+  // A pure fighter has none.
+  const power = self.maxPower > 0 ? `power ${self.powerPercent}% (${self.power}/${self.maxPower}), ` : "";
   const near = position
     ? surroundings.objects.map((object) => ({ object, away: distance(position, object.position) })).sort((a, b) => a.away - b.away)
     : surroundings.objects.map((object) => ({ object, away: undefined }));
@@ -23,7 +25,7 @@ export function summarize({ self, surroundings, inventory }: Agent, character: s
 
   return [
     `${character}, level ${self.level} ${self.className}, ${self.levelPermill}‰ of the way to level ${self.level + 1}, ${specPoints}.`,
-    `Health ${self.healthPercent}% (${self.health}/${self.maxHealth}), endurance ${self.endurancePercent}%, ${self.dead ? "dead" : self.sitting ? "sitting" : describeMovement(self.movement)} ${where}.`,
+    `Health ${self.healthPercent}% (${self.health}/${self.maxHealth}), endurance ${self.endurancePercent}%, ${power}${self.dead ? "dead" : self.sitting ? "sitting" : describeMovement(self.movement)} ${where}.`,
     nearHeading,
     ...near.slice(0, NEAR_LISTED).map(({ object, away }) => `  ${describeObject(object, self.objectId)}${away === undefined ? "" : `, ${Math.round(away)} away`}`),
     `Equipped: ${equipped.join("; ") || "nothing"}.`,

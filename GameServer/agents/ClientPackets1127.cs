@@ -246,6 +246,13 @@ namespace DOL.GS.Agents
             return PositionAndUse(eClientPackets.UseSlot, position, speed, heading, flags, slot, (byte) type);
         }
 
+        // Cancels the concentration spell at `index` in the concentration list the server last sent, as a click on it in the concentration window does.
+        // As captured in `cast-buffs.tsv`, read by `RemoveConcentrationEffectHandler`: the index, then 3 bytes it doesn't read, the same both times.
+        public static ClientPacket RemoveConcentrationEffect(byte index)
+        {
+            return new((byte) eClientPackets.RemoveConcentrationEffect, NO_PARAMETER, [index, 0x00, 0x72, 0x04]);
+        }
+
         // Picks up the object the client has targeted, which the server reads instead of anything in the packet: the captured client sent a single 0.
         public static ClientPacket PickUpRequest()
         {

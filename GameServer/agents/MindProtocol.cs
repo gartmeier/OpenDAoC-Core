@@ -129,6 +129,8 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(UseStylePrimitive), "useStyle")]
     [JsonDerivedType(typeof(AnswerDialogPrimitive), "answerDialog")]
     [JsonDerivedType(typeof(UseItemPrimitive), "useItem")]
+    [JsonDerivedType(typeof(CastSpellPrimitive), "castSpell")]
+    [JsonDerivedType(typeof(CancelConcentrationPrimitive), "cancelConcentration")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -214,6 +216,17 @@ namespace DOL.GS.Agents
         [property: JsonRequired] int Slot,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? Second = null) : Primitive;
 
+    // Casts the spell named `Spell` at what the client targets, as a click on its icon does. A heal or a buff needs a friendly target, the Character itself included: `target` it first.
+    // The Harness refuses a spell the server's last `skills` didn't list. Whether the cast begins, lands or is interrupted, and why not, the server says in `message` Percepts.
+    // What a spell does and costs is in its `skills` entry, from the tooltip the server sent with the skill list.
+    public sealed record CastSpellPrimitive([property: JsonRequired] string Spell) : Primitive;
+
+    // Cancels the Concentration buff `Spell` that the Character keeps up, as a click on it in the concentration window does. `Target` names who wears it: without it, the first of that spell in the window.
+    // Names are matched as the `concentration` Percept cuts them, so a whole name and a cut one both do. The Harness refuses a buff the server's last `concentration` didn't list.
+    public sealed record CancelConcentrationPrimitive(
+        [property: JsonRequired] string Spell,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Target = null) : Primitive;
+
     /// <summary>
     /// One thing the Harness tells the Mind: only what the 1.127 packet would tell a real client (ADR 0001).
     /// </summary>
@@ -236,6 +249,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(PlayerPercept), "player")]
     [JsonDerivedType(typeof(SkillsPercept), "skills")]
     [JsonDerivedType(typeof(EffectsPercept), "effects")]
+    [JsonDerivedType(typeof(ConcentrationPercept), "concentration")]
     [JsonDerivedType(typeof(DiedPercept), "died")]
     [JsonDerivedType(typeof(RevivedPercept), "revived")]
     [JsonDerivedType(typeof(InventoryPercept), "inventory")]
@@ -312,7 +326,7 @@ namespace DOL.GS.Agents
         bool Roleplay,
         int HealthPercent,
         bool Attacking,
-        int ManaPercent,
+        int PowerPercent,
         int EndurancePercent) : Percept;
 
     // An NPC came into view. Positions are global. The server sends it again whenever the NPC's look changes.
@@ -421,17 +435,17 @@ namespace DOL.GS.Agents
     // The 1.127 packet carries no dead flag: dying shows as health 0 and a `died` Percept.
     public sealed record StatusPercept(
         int HealthPercent,
-        int ManaPercent,
+        int PowerPercent,
         bool Sitting,
         int EndurancePercent,
         int ConcentrationPercent,
-        int MaxMana,
+        int MaxPower,
         int MaxEndurance,
         int MaxConcentration,
         int MaxHealth,
         int Health,
         int Endurance,
-        int Mana,
+        int Power,
         int Concentration) : Percept;
 
     // The Agent's Character's progress. `LevelPermill` is the experience towards the next level in thousandths, and `Experience` and `ExperienceForNextLevel` the totals it's worked out from.
@@ -454,13 +468,14 @@ namespace DOL.GS.Agents
     public sealed record SkillsPercept(SkillEntry[] Skills) : Percept;
 
     // One skill. `Level` is a specialization's trained level, an ability's or a spell's level, or the specialization level a style needs. `Page` is the skill page it's on.
-    // `Line` is a style's specialization, which the packet names by an index the client knows. `Details` are a style's, which its tooltip shows. Anything else has neither.
+    // `Line` is a style's specialization, which the packet names by an index the client knows. `Details` are a style's, and `SpellDetails` a spell's, which their tooltips show. Anything else has none.
     public sealed record SkillEntry(
         string Name,
         int Level,
         SkillPage Page,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] StyleDetails Details = null);
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] StyleDetails Details = null,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] SpellDetails SpellDetails = null);
 
     // What a style needs and does, as the server's forced tooltip update tells a 1.110+ client alongside the skill list, and the client shows when its icon is hovered.
     // `Opening` is what opens it: `Offensive` (your last attack's `OpeningResult` on the target, such as `Parry` when it parried, or `Style` after `OpeningStyle`),
@@ -497,15 +512,18 @@ namespace DOL.GS.Agents
 
     // One Effect. `Positive` says it's a buff rather than a debuff. `SecondsLeft` is its time left in whole seconds when the server sent the bar, or none for an Effect without a timer.
     // `Details` are what a spell's Effect shows in its tooltip. An ability's Effect has none.
+    // `Disabled` is the packet's mark for an Effect that does nothing while it's shown: one the server switched off, such as a weaker buff a better one of its kind replaced, or an immunity.
     public sealed record EffectEntry(
         string Name,
         bool Positive,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SecondsLeft = null,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] SpellDetails Details = null);
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] SpellDetails Details = null,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? Disabled = null);
 
     // What a spell is, as the server's forced tooltip update tells a 1.110+ client, and the client's tooltip window shows: each field under its label there, and only when it shows it.
     // `Target` is in the client's words where seen ("Realm", "Realm area effect") and the server's name otherwise. `MagicType` is the server's name, which is the client's word for those seen ("Energy").
     // A negative `PowerCost` is a percentage of maximum power. `CastingSeconds` is 0 for an instant spell. `Description` is the server's sentence for what it does.
+    // `ConcentrationCost` is the concentration a Concentration buff uses while it's up.
     public sealed record SpellDetails(
         int Level,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] float? DurationSeconds,
@@ -515,7 +533,14 @@ namespace DOL.GS.Agents
         float CastingSeconds,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string MagicType,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Radius,
-        string Description);
+        string Description,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ConcentrationCost = null);
+
+    // The Agent's Character's concentration window: every Concentration buff it keeps up, in the order it cast them, which `cancelConcentration` numbers them by.
+    public sealed record ConcentrationPercept(ConcentrationBuff[] Buffs) : Percept;
+
+    // One Concentration buff: its spell, who wears it, the Agent's Character included, and the concentration it uses. The packet cuts both names longer than 14 characters to their first 12 and "..".
+    public sealed record ConcentrationBuff(string Spell, string Target, int Cost);
 
     // A player died, the Agent's Character included: its object ID, and the object ID of what killed it, or 0.
     public sealed record DiedPercept(int ObjectId, int KillerId) : Percept;

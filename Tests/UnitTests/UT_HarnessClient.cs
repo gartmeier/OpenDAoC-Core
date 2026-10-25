@@ -452,6 +452,127 @@ namespace DOL.GS.Tests
             await Close(mind);
         }
 
+        // Specializations first, then abilities and spells, as the server lists a Naturalist's. The style is there only to be told apart.
+        private static SkillsPercept NaturalistSkills()
+        {
+            return new([
+                new("Regrowth", 2, SkillPage.Specialization),
+                new("Nurture", 2, SkillPage.Specialization),
+                new("Staves", 1, SkillPage.Abilities),
+                new("Minor Revigoration", 1, SkillPage.Spells),
+                new("Minor Bark Skin", 2, SkillPage.Spells),
+                new("Shining Blade", 2, SkillPage.Styles, "Blades")]);
+        }
+
+        // The index counts from Staves, the first entry after the specializations, as for a style: a hybrid's spells are in the same skill list.
+        [Test]
+        public async Task CastSpell_ShouldQueueTheSpellsIndexInTheSkillListLastSent()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(NaturalistSkills());
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Minor Revigoration"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Minor Bark Skin"), mind.Link), Is.Null);
+
+            Vector3 at = new(296516, 641415, 4848);
+            Assert.That(Wire(Inbound(client)[1..]), Is.EqualTo(Wire([
+                ClientPackets1127.UseSkill(at, 0, 0, 0xA000, 1),
+                ClientPackets1127.UseSkill(at, 0, 0, 0xA000, 2)])));
+            await Close(mind);
+        }
+
+        private static IEnumerable<TestCaseData> SpellsTheCharacterDoesntHave()
+        {
+            yield return new TestCaseData(new CastSpellPrimitive("Renewal"), "Greeen has no Spell \"Renewal\".");
+            // Only spells match, never a specialization, an ability or a style of that name.
+            yield return new TestCaseData(new CastSpellPrimitive("Regrowth"), "Greeen has no Spell \"Regrowth\".");
+            yield return new TestCaseData(new CastSpellPrimitive("Staves"), "Greeen has no Spell \"Staves\".");
+            yield return new TestCaseData(new CastSpellPrimitive("Shining Blade"), "Greeen has no Spell \"Shining Blade\".");
+            yield return new TestCaseData(new UseStylePrimitive("Minor Revigoration"), "Greeen has no Style \"Minor Revigoration\".");
+        }
+
+        [TestCaseSource(nameof(SpellsTheCharacterDoesntHave))]
+        public async Task CastSpell_ShouldBeRefusedWithAReason_ForASpellTheCharacterDoesntHave(Primitive primitive, string reason)
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(NaturalistSkills());
+
+            Assert.That(client.Dispatch(primitive, mind.Link), Is.EqualTo(reason));
+            Assert.That(Inbound(client), Is.Empty);
+            await Close(mind);
+        }
+
+        // As the server cuts the names: Minor Bark Skin on Greeen itself and on Vue, and Strength of the Oak on Greeen.
+        private static ConcentrationPercept NaturalistConcentration()
+        {
+            return new([new("Minor Bark S..", "Greeen", 1), new("Minor Bark S..", "Vue", 1), new("Strength of ..", "Greeen", 1)]);
+        }
+
+        // The index is the buff's place in the concentration window. Names are matched as the window cuts them.
+        [Test]
+        public async Task CancelConcentration_ShouldQueueTheBuffsIndexInTheListLastSent_TheFirstMatchUnlessATargetIsGiven()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(NaturalistConcentration());
+
+            Assert.That(client.Dispatch(new CancelConcentrationPrimitive("Minor Bark Skin"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new CancelConcentrationPrimitive("Minor Bark Skin", "Vue"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new CancelConcentrationPrimitive("Strength of the Oak"), mind.Link), Is.Null);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
+                ClientPackets1127.RemoveConcentrationEffect(0),
+                ClientPackets1127.RemoveConcentrationEffect(1),
+                ClientPackets1127.RemoveConcentrationEffect(2)])));
+            await Close(mind);
+        }
+
+        private static IEnumerable<TestCaseData> BuffsTheCharacterDoesntKeepUp()
+        {
+            yield return new TestCaseData(new CancelConcentrationPrimitive("Oak's Stoutness"), "Greeen keeps up no \"Oak's Stoutness\".");
+            yield return new TestCaseData(new CancelConcentrationPrimitive("Strength of the Oak", "Vue"), "Greeen keeps up no \"Strength of the Oak\" on Vue.");
+        }
+
+        [TestCaseSource(nameof(BuffsTheCharacterDoesntKeepUp))]
+        public async Task CancelConcentration_ShouldBeRefusedWithAReason_ForABuffTheCharacterDoesntKeepUp(Primitive primitive, string reason)
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(NaturalistConcentration());
+
+            Assert.That(client.Dispatch(primitive, mind.Link), Is.EqualTo(reason));
+            Assert.That(Inbound(client), Is.Empty);
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task CancelConcentration_ShouldFollowTheList_WhenTheServerSendsANewOne()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(NaturalistConcentration());
+            client.OnPerceived(new ConcentrationPercept([new("Strength of ..", "Greeen", 1)]));
+
+            Assert.That(client.Dispatch(new CancelConcentrationPrimitive("Strength of the Oak"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new CancelConcentrationPrimitive("Minor Bark Skin"), mind.Link), Is.EqualTo("Greeen keeps up no \"Minor Bark Skin\"."));
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.RemoveConcentrationEffect(0)])));
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task CastSpell_ShouldBeRefusedWithAReason_BeforeTheServerSentASkillList()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            Assert.That(client.Dispatch(new CastSpellPrimitive("Minor Revigoration"), mind.Link), Is.EqualTo("Greeen has no Spell \"Minor Revigoration\"."));
+            await Close(mind);
+        }
+
         // A right-click in the backpack sends type 1, and the server reads type 2 as the item's second spell.
         [Test]
         public async Task UseItem_ShouldQueueTheUseSlotPacket_ItsSecondSpellWithSecond()
@@ -661,6 +782,7 @@ namespace DOL.GS.Tests
                 nameof(IPacketLib.SendCharStatsUpdate),
                 nameof(IPacketLib.SendUpdateIcons),
                 nameof(IPacketLib.SendUpdatePoints),
+                nameof(IPacketLib.SendConcentrationList),
                 nameof(IPacketLib.SendStatusUpdate),
                 nameof(IPacketLib.SendEncumbrance)
             }));

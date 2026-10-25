@@ -1,6 +1,8 @@
 // Percepts as the Harness sends them, for tests. Every field a test doesn't pass is a plain default.
 import type {
   ArrivedPercept,
+  ConcentrationBuff,
+  ConcentrationPercept,
   DialogPercept,
   DiedPercept,
   EffectEntry,
@@ -103,7 +105,7 @@ export function playerPosition(objectId: number, x: number, y: number, z: number
     roleplay: false,
     healthPercent: 100,
     attacking: false,
-    manaPercent: 100,
+    powerPercent: 100,
     endurancePercent: 100,
   };
 }
@@ -180,17 +182,17 @@ export function status(healthPercent: number, fields: Partial<StatusPercept> = {
   return {
     kind: "status",
     healthPercent,
-    manaPercent: 0,
+    powerPercent: 0,
     sitting: false,
     endurancePercent: 100,
     concentrationPercent: 0,
-    maxMana: 0,
+    maxPower: 0,
     maxEndurance: 100,
     maxConcentration: 0,
     maxHealth: 100,
     health: healthPercent,
     endurance: 100,
-    mana: 0,
+    power: 0,
     concentration: 0,
     ...fields,
   };
@@ -215,6 +217,10 @@ export function spec(name: string, level: number): SkillEntry {
 
 export function effects(...entries: EffectEntry[]): EffectsPercept {
   return { kind: "effects", effects: entries };
+}
+
+export function concentration(...buffs: ConcentrationBuff[]): ConcentrationPercept {
+  return { kind: "concentration", buffs };
 }
 
 /** A custom Dialog to the Character with session ID 0x0101, asking yes or no unless `yesNo` is false. */

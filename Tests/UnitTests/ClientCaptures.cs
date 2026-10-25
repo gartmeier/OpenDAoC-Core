@@ -48,7 +48,11 @@ namespace DOL.GS.Tests
         // A Character using its Recall Stone from the backpack and the quickbar, standing, moving and on the reuse timer.
         public const string USE_ITEM = "use-item";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG, USE_ITEM];
+        // A Naturalist casting a heal on itself, then a heal and a buff on another and on itself, and cancelling buffs from the concentration window.
+        public const string CAST_HEAL = "cast-heal";
+        public const string CAST_BUFFS = "cast-buffs";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG, USE_ITEM, CAST_HEAL, CAST_BUFFS];
 
         public static CapturedPacket[] Load(string capture)
         {

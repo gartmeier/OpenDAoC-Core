@@ -4,7 +4,7 @@ import { type Agent, failed, type Outcome, succeeded } from "../tactic.ts";
 export const REST_TIMEOUT_MS = 300_000;
 
 /**
- * Sits until health reaches `untilPercent`, then stands.
+ * Sits until health reaches `untilPercent`, and Power too for a Character that has Power, then stands.
  * It fails with `attacked` as soon as an NPC attacks the Agent or its health drops, standing up first, or with `timeout`.
  */
 export async function rest(agent: Agent, untilPercent: number): Promise<Outcome> {
@@ -22,7 +22,7 @@ export async function rest(agent: Agent, untilPercent: number): Promise<Outcome>
         return "attacked";
 
       health = self.healthPercent;
-      return self.healthPercent >= untilPercent ? "rested" : undefined;
+      return self.healthPercent >= untilPercent && (self.maxPower === 0 || self.powerPercent >= untilPercent) ? "rested" : undefined;
     },
     REST_TIMEOUT_MS,
   );

@@ -347,6 +347,29 @@ namespace DOL.GS.Tests
             }
         }
 
+        // Fearnan's casts from the quickbar, standing, with itself or another targeted: a hybrid's spell is a skill like a style, Minor Revigoration 6 and Minor Bark Skin 7 after the specializations.
+        [TestCase(ClientCaptures.CAST_HEAL, new byte[] { 6, 6 })]
+        [TestCase(ClientCaptures.CAST_BUFFS, new byte[] { 6, 7, 6, 7 })]
+        public void UseSkill_ShouldMatchCapture_ForASpell(string capture, byte[] indexes)
+        {
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(capture, eClientPackets.UseSkill);
+            Assert.That(captured, Has.Length.EqualTo(indexes.Length));
+
+            for (int i = 0; i < captured.Length; i++)
+                AssertMatches(ClientPackets1127.UseSkill(new(294695.78f, 641726.6f, 4848), 0, 0x048C, 0xA000, indexes[i]), captured[i]);
+        }
+
+        // Both clicks on the top entry of the concentration window: the second buff moved up once the first was gone.
+        [Test]
+        public void RemoveConcentrationEffect_ShouldMatchCapture()
+        {
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.CAST_BUFFS, eClientPackets.RemoveConcentrationEffect);
+            Assert.That(captured, Has.Length.EqualTo(2));
+
+            foreach (CapturedPacket packet in captured)
+                AssertMatches(ClientPackets1127.RemoveConcentrationEffect(0), packet);
+        }
+
         // The right-click on the Recall Stone in backpack slot 40, standing with nothing targeted.
         [Test]
         public void UseSlot_ShouldMatchCapture_FromTheBackpack()

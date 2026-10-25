@@ -42,7 +42,7 @@ return attacker ? await kill(agent, attacker.objectId) : "nothing attacks me";
 
 ## Resting
 
-`rest(agent, untilPercent)` sits until your health gets there, then stands. It fails with `attacked` as soon as something attacks you or your health drops, standing up first. Resting to 100% between fights kept Greeen alive where resting to 80% didn't.
+`rest(agent, untilPercent)` sits until your health gets there, and your Power too if you have any, then stands. It fails with `attacked` as soon as something attacks you or your health drops, standing up first. Resting to 100% between fights kept Greeen alive where resting to 80% didn't.
 
 Dalta measured at level 10: no health comes back for about 20 s after a fight, then sitting heals about 0.9% a second, steadily, and running about 0.4%. So the time spent resting is set by how much health the fights cost, not by when you sit: compare Mobs by experience per % of health lost, which varied 2× between kinds of the same level.
 

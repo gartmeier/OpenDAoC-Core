@@ -112,6 +112,20 @@ namespace DOL.GS.Tests
             return effect;
         }
 
+        // Switches the Effect off without ending it, as the server does to a buff a better one of its kind replaced.
+        public static void Disable(ECSGameEffect effect)
+        {
+            FieldInfo state = typeof(ECSGameEffect).GetField("_state", BindingFlags.NonPublic | BindingFlags.Instance);
+            state.SetValue(effect, Enum.Parse(state.FieldType, "Disabled"));
+        }
+
+        // Adds the Concentration buff to its caster's concentration list, wherever its Effect is, as the server does once it has started.
+        public static void AddConcentrationEffect(TestPlayer caster, ECSGameSpellEffect effect)
+        {
+            var concentrationEffects = (List<ECSGameSpellEffect>) typeof(EffectListComponent).GetField("_concentrationEffects", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(caster.effectListComponent);
+            concentrationEffects.Add(effect);
+        }
+
         private static void AddToEffectList(TestPlayer player, ECSGameEffect effect)
         {
             var effects = (Dictionary<eEffect, List<ECSGameEffect>>) typeof(EffectListComponent).GetField("_effects", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(player.effectListComponent);

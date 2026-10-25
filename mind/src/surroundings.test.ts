@@ -57,7 +57,7 @@ function playerPosition(objectId: number, x: number, y: number, z: number, headi
     roleplay: false,
     healthPercent: 100,
     attacking: false,
-    manaPercent: 100,
+    powerPercent: 100,
     endurancePercent: 100,
   };
 }

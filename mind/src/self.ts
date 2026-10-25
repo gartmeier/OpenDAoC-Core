@@ -1,4 +1,4 @@
-import type { DialogPercept, EffectEntry, JumpPercept, Percept, PerceptMessage, Primitive, SkillEntry, SpellDetails, StopReason } from "./protocol.ts";
+import type { ConcentrationBuff, DialogPercept, EffectEntry, JumpPercept, Percept, PerceptMessage, Primitive, SkillEntry, SpellDetails, StopReason } from "./protocol.ts";
 import type { Position } from "./surroundings.ts";
 import type { Clock } from "./tactic.ts";
 
@@ -25,6 +25,8 @@ export interface Effect {
   readonly secondsLeft: number | undefined;
   /** A spell's, as its tooltip window shows them. `undefined` for an ability's Effect, such as Sprint. */
   readonly details: SpellDetails | undefined;
+  /** Shown but doing nothing: switched off by the server, such as a weaker buff a better one of its kind replaced, or an immunity. */
+  readonly disabled: boolean;
 }
 
 /** A question the server put to the Character in a window (see `CONTEXT.md`): its text, whether it asks yes or no or only says OK, and what an `answerDialog` echoes back. */
@@ -33,7 +35,8 @@ export type Dialog = Omit<DialogPercept, "kind">;
 /**
  * What the Agent currently believes about its own Character, built from Percepts (see `CONTEXT.md`).
  * The server says where the Character is at world entry and whenever it moves it itself (a jump), and how fast it may run. The Harness says where it is while it runs, and how each run ended, as the Agent's client works that out itself.
- * The server also says how healthy it is, whether it sits, its level, experience and spec points, its skills, which Effects are on it, how much Constitution it has lost, when it dies and comes back to life, and which Dialog it opened.
+ * The server also says how healthy it is, how much Power and concentration it has, whether it sits, its level, experience and spec points, its skills, which Effects are on it, which Concentration buffs it keeps up,
+ * how much Constitution it has lost, when it dies and comes back to life, and which Dialog it opened.
  * Of the Primitives the Mind sent it tracks only answering the Dialog, which closes it as a click does in the client, so there's one answer to "where am I and am I there yet".
  */
 export class Self {
@@ -47,6 +50,12 @@ export class Self {
   #health = 0;
   #maxHealth = 0;
   #endurancePercent = 100;
+  #powerPercent = 100;
+  #power = 0;
+  #maxPower = 0;
+  #concentration = 0;
+  #maxConcentration = 0;
+  #concentrationBuffs: readonly ConcentrationBuff[] = [];
   #sitting = false;
   #dead = false;
   #level = 0;
@@ -99,6 +108,11 @@ export class Self {
         this.#health = percept.health;
         this.#maxHealth = percept.maxHealth;
         this.#endurancePercent = percept.endurancePercent;
+        this.#powerPercent = percept.powerPercent;
+        this.#power = percept.power;
+        this.#maxPower = percept.maxPower;
+        this.#concentration = percept.concentration;
+        this.#maxConcentration = percept.maxConcentration;
         this.#sitting = percept.sitting;
 
         // Only the dead have no health, for example when the Mind starts while its Character lies dead.
@@ -120,6 +134,9 @@ export class Self {
         break;
       case "effects":
         this.#effects = percept.effects.map((entry) => effectFrom(entry, this.#clock));
+        break;
+      case "concentration":
+        this.#concentrationBuffs = percept.buffs;
         break;
       case "stats":
         this.#constitutionLost = percept.constitutionLost;
@@ -170,6 +187,33 @@ export class Self {
   /** 0 to 100. 100 until the server has said. */
   get endurancePercent(): number {
     return this.#endurancePercent;
+  }
+
+  /** 0 to 100. 100 until the server has said. A Character without Power, such as a pure fighter, has a `maxPower` of 0. */
+  get powerPercent(): number {
+    return this.#powerPercent;
+  }
+
+  get power(): number {
+    return this.#power;
+  }
+
+  get maxPower(): number {
+    return this.#maxPower;
+  }
+
+  /** The concentration it has left for more Concentration buffs, out of `maxConcentration`. */
+  get concentration(): number {
+    return this.#concentration;
+  }
+
+  get maxConcentration(): number {
+    return this.#maxConcentration;
+  }
+
+  /** Every Concentration buff it keeps up, in the order it cast them, with who wears it, as its concentration window shows them: names longer than 14 characters cut to their first 12 and "..". */
+  get concentrationBuffs(): readonly ConcentrationBuff[] {
+    return this.#concentrationBuffs;
   }
 
   get sitting(): boolean {
@@ -268,6 +312,7 @@ function effectFrom(entry: EffectEntry, clock: Clock): Effect {
     name: entry.name,
     positive: entry.positive,
     details: entry.details,
+    disabled: entry.disabled ?? false,
     get secondsLeft() {
       return endsAt === undefined ? undefined : Math.max(0, Math.ceil((endsAt - clock.now()) / 1000));
     },

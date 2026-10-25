@@ -53,6 +53,7 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendUpdateIcons = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateIcons), [typeof(int).MakeByRefType(), typeof(bool)]);
         private static readonly MethodInfo SendUpdateIconsOld = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateIcons), [typeof(System.Collections.IList), typeof(int).MakeByRefType()]);
         private static readonly MethodInfo SendPlayerJump = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerJump));
+        private static readonly MethodInfo SendConcentrationList = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendConcentrationList));
         private static readonly MethodInfo SendStatusUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), []);
         private static readonly MethodInfo SendStatusUpdateWithFlag = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), [typeof(byte)]);
         private static readonly MethodInfo SendUpdatePlayer = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePlayer));
@@ -829,6 +830,22 @@ namespace DOL.GS.Tests
             Assert.That(percept.Effects.Single().Details, Is.EqualTo(new SpellDetails(44, 1200, 28, "Realm", 1000, 4, "Energy", null, "The target's melee attackers receive 4.6 damage per second for 20 minutes.")));
         }
 
+        // The packet marks an Effect the server switched off, such as Minor Bark Skin once Lesser Bark Skin replaced it. The client still shows it.
+        [Test]
+        public void Project_ShouldMarkAnEffectTheServerSwitchedOff_ForTheIconsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0]);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            TestEffect minor = WorldDoubles.Effect(greeen, "Minor Bark Skin", 3062, true, 0);
+            minor.StartTick = 1;
+            WorldDoubles.Disable(minor);
+            WorldDoubles.Effect(greeen, "Lesser Bark Skin", 3063, true, 0).StartTick = 2;
+
+            EffectsPercept percept = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIcons, [0, false]);
+
+            Assert.That(percept.Effects, Is.EqualTo(new EffectEntry[] { new("Minor Bark Skin", true, Disabled: true), new("Lesser Bark Skin", true) }));
+        }
+
         // A Human's client shows an ability's Effect, such as Sprint, by its name and time left only.
         [Test]
         public void Project_ShouldGiveNoDetails_ForAnAbilitysEffect()
@@ -849,6 +866,30 @@ namespace DOL.GS.Tests
             EffectsPercept percept = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIcons, [0, true]);
 
             Assert.That(percept.Effects, Is.Empty);
+        }
+
+        // The concentration window lists the caster's Concentration buffs in the order it cast them, each with its cost and who wears it, the names cut to 14 characters.
+        [Test]
+        public void Project_ShouldGiveEveryConcentrationBuffTheCharacterKeepsUp_ForTheConcentrationListCall()
+        {
+            Zone zone = WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0];
+            GameClient client = AgentInWorld(zone);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            TestPlayer vue = PlayerIn(zone, "Vue");
+            Spell barkSkin = new(new DbSpell { Name = "Minor Bark Skin", SpellID = 5011, Icon = 3062, Target = "Realm", Type = "BaseArmorFactorBuff", Range = 1000, Value = 12, Concentration = 1 }, 2);
+            Spell strength = new(new DbSpell { Name = "Strength of the Oak", SpellID = 5001, Icon = 3063, Target = "Realm", Type = "StrengthBuff", Range = 1000, Value = 12, Concentration = 1 }, 3);
+            WorldDoubles.AddConcentrationEffect(greeen, WorldDoubles.SpellEffect(greeen, new BaseArmorFactorBuff(greeen, barkSkin, null), 0));
+            WorldDoubles.AddConcentrationEffect(greeen, WorldDoubles.SpellEffect(vue, new StrengthBuff(greeen, strength, null), 0));
+
+            ConcentrationPercept percept = (ConcentrationPercept) PerceptProjection.Project(client, SendConcentrationList, []);
+
+            Assert.That(percept.Buffs, Is.EqualTo(new ConcentrationBuff[] { new("Minor Bark S..", "Greeen", 1), new("Strength of ..", "Vue", 1) }));
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheConcentrationListCallBeforeTheAgentHasACharacter()
+        {
+            Assert.That(PerceptProjection.Project(Playing(), SendConcentrationList, []), Is.Null);
         }
 
         [Test]
@@ -976,7 +1017,7 @@ namespace DOL.GS.Tests
             Ability sprint = new("Sprint", "Sprint", "", 0, 0, 1, 0);
             Style shiningBlade = new(new DbStyle { Name = "Shining Blade", SpecKeyName = "Blades", SpecLevelRequirement = 2 }, null);
 
-            SkillEntry[] entries = PerceptProjection.SkillEntries([(blades, blades), (sprint, sprint), (shiningBlade, blades)], [shiningBlade]);
+            SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(blades, blades), (sprint, sprint), (shiningBlade, blades)], [shiningBlade]);
 
             Assert.That(entries.Select(static entry => entry with { Details = null }), Is.EqualTo(new SkillEntry[] { new("Blades", 3, SkillPage.Specialization), new("Sprint", 1, SkillPage.Abilities), new("Shining Blade", 2, SkillPage.Styles, "Blades") }));
         }
@@ -994,7 +1035,7 @@ namespace DOL.GS.Tests
             Specialization blades = new("Blades", "Blades", 0) { Level = 10 };
             Style[] allStyles = [ShiningBlade, ReturnBlade, GlowingBlade, LungingBlade];
 
-            SkillEntry[] entries = PerceptProjection.SkillEntries([(blades, blades), (ShiningBlade, blades), (ReturnBlade, blades), (GlowingBlade, blades)], allStyles);
+            SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(blades, blades), (ShiningBlade, blades), (ReturnBlade, blades), (GlowingBlade, blades)], allStyles);
 
             Assert.That(entries[0].Details, Is.Null, "a specialization has none");
             Assert.That(entries[1].Details with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Offensive, Style.eAttackResultRequirement.Any, null, null, null, 15, 0, 0, 100, false, null)));
@@ -1009,11 +1050,31 @@ namespace DOL.GS.Tests
         {
             Specialization blades = new("Blades", "Blades", 0) { Level = 12 };
 
-            SkillEntry[] entries = PerceptProjection.SkillEntries([(blades, blades), (LungingBlade, blades)], [ShiningBlade, ReturnBlade, GlowingBlade, LungingBlade]);
+            SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(blades, blades), (LungingBlade, blades)], [ShiningBlade, ReturnBlade, GlowingBlade, LungingBlade]);
 
             Assert.That(entries[1].Details.Opening, Is.EqualTo(Style.eOpening.Offensive));
             Assert.That(entries[1].Details.OpeningResult, Is.EqualTo(Style.eAttackResultRequirement.Style));
             Assert.That(entries[1].Details.OpeningStyle, Is.EqualTo("Return Blade"));
+        }
+
+        // A Naturalist's first heal and buff, as in the database. The tooltip shows a heal's power cost, and a Concentration buff's concentration cost instead.
+        private static readonly Spell MinorRevigoration = new(new DbSpell { Name = "Minor Revigoration", SpellID = 4801, Target = "Realm", Type = "Heal", Range = 2000, Value = 6, Power = 1, CastTime = 2.2 }, 1);
+        private static readonly Spell MinorBarkSkin = new(new DbSpell { Name = "Minor Bark Skin", SpellID = 5011, Target = "Realm", Type = "BaseArmorFactorBuff", Range = 1000, Value = 12, Concentration = 1, CastTime = 3 }, 2);
+
+        // What the server's forced tooltip update tells the client about each spell it lists (`SpellDelve.GetSpellString`), as for a spell's Effect.
+        [Test]
+        public void SkillEntries_ShouldGiveEachSpellTheDetailsItsTooltipShows()
+        {
+            TestPlayer greeen = WorldDoubles.Player(WorldDoubles.Client(0x0101), "Greeen");
+            Specialization regrowth = new("Regrowth", "Regrowth", 0) { Level = 2 };
+            SpellLine regrowthLine = new("Regrowth", "Regrowth", "Regrowth", true);
+
+            SkillEntry[] entries = PerceptProjection.SkillEntries(greeen, [(regrowth, regrowth), (MinorRevigoration, regrowthLine), (MinorBarkSkin, regrowthLine)], []);
+
+            Assert.That(entries[0].SpellDetails, Is.Null, "a specialization has none");
+            Assert.That(entries[1] with { SpellDetails = null }, Is.EqualTo(new SkillEntry("Minor Revigoration", 1, SkillPage.Spells)));
+            Assert.That(entries[1].SpellDetails, Is.EqualTo(new SpellDetails(1, null, 1, "Realm", 2000, 2.2f, null, null, "Heals the target for 6 hit points.")));
+            Assert.That(entries[2].SpellDetails with { Description = null }, Is.EqualTo(new SpellDetails(2, null, null, "Realm", 1000, 3, null, null, null, ConcentrationCost: 1)));
         }
 
         [Test]
@@ -1021,7 +1082,7 @@ namespace DOL.GS.Tests
         {
             Style style = new(new DbStyle { Name = "Odd Style", SpecKeyName = "No Such Spec", SpecLevelRequirement = 1 }, null);
 
-            SkillEntry[] entries = PerceptProjection.SkillEntries([(style, style)], [style]);
+            SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(style, style)], [style]);
 
             Assert.That(entries.Select(static entry => entry with { Details = null }), Is.EqualTo(new SkillEntry[] { new("Odd Style", 1, SkillPage.Styles) }));
         }

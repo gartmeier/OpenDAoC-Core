@@ -21,6 +21,22 @@ test("sits, then stands and succeeds once health reaches the threshold", async (
   expect(t.take()).toEqual([{ name: "stand" }]);
 });
 
+test("sits on until Power reaches the threshold too, for a Character that has Power", async () => {
+  const t = new TestAgent();
+  await t.perceive(ownPosition(296000, 642000, 4848), status(40, { powerPercent: 10, maxPower: 12 }));
+  const outcome = t.agent.run(rest, 90);
+  await settle();
+
+  await t.perceive(status(100, { sitting: true, powerPercent: 50, maxPower: 12 }));
+  await settle();
+  expect(t.take()).toEqual([{ name: "sit" }]);
+
+  await t.perceive(status(100, { sitting: true, powerPercent: 90, maxPower: 12 }));
+
+  expect(await outcome).toEqual({ ok: true });
+  expect(t.take()).toEqual([{ name: "stand" }]);
+});
+
 test("stands and fails with attacked as soon as an NPC attacks the Agent", async () => {
   const { t, outcome } = await resting();
   t.take();

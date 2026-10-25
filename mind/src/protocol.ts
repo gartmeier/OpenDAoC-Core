@@ -46,7 +46,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | AnswerDialogPrimitive | UseItemPrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | AnswerDialogPrimitive | UseItemPrimitive | CastSpellPrimitive | CancelConcentrationPrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -155,7 +155,18 @@ export interface UseItemPrimitive {
   second?: boolean;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export interface CastSpellPrimitive {
+  name: "castSpell";
+  spell: string;
+}
+
+export interface CancelConcentrationPrimitive {
+  name: "cancelConcentration";
+  spell: string;
+  target?: string;
+}
+
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | ConcentrationPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -224,7 +235,7 @@ export interface PlayerPositionPercept {
   roleplay: boolean;
   healthPercent: number;
   attacking: boolean;
-  manaPercent: number;
+  powerPercent: number;
   endurancePercent: number;
 }
 
@@ -339,17 +350,17 @@ export interface MaxSpeedPercept {
 export interface StatusPercept {
   kind: "status";
   healthPercent: number;
-  manaPercent: number;
+  powerPercent: number;
   sitting: boolean;
   endurancePercent: number;
   concentrationPercent: number;
-  maxMana: number;
+  maxPower: number;
   maxEndurance: number;
   maxConcentration: number;
   maxHealth: number;
   health: number;
   endurance: number;
-  mana: number;
+  power: number;
   concentration: number;
 }
 
@@ -382,6 +393,11 @@ export interface SkillsPercept {
 export interface EffectsPercept {
   kind: "effects";
   effects: EffectEntry[];
+}
+
+export interface ConcentrationPercept {
+  kind: "concentration";
+  buffs: ConcentrationBuff[];
 }
 
 export interface DiedPercept {
@@ -508,6 +524,7 @@ export interface SkillEntry {
   page: SkillPage;
   line?: string;
   details?: StyleDetails;
+  spellDetails?: SpellDetails;
 }
 
 export interface EffectEntry {
@@ -515,6 +532,13 @@ export interface EffectEntry {
   positive: boolean;
   secondsLeft?: number;
   details?: SpellDetails;
+  disabled?: boolean;
+}
+
+export interface ConcentrationBuff {
+  spell: string;
+  target: string;
+  cost: number;
 }
 
 export type eInventoryWindowType = "Update" | "Equipment" | "Inventory" | "PlayerVault" | "HouseVault" | "ConsignmentOwner" | "ConsignmentViewer" | "HorseBags";
@@ -579,6 +603,7 @@ export interface SpellDetails {
   magicType?: string;
   radius?: number;
   description: string;
+  concentrationCost?: number;
 }
 
 export interface InventoryItem {

@@ -53,7 +53,7 @@ function describe(agent: Agent, character: string, percept: Percept): string {
     case "stopped":
       return `stopped (${percept.reason})\t${at(percept)}`;
     case "status":
-      return `status\thealth ${percept.healthPercent}% (${percept.health}/${percept.maxHealth}) endurance ${percept.endurancePercent}%${percept.sitting ? " sitting" : ""}`;
+      return `status\thealth ${percept.healthPercent}% (${percept.health}/${percept.maxHealth})${percept.maxPower ? ` power ${percept.powerPercent}% (${percept.power}/${percept.maxPower})` : ""} endurance ${percept.endurancePercent}%${percept.maxConcentration ? ` concentration ${percept.concentration}/${percept.maxConcentration}` : ""}${percept.sitting ? " sitting" : ""}`;
     case "points":
       return `points\texperience ${percept.levelPermill}‰ spec points ${percept.specPoints}`;
     case "player":
@@ -62,6 +62,8 @@ function describe(agent: Agent, character: string, percept: Percept): string {
       return `skills\t${percept.skills.map((skill) => `${skill.name} ${skill.level}`).join(", ")}`;
     case "effects":
       return `effects\t${percept.effects.map(describeEffect).join(", ") || "none"}`;
+    case "concentration":
+      return `concentration\t${percept.buffs.map((buff) => `${buff.spell} on ${buff.target} (${buff.cost})`).join(", ") || "none"}`;
     case "died":
       return `died #${percept.objectId} ${nameOf(percept.objectId)}, killed by #${percept.killerId} ${nameOf(percept.killerId)}`;
     case "revived":
@@ -114,6 +116,10 @@ export function describePrimitive(agent: Agent, character: string, primitive: Pr
       return `${primitive.name} #${primitive.objectId} ${nameIn(agent, character, primitive.objectId)}`;
     case "answerDialog":
       return `answerDialog ${primitive.code} ${primitive.accept ? "accept" : "decline"}`;
+    case "castSpell":
+      return `castSpell ${primitive.spell}`;
+    case "cancelConcentration":
+      return primitive.target === undefined ? `cancelConcentration ${primitive.spell}` : `cancelConcentration ${primitive.spell} on ${primitive.target}`;
     default:
       return primitive.name;
   }
@@ -130,7 +136,7 @@ function describeItem(item: InventoryItem): string {
 
 function describeEffect(effect: EffectEntry): string {
   const description = effect.details ? `: ${effect.details.description.trim().replaceAll("\n", " ")}` : "";
-  return `${effect.name} (${effect.positive ? "buff" : "debuff"}${effect.secondsLeft === undefined ? "" : `, ${effect.secondsLeft} s`})${description}`;
+  return `${effect.name} (${effect.positive ? "buff" : "debuff"}${effect.secondsLeft === undefined ? "" : `, ${effect.secondsLeft} s`}${effect.disabled ? ", disabled" : ""})${description}`;
 }
 
 function merchantItemName({ inventory }: Agent, index: number): string {
