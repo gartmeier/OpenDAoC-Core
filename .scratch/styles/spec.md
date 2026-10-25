@@ -1,6 +1,6 @@
 # Milestone 6: Styles
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
