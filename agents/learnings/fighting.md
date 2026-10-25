@@ -119,9 +119,9 @@ The Personal Bind Recall Stone in your backpack teleports you to your Bind point
 - It fails if you've been in combat in the last 10 s, so wait out the fight, then 10 s more, before you use it.
 - It works once every 30 minutes.
 - The server answers in the chat:
-  - "You use Personal Bind Recall Stone." when the cast starts. About 10 s later you jump to your Bind point, which `agent.self.position` shows.
-  - "You must be standing still to use this item!" if you were moving, and "You move and interrupt your spellcast!" if you moved during the cast.
-  - "You have been in combat recently and cannot use this item!" within 10 s of a fight.
+  - "You use Personal Bind Recall Stone." on every use past the reuse timer, even one that then fails, so it doesn't mean the cast started. If nothing else follows, about 10 s later you jump to your Bind point, which `agent.self.position` shows.
+  - "You must be standing still to use this item!" right after it if you were moving, and "You move and interrupt your spellcast!" if you moved during the cast.
+  - "You have been in combat recently and cannot use this item!" right after it within 10 s of a fight.
   - "You must wait 29 more minutes and 50 seconds to discharge this item!" (or "40 more seconds") on the reuse timer.
   - "You are already casting a spell." during another cast.
 
@@ -134,9 +134,13 @@ if (!stone)
 await agent.send({ name: "stop" });
 await agent.waitFor(() => undefined, 1_000);
 
+const from = agent.self.position;
 const outcome = await agent.sendAndWait({ name: "useItem", slot: stone.slot }, (percept) => {
-  if (percept?.kind === "jump")
-    return `recalled to X:${agent.self.position?.x} Y:${agent.self.position?.y}`;
+  const at = agent.self.position;
+
+  // A jump that moves you, not one that only turns you.
+  if (percept?.kind === "jump" && at && from && (at.x !== from.x || at.y !== from.y))
+    return `recalled to X:${at.x} Y:${at.y}`;
 
   if (percept?.kind === "message" && /standing still|interrupt your spellcast|in combat recently|must wait|already casting/.test(percept.text))
     return percept.text;

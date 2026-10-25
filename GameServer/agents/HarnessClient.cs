@@ -369,7 +369,7 @@ namespace DOL.GS.Agents
             return null;
         }
 
-        // Slots are 16 bits in every packet that carries one.
+        // Slots are 16 bits in every packet that carries one, except the use slot packet.
         private static string BadSlot(int slot)
         {
             return slot is < 0 or > ushort.MaxValue ? $"A slot is 0 to {ushort.MaxValue}, not {slot}." : null;

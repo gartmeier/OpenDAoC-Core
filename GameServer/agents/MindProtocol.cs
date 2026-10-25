@@ -208,7 +208,7 @@ namespace DOL.GS.Agents
         [property: JsonRequired] int Data3,
         [property: JsonRequired] bool Accept) : Primitive;
 
-    // Uses the item in slot `Slot`, backpack or equipment as for `moveItem`, as a right-click on it or a click on it in the quickbar does. `Second` uses its second spell, which some charged gear has.
+    // Uses the item in slot `Slot`, backpack or equipment as for `moveItem`, as a right-click on it in the backpack does. `Second` uses its second spell, which some charged gear has.
     // The Harness refuses only a slot past 255. Whether the use worked, and why not, the server says in `message` Percepts: an empty slot, moving, combat, the reuse timer. A teleport comes as a `jump` Percept.
     public sealed record UseItemPrimitive(
         [property: JsonRequired] int Slot,

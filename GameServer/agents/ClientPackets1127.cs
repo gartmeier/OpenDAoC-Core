@@ -286,7 +286,7 @@ namespace DOL.GS.Agents
         }
 
         // The skill and use slot packets: the client's position, speed, heading and flags, then what to use, its type and 2 bytes of 0.
-        private static ClientPacket PositionAndUse(eClientPackets code, Vector3 position, float speed, ushort heading, ushort flags, byte what, byte type)
+        private static ClientPacket PositionAndUse(eClientPackets code, Vector3 position, float speed, ushort heading, ushort flags, byte indexOrSlot, byte type)
         {
             byte[] data = new byte[24];
             Span<byte> span = data;
@@ -296,7 +296,7 @@ namespace DOL.GS.Agents
             BinaryPrimitives.WriteSingleLittleEndian(span[12..], speed);
             BinaryPrimitives.WriteUInt16BigEndian(span[16..], heading);
             BinaryPrimitives.WriteUInt16BigEndian(span[18..], flags);
-            data[20] = what;
+            data[20] = indexOrSlot;
             data[21] = type;
             return new((byte) code, NO_PARAMETER, data);
         }
