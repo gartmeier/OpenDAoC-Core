@@ -311,6 +311,20 @@ namespace DOL.GS.Agents
             return new((byte) eClientPackets.PlayerTarget, DEFAULT_PARAMETER, data);
         }
 
+        // Answers the Dialog the server opened, as a click on its Accept, Decline or OK button does. As captured in `healer-dialog.tsv`, read by `DialogResponseHandler`:
+        // data1 to data3 as the server's Dialog sent them, its code, and the response, 1 to accept and 0 to decline.
+        public static ClientPacket DialogResponse(byte code, ushort data1, ushort data2, ushort data3, bool accept)
+        {
+            byte[] data = new byte[8];
+            Span<byte> span = data;
+            BinaryPrimitives.WriteUInt16BigEndian(span[0..], data1);
+            BinaryPrimitives.WriteUInt16BigEndian(span[2..], data2);
+            BinaryPrimitives.WriteUInt16BigEndian(span[4..], data3);
+            data[6] = code;
+            data[7] = (byte) (accept ? 0x01 : 0x00);
+            return new((byte) eClientPackets.DialogResponse, DEFAULT_PARAMETER, data);
+        }
+
         // Sent by the client at the end of world entry. Its first byte isn't a code the server acts on.
         public static ClientPacket ShowWarmapRequest()
         {

@@ -405,6 +405,17 @@ namespace DOL.GS.Tests
             Assert.That(packets[i - 1].Code, Is.EqualTo((byte) eClientPackets.PlayerTarget), "targeted first");
         }
 
+        // The Human declined the Healer's Dialog, then accepted it.
+        [Test]
+        public void DialogResponse_ShouldMatchCapture()
+        {
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.HEALER_DIALOG, eClientPackets.DialogResponse);
+            Assert.That(captured, Has.Length.EqualTo(2));
+
+            AssertMatches(ClientPackets1127.DialogResponse((byte) eDialogCode.CustomDialog, captured[0].SessionId, 0x01, 0x00, false), captured[0]);
+            AssertMatches(ClientPackets1127.DialogResponse((byte) eDialogCode.CustomDialog, captured[1].SessionId, 0x01, 0x00, true), captured[1]);
+        }
+
         [TestCase(100, 0x00)]
         [TestCase(109, 0x09)]
         [TestCase(200, 0x0A)]

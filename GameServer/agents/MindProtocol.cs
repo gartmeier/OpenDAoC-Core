@@ -127,6 +127,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(BuyPrimitive), "buy")]
     [JsonDerivedType(typeof(SellPrimitive), "sell")]
     [JsonDerivedType(typeof(UseStylePrimitive), "useStyle")]
+    [JsonDerivedType(typeof(AnswerDialogPrimitive), "answerDialog")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -197,6 +198,15 @@ namespace DOL.GS.Agents
         [property: JsonRequired] string Style,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null) : Primitive;
 
+    // Accepts the open Dialog, or declines it (`Accept` false), as a click on its button does. `Code`, `Data1`, `Data2` and `Data3` are the `dialog` Percept's, echoed back as the client does.
+    // An OK-only Dialog is answered the same way. Whether the server still waits on that Dialog isn't known here: the chat that follows says what happened.
+    public sealed record AnswerDialogPrimitive(
+        [property: JsonRequired] eDialogCode Code,
+        [property: JsonRequired] int Data1,
+        [property: JsonRequired] int Data2,
+        [property: JsonRequired] int Data3,
+        [property: JsonRequired] bool Accept) : Primitive;
+
     /// <summary>
     /// One thing the Harness tells the Mind: only what the 1.127 packet would tell a real client (ADR 0001).
     /// </summary>
@@ -225,6 +235,8 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(MoneyPercept), "money")]
     [JsonDerivedType(typeof(ExaminedPercept), "examined")]
     [JsonDerivedType(typeof(MerchantWindowPercept), "merchantWindow")]
+    [JsonDerivedType(typeof(DialogPercept), "dialog")]
+    [JsonDerivedType(typeof(StatsPercept), "stats")]
     [JsonDerivedType(typeof(RoutedPercept), "routed")]
     [JsonDerivedType(typeof(MovedPercept), "moved")]
     [JsonDerivedType(typeof(ArrivedPercept), "arrived")]
@@ -547,6 +559,13 @@ namespace DOL.GS.Agents
         long Price,
         int Model,
         string Name);
+
+    // A Dialog the server opened, a question in a window: its text, and whether it asks yes or no (`YesNo`) or only says OK.
+    // `Code`, `Data1`, `Data2` and `Data3` are what an `answerDialog` echoes back, as the client does. A newer Dialog takes its place.
+    public sealed record DialogPercept(eDialogCode Code, int Data1, int Data2, int Data3, bool YesNo, string Text) : Percept;
+
+    // The Agent's Character's stats window. Only the Constitution it has lost by dying, which a Healer restores, and the client shows in red. The packet's other stats have no fields yet.
+    public sealed record StatsPercept(int ConstitutionLost) : Percept;
 
     // Worked out by the Harness, as the Agent's client works it out: where the Character is while it runs to the target of a `moveTo`, sent with each position update. Positions are global.
     public sealed record MovedPercept(float X, float Y, float Z, int Heading, float Speed, float TargetX, float TargetY, float TargetZ) : Percept;

@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using DOL.GS.PacketHandler;
+using DOL.GS.PacketHandler.Client.v168;
 
 namespace DOL.GS.Agents
 {
@@ -8,6 +9,7 @@ namespace DOL.GS.Agents
     /// The Harness client's outbound packet library (ADR 0001): every `Send*` call the server makes to tell the Agent's client something arrives in <see cref="Invoke"/>.
     /// A runtime proxy rather than a hand-written <see cref="IPacketLib"/>, so that every call of the large and changing interface ends up in one place.
     /// Every call is recorded in the Agent's trace and told to its Mind as a Percept. The client reacts to what the Percept says, as a real client does to the packet, and to its Character quitting. It's called on the game loop and must never block.
+    /// Where a real library also changes game state, such as the Dialog callback the response handler calls, it does the same.
     /// </summary>
     public class HarnessPacketLib : DispatchProxy
     {
@@ -29,10 +31,19 @@ namespace DOL.GS.Agents
             if (!targetMethod.IsSpecialName)
                 _trace.Record(_client.ClientState, targetMethod, args);
 
+            if (targetMethod.Name is nameof(IPacketLib.SendCustomDialog))
+                OpenCustomDialog((CustomDialogResponse) args[1]);
+
             Percept percept = _client.Mind.Perceive(_client, targetMethod, args);
 
             if (percept != null)
                 _client.OnPerceived(percept);
+
+            // As the real library does after it sends the packet: the response handler acts on an answer only for the inviter it names.
+            if (targetMethod.Name is nameof(IPacketLib.SendGroupInviteCommand))
+                _client.Player?.TempProperties.SetProperty(DialogResponseHandler.GROUP_INVITE_KEY, ((GamePlayer) args[0]).Name);
+            else if (targetMethod.Name is nameof(IPacketLib.SendGuildInviteCommand))
+                _client.Player?.TempProperties.SetProperty(DialogResponseHandler.GUILD_INVITE_KEY, ((GamePlayer) args[0]).Name);
 
             if (targetMethod.Name is nameof(IPacketLib.SendPlayerQuit))
                 _client.OnPlayerQuit((bool) args[0]);
@@ -56,6 +67,21 @@ namespace DOL.GS.Agents
                 // Every other member returns void today. Anything added later gets its type's default.
                 _ => targetMethod.ReturnType.IsValueType && targetMethod.ReturnType != typeof(void) ? Activator.CreateInstance(targetMethod.ReturnType) : null
             };
+        }
+
+        // As `PacketLib168.SendCustomDialog` does before it sends the packet: declines the custom Dialog still open, and hands the player the new one's callback, which `DialogResponseHandler` calls with the answer.
+        private void OpenCustomDialog(CustomDialogResponse callback)
+        {
+            GamePlayer player = _client.Player;
+
+            if (player == null)
+                return;
+
+            lock (player)
+            {
+                player.CustomDialogCallback?.Invoke(player, 0x00);
+                player.CustomDialogCallback = callback;
+            }
         }
     }
 }

@@ -466,6 +466,101 @@ namespace DOL.GS.Tests
             yield return new TestCaseData(new BuyPrimitive(31, 256), "A count is 1 to 255");
             yield return new TestCaseData(new PickUpPrimitive(65536), "An object ID is 1 to 65535");
             yield return new TestCaseData(new TalkToPrimitive(0), "An object ID is 1 to 65535");
+            yield return new TestCaseData(new AnswerDialogPrimitive(eDialogCode.CustomDialog, 65536, 1, 0, true), "A Dialog's data is 0 to 65535");
+            yield return new TestCaseData(new AnswerDialogPrimitive(eDialogCode.CustomDialog, 1, 1, -1, true), "A Dialog's data is 0 to 65535");
+        }
+
+        [Test]
+        public async Task AnswerDialog_ShouldQueueTheDialogResponseTheCaptureShows()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            Assert.That(client.Dispatch(new AnswerDialogPrimitive(eDialogCode.CustomDialog, 0x0101, 0x01, 0x00, true), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new AnswerDialogPrimitive(eDialogCode.GroupInvite, 0x0304, 0x00, 0x00, false), mind.Link), Is.Null);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
+                ClientPackets1127.DialogResponse((byte) eDialogCode.CustomDialog, 0x0101, 0x01, 0x00, true),
+                ClientPackets1127.DialogResponse((byte) eDialogCode.GroupInvite, 0x0304, 0x00, 0x00, false)])));
+            await Close(mind);
+        }
+
+        // The real packet library hands the response handler the server's callback through the player, and declines a custom Dialog still open first.
+        [Test]
+        public async Task Out_ShouldHandTheServersCallbackToThePlayer_DecliningTheCustomDialogStillOpen()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            using AgentTrace trace = new("Greeen", () => TextWriter.Null);
+            IPacketLib packetLib = HarnessPacketLib.Create(client, trace);
+            List<byte> firstAnswers = [];
+            CustomDialogResponse first = (_, response) => firstAnswers.Add(response);
+            CustomDialogResponse second = static (_, _) => { };
+
+            packetLib.SendCustomDialog("Do you accept?", first);
+            Assert.That(client.Player.CustomDialogCallback, Is.SameAs(first));
+            packetLib.SendCustomDialog("And now?", second);
+
+            Assert.That(firstAnswers, Is.EqualTo(new byte[] { 0x00 }));
+            Assert.That(client.Player.CustomDialogCallback, Is.SameAs(second));
+            await Close(mind);
+        }
+
+        // The real packet library leaves the inviter's name on the player, which the response handler checks before it acts on an answer.
+        [Test]
+        public async Task Out_ShouldLeaveTheInvitersNameForTheResponseHandler_ForAGroupOrGuildInvite()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            using AgentTrace trace = new("Greeen", () => TextWriter.Null);
+            IPacketLib packetLib = HarnessPacketLib.Create(client, trace);
+            TestPlayer dalta = WorldDoubles.Player(WorldDoubles.Client(0x0304), "Dalta");
+
+            packetLib.SendGroupInviteCommand(dalta, "Dalta has invited you to join a group.");
+            packetLib.SendGuildInviteCommand(dalta, "Dalta has invited you into Greenwood.");
+
+            Assert.That(client.Player.TempProperties.GetProperty<string>(DialogResponseHandler.GROUP_INVITE_KEY), Is.EqualTo("Dalta"));
+            Assert.That(client.Player.TempProperties.GetProperty<string>(DialogResponseHandler.GUILD_INVITE_KEY), Is.EqualTo("Dalta"));
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task TakeOver_ShouldTellTheNewMindTheNewestDialogStillOpen_AfterWhatWorldEntryTells()
+        {
+            FakeMind oldMind = new();
+            FakeMind newMind = new();
+            HarnessClient client = InWorld(oldMind.Link, 1);
+            WorldDoubles.Inventory((TestPlayer) client.Player);
+            RecordingPacketLib.Install(client);
+            WorldDoubles.ObjectCache((TestPlayer) client.Player);
+            client.OnPerceived(new DialogPercept(eDialogCode.CustomDialog, 1, 1, 0, true, "Do you accept?"));
+            client.OnPerceived(new DialogPercept(eDialogCode.CustomDialog, 1, 1, 0, true, "And now?"));
+
+            client.TakeOver(newMind.Link);
+            await Close(newMind);
+
+            Assert.That(newMind.Sent.OfType<PerceptMessage>().Select(static message => message.Percept), Is.EqualTo(new Percept[]
+            {
+                new DialogPercept(eDialogCode.CustomDialog, 1, 1, 0, true, "And now?")
+            }));
+        }
+
+        [Test]
+        public async Task TakeOver_ShouldTellTheNewMindNoDialog_OnceTheOpenOneWasAnswered()
+        {
+            FakeMind oldMind = new();
+            FakeMind newMind = new();
+            HarnessClient client = InWorld(oldMind.Link, 1);
+            WorldDoubles.Inventory((TestPlayer) client.Player);
+            RecordingPacketLib.Install(client);
+            WorldDoubles.ObjectCache((TestPlayer) client.Player);
+            client.OnPerceived(new DialogPercept(eDialogCode.CustomDialog, 1, 1, 0, true, "Do you accept?"));
+            client.Dispatch(new AnswerDialogPrimitive(eDialogCode.CustomDialog, 1, 1, 0, true), oldMind.Link);
+
+            client.TakeOver(newMind.Link);
+            await Close(newMind);
+
+            Assert.That(newMind.Sent.OfType<PerceptMessage>(), Is.Empty);
         }
 
         [TestCaseSource(nameof(PrimitivesThePacketsCantCarry))]
@@ -527,6 +622,7 @@ namespace DOL.GS.Tests
                 nameof(IPacketLib.SendUpdatePlayerSkills),
                 nameof(IPacketLib.SendUpdatePlayer),
                 nameof(IPacketLib.SendUpdateMoney),
+                nameof(IPacketLib.SendCharStatsUpdate),
                 nameof(IPacketLib.SendUpdateIcons),
                 nameof(IPacketLib.SendUpdatePoints),
                 nameof(IPacketLib.SendStatusUpdate),

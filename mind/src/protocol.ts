@@ -46,7 +46,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | AnswerDialogPrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -140,7 +140,16 @@ export interface UseStylePrimitive {
   line?: string;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export interface AnswerDialogPrimitive {
+  name: "answerDialog";
+  code: eDialogCode;
+  data1: number;
+  data2: number;
+  data3: number;
+  accept: boolean;
+}
+
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -396,6 +405,21 @@ export interface MerchantWindowPercept {
   items: MerchantItem[];
 }
 
+export interface DialogPercept {
+  kind: "dialog";
+  code: eDialogCode;
+  data1: number;
+  data2: number;
+  data3: number;
+  yesNo: boolean;
+  text: string;
+}
+
+export interface StatsPercept {
+  kind: "stats";
+  constitutionLost: number;
+}
+
 export interface RoutedPercept {
   kind: "routed";
   corners: RouteCorner[];
@@ -428,6 +452,8 @@ export interface StoppedPercept {
   z: number;
   reason: StopReason;
 }
+
+export type eDialogCode = "SimpleWarning" | "GuildInvite" | "GroupInvite" | "CustomDialog" | "GuildLeave" | "HousePayRent" | "MasterLevelWindow" | "KeepClaim" | "BuyRespec" | "WarmapWindowHibernia" | "WarmapWindowAlbion" | "WarmapWindowMidgard" | "QuestSubscribe";
 
 export type eChatType = "CT_Say" | "CT_Send" | "CT_Group" | "CT_Guild" | "CT_Broadcast" | "CT_Emote" | "CT_Help" | "CT_Chat" | "CT_Advise" | "CT_Officer" | "CT_Alliance" | "CT_BattleGroup" | "CT_BattleGroupLeader" | "CT_Staff" | "CT_Spell" | "CT_YouHit" | "CT_System" | "CT_Items" | "CT_Merchant" | "CT_YourDeath" | "CT_OthersDeath" | "CT_OthersCombat" | "CT_ResistsChanged" | "CT_SpellExpires" | "CT_Loot" | "CT_SpellResisted" | "CT_Important" | "CT_Damaged" | "CT_Action" | "CT_SpellPulse" | "CT_KilledByAlb" | "CT_KilledByMid" | "CT_KilledByHib" | "CT_LookingForGroup" | "CT_Trade" | "CT_SocialInterface" | "CT_ScreenCenter" | "CT_ScreenCenterSmaller" | "CT_ScreenCenter_And_CT_System" | "CT_ScreenCenterSmaller_And_CT_System";
 

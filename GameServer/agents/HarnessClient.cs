@@ -51,6 +51,8 @@ namespace DOL.GS.Agents
         private bool _attacking;
         // The skill list the server last sent, which the client's icons stand for and the server reads their indexes against.
         private SkillEntry[] _skills = [];
+        // The Dialog the client shows, until it answers it. The server keeps no copy of its text to send a new Mind.
+        private DialogPercept _openDialog;
         private AgentTrace _trace;
         private bool _mindLost;
 
@@ -142,6 +144,7 @@ namespace DOL.GS.Agents
 
         // The new Mind knows nothing of what the old one was told, though a real client never forgets. So the server tells the client again what it tells one entering the world (`WorldInitRequestHandler`), with the status and encumbrance it sends just after.
         // The client also forgets which NPCs, items and doors the server sent it, so that the server creates them anew, and which players it knows, so that it asks for them again.
+        // A Dialog it hasn't answered is told again last.
         private void TellAnew()
         {
             GamePlayer player = Player;
@@ -153,6 +156,7 @@ namespace DOL.GS.Agents
             packetLib.SendUpdatePlayerSkills(false);
             packetLib.SendUpdatePlayer();
             packetLib.SendUpdateMoney();
+            packetLib.SendCharStatsUpdate();
             // Every Effect, as for a client that has shown none.
             int effectsCount = 0;
             packetLib.SendUpdateIcons(ref effectsCount, true);
@@ -176,6 +180,10 @@ namespace DOL.GS.Agents
                 cache.HouseUpdateCache.Clear();
 
             _playerCreateRequests = new();
+
+            // The window the client still shows, which the server can't send again.
+            if (_openDialog != null)
+                Mind.Perceive(_openDialog);
         }
 
         /// <summary>
@@ -307,6 +315,15 @@ namespace DOL.GS.Agents
 
                     break;
                 }
+                case AnswerDialogPrimitive answer:
+                {
+                    if ((BadDialogData(answer.Data1) ?? BadDialogData(answer.Data2) ?? BadDialogData(answer.Data3)) is string reason)
+                        return reason;
+
+                    // The client closes the window on the click.
+                    _openDialog = null;
+                    break;
+                }
             }
 
             GamePlayer player = Player;
@@ -328,6 +345,7 @@ namespace DOL.GS.Agents
                 TalkToPrimitive talkTo => ClientPackets1127.InteractRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) talkTo.ObjectId),
                 BuyPrimitive buy => ClientPackets1127.BuyRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) buy.Index, (byte) buy.Count),
                 SellPrimitive sell => ClientPackets1127.SellRequest((uint) player.X, (uint) player.Y, SessionID, (ushort) sell.Slot),
+                AnswerDialogPrimitive answer => ClientPackets1127.DialogResponse((byte) answer.Code, (ushort) answer.Data1, (ushort) answer.Data2, (ushort) answer.Data3, answer.Accept),
                 // Where the server has the Character, so the position it takes from the packet moves it nowhere.
                 UseStylePrimitive => ClientPackets1127.UseSkill(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) styleIndex),
                 _ => null
@@ -350,6 +368,12 @@ namespace DOL.GS.Agents
         private static string BadIndex(int index)
         {
             return index is < 0 or > ushort.MaxValue ? $"An index is 0 to {ushort.MaxValue}, not {index}." : null;
+        }
+
+        // A Dialog's data are 16 bits in the dialog response.
+        private static string BadDialogData(int data)
+        {
+            return data is < 0 or > ushort.MaxValue ? $"A Dialog's data is 0 to {ushort.MaxValue}, not {data}." : null;
         }
 
         // The style's index as the skill handler reads it: its place in the skill list the server last sent, counting from the first entry after the specializations.
@@ -408,6 +432,12 @@ namespace DOL.GS.Agents
                 case SkillsPercept skills:
                 {
                     _skills = skills.Skills;
+                    break;
+                }
+                // The client shows the window until it's clicked, and a newer one in its place.
+                case DialogPercept dialog:
+                {
+                    _openDialog = dialog;
                     break;
                 }
                 case MaxSpeedPercept maxSpeed:

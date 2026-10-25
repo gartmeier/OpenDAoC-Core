@@ -109,6 +109,11 @@ The Harness turns every Dialog the server opens into a Dialog Percept with its t
 ## Further Notes
 
 - **Captured on 2026-10-25** in `healer-dialog.tsv`, checked in with its README section (Dialogs). The Human, possessing Dalta, talked to a Healer and declined, then talked to it again and accepted. The dialog response has parameter 0xFFFF, unlike the item packets' 0x0000. Its 8 bytes are data1 to data3 as the server's Dialog sent them (`0003` session ID, `0001` custom marker, `0000`), the code `06` and the response, `00` to decline and `01` to accept. That's the order the handler reads them in.
+- **Found while implementing.**
+  - The Harness's packet library replaces the real one, so it does what the real one does to game state too. For a custom Dialog, it declines the one still open and hands the player the new callback, which the response handler calls. Without that, accepting did nothing. For a group or guild invite, it leaves the inviter's name, which the handler checks before it acts.
+  - Group and guild invites, leaving a guild, and taking or aborting a quest each write the Dialog packet through a call of their own, not the typed dialog box call. They project to the Dialog Percept too.
+  - A portal stone opens the realm's warmap through the typed dialog box call. It's a map rather than a question, so it gives no Percept.
+  - The Journal describes the Dialog and stats Percepts and the `answerDialog` Primitive. The guide and the `execute_code` tool description list `answer` among the porcelain.
 - The server declines an open custom Dialog itself when it opens another, so the Self keeping only the newest one matches what the server waits on. A typed Dialog and a custom one open at once would leave only the newest on the Self. That's not expected while Agents play alone.
 - World entry already sends the stats window, so a newly entered Agent gets its lost Constitution without any change to world entry.
 - A Healer restores as many points as the Character can afford, at least one. After a partial restore, `constitutionLost` shows what's left.

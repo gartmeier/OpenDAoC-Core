@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import type { JumpPercept, MovedPercept, OwnPositionPercept, Percept, PerceptMessage } from "./protocol.ts";
 import { ownPositionIn, Self } from "./self.ts";
 import { FakeClock } from "./test-agent.ts";
-import { died, effects, player, points, revived, skills, spec, status } from "./test-percepts.ts";
+import { dialog, died, effects, player, points, revived, skills, spec, stats, status } from "./test-percepts.ts";
 
 function message(percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs: 1000, percept };
@@ -280,4 +280,42 @@ test("keeps a spell Effect's details, and none for an ability's", () => {
     { name: "Speed of the Realm", details },
     { name: "Sprint", details: undefined },
   ]);
+});
+
+test("knows of no Dialog and no lost Constitution before the server says", () => {
+  const agentSelf = new Self(new FakeClock());
+
+  expect(agentSelf.dialog).toBeUndefined();
+  expect(agentSelf.constitutionLost).toBeUndefined();
+});
+
+test("keeps the Dialog the server opened, and a newer one in its place", () => {
+  const agentSelf = new Self(new FakeClock());
+
+  agentSelf.perceive(message(dialog("It will cost 2 silver. Do you accept?")));
+  expect(agentSelf.dialog).toEqual({ code: "CustomDialog", data1: 0x0101, data2: 1, data3: 0, yesNo: true, text: "It will cost 2 silver. Do you accept?" });
+
+  agentSelf.perceive(message(dialog("Done.", false)));
+  expect(agentSelf.dialog).toEqual({ code: "CustomDialog", data1: 0x0101, data2: 1, data3: 0, yesNo: false, text: "Done." });
+});
+
+test("forgets the Dialog once it's answered, as the client closes the window on the click", () => {
+  const agentSelf = new Self(new FakeClock());
+  agentSelf.perceive(message(dialog("Do you accept?")));
+
+  agentSelf.sent({ name: "say", text: "hello" });
+  expect(agentSelf.dialog?.text).toBe("Do you accept?");
+
+  agentSelf.sent({ name: "answerDialog", code: "CustomDialog", data1: 0x0101, data2: 1, data3: 0, accept: true });
+  expect(agentSelf.dialog).toBeUndefined();
+});
+
+test("takes the lost Constitution from each stats Percept", () => {
+  const agentSelf = new Self(new FakeClock());
+
+  agentSelf.perceive(message(stats(7)));
+  expect(agentSelf.constitutionLost).toBe(7);
+
+  agentSelf.perceive(message(stats(0)));
+  expect(agentSelf.constitutionLost).toBe(0);
 });

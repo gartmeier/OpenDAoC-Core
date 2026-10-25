@@ -232,6 +232,11 @@ namespace DOL.GS.Tests
         public override long Experience { get => TestExperience; set => TestExperience = value; }
         public override long ExperienceForNextLevel => TestExperienceForNextLevel;
 
+        // What the stats packet reads, 0 unless a test sets it.
+        public int TestConstitutionLost { get; set; }
+
+        public override int TotalConstitutionLostAtDeath { get => TestConstitutionLost; set => TestConstitutionLost = value; }
+
         public override int GetModified(eProperty property)
         {
             return Modified.GetValueOrDefault(property);
@@ -294,6 +299,8 @@ namespace DOL.GS.Tests
             // No abilities, but the lock the constructor would have made to look them up.
             typeof(GameLiving).GetField("_abilitiesLock", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new System.Threading.Lock());
             m_abilities = [];
+            // The temporary properties the initializer would have made.
+            typeof(GameLiving).GetField($"<{nameof(TempProperties)}>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new PropertyCollection());
             Alive = true;
             Visible = true;
         }

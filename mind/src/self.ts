@@ -1,4 +1,4 @@
-import type { EffectEntry, JumpPercept, Percept, PerceptMessage, SkillEntry, SpellDetails, StopReason } from "./protocol.ts";
+import type { DialogPercept, EffectEntry, JumpPercept, Percept, PerceptMessage, Primitive, SkillEntry, SpellDetails, StopReason } from "./protocol.ts";
 import type { Position } from "./surroundings.ts";
 import type { Clock } from "./tactic.ts";
 
@@ -27,11 +27,14 @@ export interface Effect {
   readonly details: SpellDetails | undefined;
 }
 
+/** A question the server put to the Character in a window (see `CONTEXT.md`): its text, whether it asks yes or no or only says OK, and what an `answerDialog` echoes back. */
+export type Dialog = Omit<DialogPercept, "kind">;
+
 /**
- * What the Agent currently believes about its own Character, built only from Percepts (see `CONTEXT.md`).
+ * What the Agent currently believes about its own Character, built from Percepts (see `CONTEXT.md`).
  * The server says where the Character is at world entry and whenever it moves it itself (a jump), and how fast it may run. The Harness says where it is while it runs, and how each run ended, as the Agent's client works that out itself.
- * The server also says how healthy it is, whether it sits, its level, experience and spec points, its skills, which Effects are on it, and when it dies and comes back to life.
- * It doesn't track the Primitives the Mind sent, so there's one answer to "where am I and am I there yet".
+ * The server also says how healthy it is, whether it sits, its level, experience and spec points, its skills, which Effects are on it, how much Constitution it has lost, when it dies and comes back to life, and which Dialog it opened.
+ * Of the Primitives the Mind sent it tracks only answering the Dialog, which closes it as a click does in the client, so there's one answer to "where am I and am I there yet".
  */
 export class Self {
   readonly #clock: Clock;
@@ -53,6 +56,8 @@ export class Self {
   #skills: readonly SkillEntry[] = [];
   #specs: ReadonlyMap<string, number> = new Map();
   #effects: readonly Effect[] = [];
+  #constitutionLost: number | undefined;
+  #dialog: Dialog | undefined;
 
   /** `clock` is the Agent's, which an Effect's time left counts down on. */
   constructor(clock: Clock) {
@@ -116,6 +121,14 @@ export class Self {
       case "effects":
         this.#effects = percept.effects.map((entry) => effectFrom(entry, this.#clock));
         break;
+      case "stats":
+        this.#constitutionLost = percept.constitutionLost;
+        break;
+      case "dialog": {
+        const { kind, ...dialog } = percept;
+        this.#dialog = dialog;
+        break;
+      }
       case "died":
         if (percept.objectId === this.#objectId)
           this.#dead = true;
@@ -127,6 +140,12 @@ export class Self {
 
         break;
     }
+  }
+
+  /** Takes in a Primitive as it's sent: answering the Dialog closes it. */
+  sent(primitive: Primitive): void {
+    if (primitive.name === "answerDialog")
+      this.#dialog = undefined;
   }
 
   /** The Character's object ID, which other objects' Percepts name it by. Unknown until the server has said, at world entry. */
@@ -193,6 +212,16 @@ export class Self {
   /** Every Effect on it, in the order its buff bar shows them. */
   get effects(): readonly Effect[] {
     return this.#effects;
+  }
+
+  /** The Constitution it has lost by dying, which a Healer restores. Unknown until the server has said, at world entry. */
+  get constitutionLost(): number | undefined {
+    return this.#constitutionLost;
+  }
+
+  /** The Dialog the server opened, until it's answered or a newer one takes its place. */
+  get dialog(): Dialog | undefined {
+    return this.#dialog;
   }
 
   /** Where the Character is, in global coordinates. Unknown until the server has said, at world entry. */
