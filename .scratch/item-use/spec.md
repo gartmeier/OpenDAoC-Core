@@ -22,8 +22,8 @@ Acceptance: Dalta, in a new Claude Code session, told that `useItem` exists and 
 
 1. As the Human, I want to record a capture with the real 1.127 client of Dalta using its Recall Stone, so that the new packet is built byte for byte as the client sends it.
 2. As the Human, I want the capture to use the stone from the backpack and from the quickbar, so that I know whether the two send the same packet.
-3. As the Human, I want the capture to use the stone while moving, so that the Learning can quote the server's refusal.
-4. As the Human, I want the capture to use the stone a second time right after the first, so that the Learning can quote the reuse-timer reply.
+3. As the Human, I want the capture to use the stone while moving, so that I know what the client writes in the packet's speed and flags then.
+4. As the Human, I want the capture to use the stone again right after a use that worked, so that I know the client sends the same packet on the reuse timer.
 5. As the Human, I want Dalta to carry on as the same Agent, with its Character, folder, Lessons and Tactics, so that I see how it fits recalling into the loop it already wrote.
 6. As the Human, I want to start a new Claude Code session in Dalta's folder and tell it about `useItem` and the Learning, so that a run starts as earlier ones did.
 7. As the Human, I want no speed-check entries for Dalta in the server log, so that using an item and the teleport don't break the position the server trusts.
@@ -53,15 +53,16 @@ Acceptance: Dalta, in a new Claude Code session, told that `useItem` exists and 
   3. using it while moving;
   4. using it again right after a use that worked.
 
-  It's checked in with the other 1.127 fixtures, with a section in their README, and the builder is written against it. It settles what reading the handler leaves open:
-  - the use type byte the client writes for a plain use, from the backpack and from the quickbar;
-  - how the client numbers the slot;
-  - whether the layout is the use skill packet's, as the handler's reading suggests;
-  - what the client writes in the fields the server doesn't read;
-  - the exact text of the server's replies, for the Learning.
+  Done: it's checked in with the other 1.127 fixtures as `use-item.tsv`, with a "Using an item" section in their README, and the builder is written against it. No markers were said, so its parts are told apart by timing and position. It settled what reading the handler left open:
+  - the layout is the use skill packet's: X, Y and Z as little-endian floats, the speed as a float, the heading, 2 bytes of flags, the slot, the type and 2 bytes of 0;
+  - the slot is the inventory slot itself (40 for the first backpack slot), from the backpack and the quickbar alike;
+  - the type is 1 from the backpack and 0 from the quickbar;
+  - the flags carry no target-in-view bits with nothing targeted, and 0x4000 while moving.
+
+  The server's replies aren't in an inbound capture. The Learning takes them from the server's code (see Further Notes), and the acceptance run checks them.
 - **Primitive (ADR 0002).** In the Harness area, built as the captured client sends it, handled by the real handler on the client tick:
   - `useItem { slot, second? }` sends the use slot packet for that slot.
-  - Without `second`, the type byte is what the capture shows for a plain use. With `second`, it's 2, which the server reads as the item's second spell.
+  - Without `second`, the type byte is 1, as a right-click in the backpack sends. With `second`, it's 2, which the server reads as the item's second spell. The quickbar's 0 isn't used: for a weapon or horse slot it means a click on the slot, which is out of scope.
   - The packet starts with the client's position, speed and heading, then flags with the strafing and target-in-view bits, which the server takes from it as it does from a position update. The Harness writes these as `useStyle`'s skill packet does.
 - **Refusals.** Only a slot the packet can't carry, in its one byte, is refused at dispatch, with a reason in the style of the other item Primitives. The Harness doesn't track what's in each slot: an empty slot, a slot outside the backpack and equipment, or `second` on an item without a second spell all go to the server, whose reply or silence the Mind judges from Percepts (ADR 0004).
 - **Feedback.** No new Percepts. The server's messages about the use come as `message` Percepts and appear in `execute_code`'s chat. The teleport comes as the existing `jump` Percept, which the Harness's movement already follows.
@@ -70,7 +71,7 @@ Acceptance: Dalta, in a new Claude Code session, told that `useItem` exists and 
   - the Personal Bind Recall Stone teleports you to your Bind point, and examining it doesn't say so;
   - it takes a 10 s cast, standing still, and fails if you've been in combat in the last 10 s, so stop, wait out the fight, then use it;
   - it works once every 30 minutes;
-  - the messages for a use that worked, moving, combat and the reuse timer, quoted from the capture;
+  - the messages for a use that worked, moving, combat and the reuse timer, quoted from the server's code;
   - a snippet that finds the stone in the backpack, uses it, and waits for the position to change, with a timeout.
 - **Not changed.** Porcelain Tactics, Self, Surroundings, Inventory, examining, the Wiki, the guide and the `execute_code` summary.
 - **Code placement.** As before: the Harness folder and namespace, no core code changes. Only the Learning and the regenerated types change on the Mind side.
@@ -79,17 +80,17 @@ Acceptance: Dalta, in a new Claude Code session, told that `useItem` exists and 
 
 - **Good tests** check behaviour seen from outside: a Primitive in, a queued packet or a refusal out; packets matching what the real client sent. They don't check how the packet is assembled.
 - **Harness dispatch (existing seam, the main one).** On a Character double:
-  - `useItem` for a backpack slot queues a use slot packet that the handler reads back as that slot and the plain-use type;
+  - `useItem` for a backpack slot queues a use slot packet that the handler reads back as that slot and type 1;
   - `useItem` with `second` queues type 2;
   - the packet claims the target is in view while something is targeted, as `useStyle`'s does;
   - a slot the packet can't carry is refused with a reason.
   - Prior art: the `useStyle` and `sell` dispatch tests in the Harness client tests.
-- **Packet builder (existing seam).** Golden bytes for the use slot packet against the new capture, masking only fields the README documents as varying. Prior art: the use skill builder test.
+- **Packet builder (existing seam).** Golden bytes for the use slot packet against the backpack use in `use-item.tsv`, masking only fields the README documents as varying. Prior art: the use skill builder test.
 - **Protocol (existing seam).** The new Primitive round-trips as JSON, and the codegen test fails until the TypeScript is regenerated. Prior art: the `useStyle` protocol test.
 - **Learnings (existing seam).** The new snippet typechecks as an `execute_code` snippet.
 - **Not tested automatically:** the live server and the coding agent, covered by the manual acceptance test.
 - **Manual acceptance test:**
-  1. Record the capture with the real client, as above.
+  1. Record the capture with the real client, as above. Done.
   2. Start a new Claude Code session in Dalta's folder, tell it that `useItem` exists and that the fighting Learning's Binding section explains recalling, and tell it to play on.
   3. Leave it, nudging it only when it stops.
   4. Dalta recalls at least once after a Kill Task kill and lands at its Bind point.
@@ -116,7 +117,9 @@ Acceptance: Dalta, in a new Claude Code session, told that `useItem` exists and 
   - ADR 0009: Primitives and Percepts are added when the coding agent needs them. This one comes from Dalta's papercut.
 - Facts this spec relies on, from the server and its database as they stand:
   - **The use slot handler** reads, for 1.124+ clients, the position as three little-endian floats, the speed as a float and the heading, then 2 bytes of flags, the slot as a byte and the use type as a byte. Its flags give strafing, target in view and ground target in view, as the use skill packet's do.
-  - **Use types:** 0 is a click, 1 the first use and 2 the second. For most items 0 and 1 both cast the item's first spell. 2 casts its second spell. On the weapon and horse slots, 0 means a click on the slot.
+  - **Use types:** 0 is a click, 1 the first use and 2 the second. For most items 0 and 1 both cast the item's first spell. 2 casts its second spell. On the weapon and horse slots, 0 means a click on the slot. A magical backpack item such as the Recall Stone ignores 2 altogether, so `second` does nothing on the stone.
+  - **The server's replies to using the stone,** from its code: "You use Personal Bind Recall Stone." when it starts; "You must be standing still to use this item!" while moving; "You have been in combat recently and cannot use this item!" within 10 s of combat; "You move and interrupt your spellcast!" when the Character moves during the cast; "You are already casting a spell." during another cast; and "You must wait 29 more minutes and 50 seconds to discharge this item!", or "You must wait 40 more seconds to discharge this item!", on the reuse timer.
+  - **The capture** (`use-item.tsv`): the use from the backpack and the first from the quickbar were each followed by the Character moving within 2 s, and no teleport. The use while moving gave no teleport. The next standing use teleported Dalta 10.8 s later from X:341809 Y:591946 to its Bind point at X:338704 Y:444627. Three uses there, 2–5 s later, met the reuse timer.
   - **The Personal Bind Recall Stone** is a magical backpack item whose spell is Personal Recall Stone (`GatewayPersonalBind`), with a 10 s cast and a 30-minute reuse (`CanUseEvery` 1800 s). It can't be traded, sold or destroyed. Its spell fails while the Character moves, within 10 s of combat, while carrying a relic, and in RvR zones or instances on non-PvE servers.
   - **Items with uses in the database:** 2,228 of 34,545 have a first spell: potions, the Recall Stones, and charged equipment from level 12. Only 189 have a second spell, all gear of level 45 to 51.
   - **Examining the stone** gives only "Cannot be traded to other players. Cannot be sold to merchants. Cannot be destroyed.", as Dalta's Journal of 2026-10-24 shows.
