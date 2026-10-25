@@ -347,6 +347,30 @@ namespace DOL.GS.Tests
             }
         }
 
+        // The right-click on the Recall Stone in backpack slot 40, standing with nothing targeted.
+        [Test]
+        public void UseSlot_ShouldMatchCapture_FromTheBackpack()
+        {
+            CapturedPacket packet = ClientCaptures.WhilePlaying(ClientCaptures.USE_ITEM, eClientPackets.UseSlot)[0];
+
+            AssertMatches(ClientPackets1127.UseSlot(new(341883, 592145.25f, 5473.81982421875f), 0, 0x0C00, 0, 40, eUseType.Use1), packet);
+        }
+
+        // Every use in the capture, from the backpack and the quickbar, standing and moving, all laid out alike.
+        [Test]
+        public void UseSlot_ShouldMatchCapture()
+        {
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.USE_ITEM, eClientPackets.UseSlot);
+            Assert.That(captured, Has.Length.EqualTo(7));
+
+            foreach (CapturedPacket packet in captured)
+            {
+                byte[] data = packet.Data;
+                Vector3 position = new(BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(0)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(4)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(8)));
+                AssertMatches(ClientPackets1127.UseSlot(position, ClientCaptures.Speed(packet), Short(packet, 16), Short(packet, 18), 40, (eUseType) data[21]), packet);
+            }
+        }
+
         // Every move in the capture, equipping and unequipping, rearranging the backpack and dropping an item on the ground (slot 1). The client always sent a count of 0.
         [Test]
         public void MoveItem_ShouldMatchCapture()

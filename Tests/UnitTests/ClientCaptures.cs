@@ -45,7 +45,10 @@ namespace DOL.GS.Tests
         // A Character that lost Constitution declining, then accepting, a Healer's Dialog.
         public const string HEALER_DIALOG = "healer-dialog";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG];
+        // A Character using its Recall Stone from the backpack and the quickbar, standing, moving and on the reuse timer.
+        public const string USE_ITEM = "use-item";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG, USE_ITEM];
 
         public static CapturedPacket[] Load(string capture)
         {

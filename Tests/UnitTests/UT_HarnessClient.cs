@@ -452,8 +452,44 @@ namespace DOL.GS.Tests
             await Close(mind);
         }
 
+        // A right-click in the backpack sends type 1, and the server reads type 2 as the item's second spell.
+        [Test]
+        public async Task UseItem_ShouldQueueTheUseSlotPacket_ItsSecondSpellWithSecond()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            Assert.That(client.Dispatch(new UseItemPrimitive(40), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new UseItemPrimitive(26, true), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new UseItemPrimitive(26, false), mind.Link), Is.Null);
+
+            Vector3 at = new(296516, 641415, 4848);
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
+                ClientPackets1127.UseSlot(at, 0, 0, 0, 40, eUseType.Use1),
+                ClientPackets1127.UseSlot(at, 0, 0, 0, 26, eUseType.Use2),
+                ClientPackets1127.UseSlot(at, 0, 0, 0, 26, eUseType.Use1)])));
+            await Close(mind);
+        }
+
+        // The server reads whether the target is in view from the use slot packet too, as from the skill packet.
+        [Test]
+        public async Task UseItem_ShouldClaimTheTargetIsInView_WhileSomethingIsTargeted()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+
+            client.Dispatch(new UseItemPrimitive(40), mind.Link);
+
+            Assert.That(Wire(Inbound(client)[1..]), Is.EqualTo(Wire([ClientPackets1127.UseSlot(new(296516, 641415, 4848), 0, 0, 0xA000, 40, eUseType.Use1)])));
+            await Close(mind);
+        }
+
         private static IEnumerable<TestCaseData> PrimitivesThePacketsCantCarry()
         {
+            // The use slot packet's slot is a single byte.
+            yield return new TestCaseData(new UseItemPrimitive(256), "A slot to use is 0 to 255");
+            yield return new TestCaseData(new UseItemPrimitive(-1, true), "A slot to use is 0 to 255");
             // The paper doll lets the server choose the slot, and above 1000 the item goes to another object.
             yield return new TestCaseData(new MoveItemPrimitive(0, 10), "A move is between the Character's own slots, 1 to 99");
             yield return new TestCaseData(new MoveItemPrimitive(41, 100), "A move is between the Character's own slots, 1 to 99");
