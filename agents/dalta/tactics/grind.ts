@@ -28,9 +28,12 @@ export async function trainBlades(agent: Agent): Promise<void> {
     points -= to.get(next)!;
   }
   // `train` sends the line unquoted, which the server ignores for "Celtic Dual".
+  // At level 18 the Parry /train right after Blades' was ignored without a word: try each line twice.
   for (const l of lines)
-    if (to.get(l)! > from.get(l)!)
-      await agent.sendAndWait({ name: "command", text: `/train "${l}" ${to.get(l)}` }, () => (agent.self.specs.get(l) ?? 0) >= to.get(l)!, 10_000);
+    for (let attempt = 0; attempt < 2 && (agent.self.specs.get(l) ?? 0) < to.get(l)!; attempt++) {
+      await agent.waitFor(() => false, 1_000);
+      await agent.sendAndWait({ name: "command", text: `/train "${l}" ${to.get(l)}` }, () => (agent.self.specs.get(l) ?? 0) >= to.get(l)!, 5_000);
+    }
 }
 
 export interface GrindOptions {
@@ -106,7 +109,7 @@ export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spot
     const low = level + band[0];
     const high = level + band[1];
     const mob = agent.surroundings.npcs
-      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && !exclude.includes(n.name) && (!stayAfterPrefer || !prefer || preferKilled || n.name === prefer) && (n.level >= low || n.name === prefer) && (n.level <= high || n.name === prefer) && (avoid.get(n.objectId) ?? 0) < 2)
+      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && !exclude.includes(n.name) && (!stayAfterPrefer || !prefer || preferKilled || n.name === prefer) && (n.level >= low || n.name === prefer) && n.level <= high && (avoid.get(n.objectId) ?? 0) < 2)
       // A Mob a level higher pays about double: worth running 1500 units further for.
       .map((n) => ({ n, d: Math.hypot(n.position.x - pos.x, n.position.y - pos.y) - (n.level - low) * 1500 - (n.name === prefer ? 3000 : 0) }))
       .sort((a, b) => a.d - b.d)[0]?.n;

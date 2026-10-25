@@ -35,7 +35,7 @@ return agent.self.skills
 - "You are too fatigued to use this style!" without the endurance;
 - "You must perform the Return Blade style before this one!" for a follow-up used too early.
 
-Every Style costs endurance, which `agent.self.endurancePercent` shows and which comes back over time. Without enough, the server says you're too fatigued and your swings go on without the Style.
+Every Style costs endurance, which `agent.self.endurancePercent` shows and which comes back over time. Without enough, the server says you're too fatigued and your swings go on without the Style. Endurance comes back about 1% a second standing still and 4% sitting, but not at all while you run or fight (`GameServer/propertycalc/EnduranceRegenerationAmountCalculator.cs`): after a long run you arrive with what you left with. Sit 15–20 s before a fight if you need it.
 
 Each Style is used once, so queue it again for the next swing. The server forgets a queued Style after **every** swing, a miss or a fumble too, and whenever attack stops (as when the Mob is out of view at the start), often without any "You fail": so queue again after each "You attack ..." or "You miss!", not only after "You perform" or "You fail". Waiting only for those left Dalta's Shining Blade unused for a whole fight. `dalta/tactics/fight.ts` does this. Queueing the same Style again before it's used only says "You are already preparing to use this style!": harmless, so wait for "You perform" or "You fail" before you queue again.
 

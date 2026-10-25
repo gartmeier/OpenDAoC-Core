@@ -11,6 +11,10 @@ export const ORNORA = { name: "Sentinel Ornora", x: 345307, y: 526666, z: 5495 }
 export const CASIDHE = { name: "Sentinel Casidhe", x: 248097, y: 437181, z: 5711 };
 /** Bocans L15 at X:263700–266300 Y:429000–431500, ~16000 east of Casidhe. Ghoulies L20–22 2000 north: approach from the south-west. */
 export const BOCANS = [{ x: 264500, y: 430000, z: 5500 }, { x: 265800, y: 430300, z: 5500 }];
+/** Casidhe's task Mob at level 18: moheran distorters L17–19, ~8 at X:270700–272600 Y:434300–438200, ~23000 east of Casidhe, by Druid Harkin. Fog phantoms (L21–23) 3000 west. Never fight the L19 ones (they cost 55–87%). */
+export const DISTORTERS = [{ x: 272000, y: 436500, z: 5700 }, { x: 271300, y: 435200, z: 5700 }];
+/** Mobs near the bocan and distorter camps that I must not pull. */
+export const EAST_EXCLUDE = ["ghoulie", "fog phantom", "fog wraith", "zephyr wraith", "vindictive bocan", "aughisky", "cliff beetle"];
 
 /**
  * Goes to the task guard, hands in a finished Kill Task (talking to the guard does it) and asks for a new one.

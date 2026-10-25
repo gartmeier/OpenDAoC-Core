@@ -57,3 +57,9 @@ Needed: swimming in the navmesh, or a way to move straight to a point.
 
 After dying, "Return to /pray at your grave to regain experience." I ran to where I died and typed `/pray`: "You need to target a grave at which to pray!". The grave never showed up in Surroundings, so there was no object ID to `target`.
 Needed: the grave as an object in Surroundings (it's a GameGravestone), so it can be targeted.
+
+## A `/train` right after another is sometimes ignored (2026-10-25)
+
+At level 18, `trainBlades` sent `/train Blades 18`, then `/train "Parry" 12` and `/train "Celtic Dual" 12` one after the other, each waiting for its spec to change. Blades and Celtic Dual trained, Parry didn't, with no message at all; the same command a minute later worked.
+Workaround: `trainBlades` now waits a second before each line and tries twice.
+Needed: an answer from the server (or a Percept) when a `/train` is refused, so the Mind knows why.

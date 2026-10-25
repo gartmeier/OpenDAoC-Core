@@ -39,3 +39,19 @@ Game rules learned by reading the server's source rather than by playing, each w
 - The guard takes the first NPC of level L−2 to L in the zone, and gives no task ("couldn't find any mob kill order") if that NPC's name has a capital letter: a named Mob such as Connacht's Follower of Ultan (14) or Daewain (15). That's why Connacht gave none at level 14. The Mob is looked up in *your* current zone.
 - In play, Cliffs of Moher's first L−2..L NPC at levels 16 and 17 was the bocan (L15); its task paid 64‰ at 16 and 63‰ at 17, about twice the formula below, so the server rate seems to be ×2.
 - Task XP (`quests/Tasks/AbstractTask.cs`): half the XP of your level spread over level − 1 tasks, i.e. `XPNeeded × 0.5 / (level − 1)` per task (about 33‰ at level 16, before any server rate). Money: 1542c at 16, 1790c at 17 (`MoneyReward`).
+
+## Endurance regeneration (`propertycalc/EnduranceRegenerationAmountCalculator.cs`, `gameobjects/GamePlayer.cs`)
+
+- A tick every second. Out of combat it gives 1 standing still and 4 sitting, and **nothing while moving** (despite the 1.87 comment in the file) or in combat, plus item and buff bonuses. Sprinting costs 5 a tick. So endurance spent in a fight comes back only during rests, not on runs.
+
+## Parthanan farm (`scripts/mobs/HiberniaMobs/ParthananFarm.cs`)
+
+- Connacht's parthanans belong to a farm: after 60–120 kills (random) the minions gather at the Parthanan Farm Controller and an amalgamate parthanan (3000 health, CC-immune, immune to magic damage types, immune to all damage while the sacrifice goes on) forms; the trash parthanans are hidden until it dies.
+
+## Experience items (`gameutils/LootGeneratorTemplate.cs`)
+
+- Some loot (e.g. the Parthanan ear) is an "XP item" on a per-player cooldown: "0h 2m 20s until next XP item" after a kill. Each kill of a different Mob kind that has such an item cuts 20 s off the cooldown. Parthanan ears sold to a merchant for ~2.3 gold each.
+
+## Kill Tasks at level 18 in Cliffs of Moher
+
+- The first L16–18 NPC in the zone's order is the moheran distorter (L17–19). The reward was 61‰ + ~2050c (347057 XP). A death expires the open task: the next hand-in gave nothing.
