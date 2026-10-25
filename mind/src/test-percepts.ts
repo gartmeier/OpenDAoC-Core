@@ -222,8 +222,8 @@ export function dialog(text: string, yesNo = true): DialogPercept {
   return { kind: "dialog", code: "CustomDialog", data1: 0x0101, data2: 1, data3: 0, yesNo, text };
 }
 
-export function stats(constitutionLost: number): StatsPercept {
-  return { kind: "stats", constitutionLost };
+export function stats(constitutionLost: number, maxHealth = 488): StatsPercept {
+  return { kind: "stats", constitutionLost, maxHealth };
 }
 
 export function died(objectId: number, killerId = 0): DiedPercept {

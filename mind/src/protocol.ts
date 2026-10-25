@@ -435,6 +435,7 @@ export interface DialogPercept {
 export interface StatsPercept {
   kind: "stats";
   constitutionLost: number;
+  maxHealth: number;
 }
 
 export interface RoutedPercept {

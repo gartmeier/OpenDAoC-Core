@@ -79,7 +79,7 @@ function describe(agent: Agent, character: string, percept: Percept): string {
     case "dialog":
       return `dialog ${percept.code} (${percept.yesNo ? "yes or no" : "OK"})\t${percept.text}`;
     case "stats":
-      return `stats\tconstitution lost ${percept.constitutionLost}`;
+      return `stats\tconstitution lost ${percept.constitutionLost} max health ${percept.maxHealth}`;
   }
 }
 

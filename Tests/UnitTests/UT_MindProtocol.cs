@@ -124,7 +124,7 @@ namespace DOL.GS.Tests
         {
             Assert.That(Write(new PerceptMessage(15, 2600, new DialogPercept(eDialogCode.CustomDialog, 257, 1, 0, true, "Do you accept?"))),
                 Does.EndWith("""{"kind":"dialog","code":"CustomDialog","data1":257,"data2":1,"data3":0,"yesNo":true,"text":"Do you accept?"}}"""));
-            Assert.That(Write(new PerceptMessage(16, 2700, new StatsPercept(7))), Does.EndWith("""{"kind":"stats","constitutionLost":7}}"""));
+            Assert.That(Write(new PerceptMessage(16, 2700, new StatsPercept(7, 488))), Does.EndWith("""{"kind":"stats","constitutionLost":7,"maxHealth":488}}"""));
         }
 
         [Test]

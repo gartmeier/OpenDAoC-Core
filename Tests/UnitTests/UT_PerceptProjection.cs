@@ -1202,18 +1202,20 @@ namespace DOL.GS.Tests
                 Is.EqualTo(new DialogPercept(eDialogCode.QuestSubscribe, 7, 0x0456, 0x01, true, "Abort the quest?")));
         }
 
+        // A Healer sends only the stats packet after restoring Constitution, so it's the max health it carries that the client shows.
         [Test]
-        public void Project_ShouldGiveTheConstitutionLost_ForTheStatsCall()
+        public void Project_ShouldGiveTheConstitutionLostAndMaxHealth_ForTheStatsCall()
         {
             GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
             TestPlayer greeen = (TestPlayer) client.Player;
+            greeen.TestMaxHealth = 496;
 
             Percept none = PerceptProjection.Project(client, SendCharStatsUpdate, []);
-            greeen.TestConstitutionLost = 7;
+            (greeen.TestConstitutionLost, greeen.TestMaxHealth) = (5, 488);
             Percept lost = PerceptProjection.Project(client, SendCharStatsUpdate, []);
 
-            Assert.That(none, Is.EqualTo(new StatsPercept(0)));
-            Assert.That(lost, Is.EqualTo(new StatsPercept(7)));
+            Assert.That(none, Is.EqualTo(new StatsPercept(0, 496)));
+            Assert.That(lost, Is.EqualTo(new StatsPercept(5, 488)));
         }
 
         [Test]

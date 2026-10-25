@@ -784,11 +784,11 @@ namespace DOL.GS.Agents
             return new DialogPercept(eDialogCode.QuestSubscribe, questId, npc.ObjectID, abort ? 0x01 : 0x00, true, Encoded(text));
         }
 
-        // Mirrors the lost Constitution `PacketLib175.SendCharStatsUpdate` sends in a byte of its own, which no later library overrides.
+        // Mirrors the lost Constitution `PacketLib175.SendCharStatsUpdate` sends in a byte of its own, and the max health after it, which no later library overrides.
         private static StatsPercept Stats(GameClient client)
         {
             GamePlayer player = client.Player;
-            return player == null ? null : new StatsPercept((byte) player.TotalConstitutionLostAtDeath);
+            return player == null ? null : new StatsPercept((byte) player.TotalConstitutionLostAtDeath, (ushort) player.MaxHealth);
         }
 
         // Mirrors `PacketLib181.SendCustomTextWindow`, which no later library overrides, and the `PacketLib168.WriteCustomTextWindowData` it calls.
