@@ -169,7 +169,7 @@ test("other Percepts change nothing", () => {
   agentSelf.perceive(message({ kind: "bare", call: "SendUpdatePoints" }));
   agentSelf.perceive(message({ kind: "message", text: 'Vue says, "come"', chatType: "CT_Say", chatLocation: "CL_ChatWindow" }));
   // The route starts where the Character is, but `moved` says so once it runs.
-  agentSelf.perceive(message({ kind: "routed", corners: [{ x: 296000, y: 642000, z: 4848 }, { x: 299000, y: 642000, z: 4850 }], reachesTarget: true }));
+  agentSelf.perceive(message({ kind: "routed", corners: [{ x: 296000, y: 642000, z: 4848, swim: false }, { x: 299000, y: 642000, z: 4850, swim: false }], reachesTarget: true }));
 
   expect(agentSelf.position).toEqual({ x: 296600, y: 642629, z: 4848 });
   expect(agentSelf.movement).toEqual({ kind: "standing" });

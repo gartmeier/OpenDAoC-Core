@@ -52,6 +52,10 @@ return agent.surroundings.objects.map((object) => `${object.kind} ${object.name}
 
 The server checks how fast you move. Only ever move by running, with `runTo` or the `moveTo` Primitive.
 
+## Swimming
+
+Routes cross water on the surface when swimming there is faster than going round over land: across Lough Derg, its water east of Howth, or a river without a bridge nearby. Swimming is a little under half your running speed, and a speed buff speeds it up too. You never dive. A run can end in the water, for example at a Mob standing in a lake, and you stand there swimming. Nobody has tried fighting or resting in the water yet.
+
 ## Where routes don't go
 
-A run can end `unreachable` at the same line whichever way you come: in Silvermine Mts. every route east of Howth into X:349000–358000 Y:590000–607000 stops at X:347100. If two or three approaches stop at the same place, give up on that spot rather than roam into it again and again.
+A run can end `unreachable` at the same line whichever way you come. If two or three approaches stop at the same place, give up on that spot rather than roam into it again and again.

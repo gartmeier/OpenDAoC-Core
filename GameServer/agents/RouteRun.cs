@@ -8,6 +8,7 @@ namespace DOL.GS.Agents
     /// Given the game loop time, it gives where the Character is, which way it faces, how fast it goes and which zone it's in. It touches nothing in the game.
     /// The speed ramps up from standing as the client's does, holds at the maximum speed round every corner, and falls to 0 so that the Character stops exactly at the last corner.
     /// Only X and Y count towards the distance and the speed, as in the server's speed check. Z is the floor under each position where there is one, and otherwise goes linearly between corners.
+    /// On a Swim leg the Character swims as the client in the `swim-*.tsv` captures does: at `SWIM_SPEED` of the running speed, `SWIM_DEPTH` below the navmesh's water, which lies flat. Going in, the speed drops to the swim speed at once, and coming out it's back to running.
     /// Every position follows from the time since the run started, so a stall in the game loop never carries the Character past the end.
     /// </summary>
     public sealed class RouteRun
@@ -18,13 +19,19 @@ namespace DOL.GS.Agents
         // In game units per second per second. Both captured stops fall from 191 to about 100 in one 200 ms update and to 0 in the next, about 40 units on.
         public const float DECELERATION = 480;
 
-        private readonly Vector3[] _corners;
-        // How far each corner is along the route from the first, in X and Y.
-        private readonly float[] _along;
+        // Of the running speed. The captured client swims at 85 running at 191, and at 124 with a speed buff running at 280.
+        public const float SWIM_SPEED = 85f / 191;
+
+        // In game units. The captured swimmer is 40 below the water's surface, and the navmesh's water 16 below it.
+        public const float SWIM_DEPTH = 24;
+
+        private readonly Route.Corner[] _corners;
+        // How far each corner is along the route from the first, in X and Y, as far as running would take as long (`Effort`). The run speeds up, holds and slows down along this.
+        private readonly float[] _effort;
         // The heading along each leg, the leg from corner `i` to corner `i + 1` at `i`.
         private readonly ushort[] _headings;
         private readonly Region _region;
-        private readonly Func<Vector3, float?> _floor;
+        private readonly Func<Vector3, bool, float?> _floor;
         private readonly float _length;
         private readonly ushort _startZoneId;
         private Profile _profile;
@@ -33,56 +40,71 @@ namespace DOL.GS.Agents
         /// <summary>
         /// Starts a run at `now` (the game loop time) through `corners`, all global, the first where the Character is, with the Character going at `speed` already, for example when a new run replaces one.
         /// `heading` is the one the Character has, which it keeps on a leg that goes straight up or down. `region` gives the zone at each position, from its static layout (ADR 0006).
-        /// `floor` gives the Z of the ground under a position, or null where it doesn't know it.
+        /// `floor` gives the Z of the ground under a position, or of the navmesh's water on a Swim leg, or null where it doesn't know it.
         /// </summary>
-        public RouteRun(Vector3[] corners, ushort heading, float speed, float maxSpeed, Region region, Func<Vector3, float?> floor, long now)
+        public RouteRun(Route.Corner[] corners, ushort heading, float speed, float maxSpeed, Region region, Func<Vector3, bool, float?> floor, long now)
         {
             _corners = corners;
             _region = region;
             _floor = floor;
-            _along = new float[corners.Length];
+            _effort = new float[corners.Length];
             _headings = new ushort[Math.Max(1, corners.Length - 1)];
             _headings[0] = heading;
 
             for (int i = 1; i < corners.Length; i++)
             {
-                Vector2 leg = new(corners[i].X - corners[i - 1].X, corners[i].Y - corners[i - 1].Y);
-                _along[i] = _along[i - 1] + leg.Length();
+                Vector2 leg = new(corners[i].Position.X - corners[i - 1].Position.X, corners[i].Position.Y - corners[i - 1].Position.Y);
+                _effort[i] = _effort[i - 1] + Effort(leg.Length(), corners[i - 1].Swim);
                 _headings[i - 1] = leg != Vector2.Zero ? HeadingAlong(leg) : i > 1 ? _headings[i - 2] : heading;
             }
 
-            _length = _along[^1];
-            _startZoneId = region.GetZone((int) corners[0].X, (int) corners[0].Y)?.ID ?? 0;
-            _profile = new(now, 0, Math.Min(speed, maxSpeed), maxSpeed, _length);
+            _length = _effort[^1];
+            Vector3 start = corners[0].Position;
+            _startZoneId = region.GetZone((int) start.X, (int) start.Y)?.ID ?? 0;
+            _profile = new(now, 0, Math.Min(Effort(speed, corners[0].Swim), maxSpeed), maxSpeed, _length);
         }
 
-        // In a straight line from `start` to `target`, with no floor to follow.
-        public RouteRun(Vector3 start, Vector3 target, ushort heading, float speed, float maxSpeed, Region region, long now) : this([start, target], heading, speed, maxSpeed, region, static _ => null, now) { }
+        // In a straight line from `start` to `target`, over land, with no floor to follow.
+        public RouteRun(Vector3 start, Vector3 target, ushort heading, float speed, float maxSpeed, Region region, long now) : this([new(start, false), new(target, false)], heading, speed, maxSpeed, region, static (_, _) => null, now) { }
+
+        // How far running would go in the time it takes to go `distance`, swimming (`swim`) or running.
+        public static float Effort(float distance, bool swim)
+        {
+            return swim ? distance / SWIM_SPEED : distance;
+        }
 
         // Whether `Stop` ended the run short of the end.
         public bool IsStopped => _stopped;
 
         public Step At(long now)
         {
-            (float distance, float speed, bool ended) = _profile.At(now);
-            int leg = Leg(distance);
+            (float effort, float speed, bool ended) = _profile.At(now);
+            int leg = Leg(effort);
             Vector3 position;
+            bool swimming;
 
-            if (distance >= _length)
-                position = _corners[^1];
+            if (effort >= _length)
+                (position, swimming) = _corners[^1];
             else
             {
-                Vector3 from = _corners[leg];
-                Vector3 to = _corners[leg + 1];
-                float legLength = _along[leg + 1] - _along[leg];
-                float fraction = legLength > 0 ? (distance - _along[leg]) / legLength : 1;
-                position = new(from.X + (to.X - from.X) * fraction, from.Y + (to.Y - from.Y) * fraction, from.Z + (to.Z - from.Z) * fraction);
+                (Vector3 from, swimming) = _corners[leg];
+                Vector3 to = _corners[leg + 1].Position;
+                float legEffort = _effort[leg + 1] - _effort[leg];
+                float fraction = legEffort > 0 ? (effort - _effort[leg]) / legEffort : 1;
+                // The navmesh's water lies flat, and the leg may end up a bank.
+                position = new(from.X + (to.X - from.X) * fraction, from.Y + (to.Y - from.Y) * fraction, swimming ? from.Z : from.Z + (to.Z - from.Z) * fraction);
             }
 
-            if (_floor(position) is float z)
+            if (_floor(position, swimming) is float z)
                 position.Z = z;
 
-            return new(position, ZoneAt(position), _headings[leg], speed, ended, ended && !_stopped);
+            if (swimming)
+            {
+                position.Z -= SWIM_DEPTH;
+                speed *= SWIM_SPEED;
+            }
+
+            return new(position, ZoneAt(position), _headings[leg], speed, swimming, ended, ended && !_stopped);
         }
 
         // Ends the run where the Character is at `now`, at once.
@@ -106,12 +128,12 @@ namespace DOL.GS.Agents
                 _profile = new(now, distance, Math.Min(speed, maxSpeed), maxSpeed, _length);
         }
 
-        // The leg `distance` along the route falls on. A corner starts the leg after it, and the end is on the last leg.
-        private int Leg(float distance)
+        // The leg `effort` along the route falls on. A corner starts the leg after it, and the end is on the last leg.
+        private int Leg(float effort)
         {
             int leg = 0;
 
-            while (leg < _headings.Length - 1 && _along[leg + 1] <= distance)
+            while (leg < _headings.Length - 1 && _effort[leg + 1] <= effort)
                 leg++;
 
             return leg;
@@ -135,10 +157,10 @@ namespace DOL.GS.Agents
         }
 
         /// <summary>
-        /// Where the Character is on its run, what the client sends for it, and whether the run has ended (`Ended`), by arriving (`Arrived`) or by a stop.
+        /// Where the Character is on its run, what the client sends for it, whether it's swimming, and whether the run has ended (`Ended`), by arriving (`Arrived`) or by a stop.
         /// `Position` is global. `Heading` is 0 to 4095, without the flags a position update sets.
         /// </summary>
-        public readonly record struct Step(Vector3 Position, ushort ZoneId, ushort Heading, float Speed, bool Ended, bool Arrived);
+        public readonly record struct Step(Vector3 Position, ushort ZoneId, ushort Heading, float Speed, bool Swimming, bool Ended, bool Arrived);
 
         /// <summary>
         /// How far along the line the Character is over time, from `Distance` at `Start` going at `Speed`: it speeds up to `MaxSpeed`, holds it, and slows down to stop at `End`.

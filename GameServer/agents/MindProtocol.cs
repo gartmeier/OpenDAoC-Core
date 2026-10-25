@@ -555,8 +555,8 @@ namespace DOL.GS.Agents
     // `ReachesTarget` is false when the route can't get to the target, and the run then ends `stopped` with `Unreachable` at the last corner.
     public sealed record RoutedPercept(RouteCorner[] Corners, bool ReachesTarget) : Percept;
 
-    // One corner of a route, global.
-    public sealed record RouteCorner(float X, float Y, float Z);
+    // One corner of a route, global. `Swim` when the route swims from it on, across water on the surface; on the last corner, when the route ends in the water.
+    public sealed record RouteCorner(float X, float Y, float Z, bool Swim);
 
     // Worked out by the Harness: a `moveTo` reached its target, and the Character stands there.
     public sealed record ArrivedPercept(float X, float Y, float Z) : Percept;

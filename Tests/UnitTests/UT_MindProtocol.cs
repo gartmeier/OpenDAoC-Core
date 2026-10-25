@@ -54,10 +54,10 @@ namespace DOL.GS.Tests
         [Test]
         public void Write_ShouldWriteARoutedPercept_WithItsCornersInOrder()
         {
-            RoutedPercept routed = new([new(1, 2, 3), new(4.5f, 5, 6)], false);
+            RoutedPercept routed = new([new(1, 2, 3, true), new(4.5f, 5, 6, false)], false);
 
             Assert.That(Write(new PerceptMessage(7, 2200, routed)),
-                Is.EqualTo("""{"type":"percept","sequence":7,"elapsedMs":2200,"percept":{"kind":"routed","corners":[{"x":1,"y":2,"z":3},{"x":4.5,"y":5,"z":6}],"reachesTarget":false}}"""));
+                Is.EqualTo("""{"type":"percept","sequence":7,"elapsedMs":2200,"percept":{"kind":"routed","corners":[{"x":1,"y":2,"z":3,"swim":true},{"x":4.5,"y":5,"z":6,"swim":false}],"reachesTarget":false}}"""));
         }
 
         [Test]

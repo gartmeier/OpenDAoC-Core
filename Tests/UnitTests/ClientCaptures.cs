@@ -37,7 +37,12 @@ namespace DOL.GS.Tests
         // A Blademaster fighting Mobs with styles from the quickbar.
         public const string STYLES = "styles";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES];
+        // A Character swimming across a river, swimming and turning about, and stopping, sitting and standing in it.
+        public const string SWIM_STRAIGHT = "swim-straight";
+        public const string SWIM_TURN = "swim-turn";
+        public const string SWIM_STOP_SIT_STAND = "swim-stop-sit-stand";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND];
 
         public static CapturedPacket[] Load(string capture)
         {

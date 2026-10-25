@@ -42,7 +42,8 @@ function describe(agent: Agent, character: string, percept: Percept): string {
     case "maxSpeed":
       return `maxSpeed ${percept.maxSpeedPercent}% (${self.maxSpeed.toFixed(1)} per second)`;
     case "routed":
-      return `routed (${percept.reachesTarget ? "reaches the target" : "can't reach the target"})\t${percept.corners.map(at).join(" → ")}`;
+      // A Swim leg is joined with `~`.
+      return `routed (${percept.reachesTarget ? "reaches the target" : "can't reach the target"})\t${percept.corners.map((corner, i) => (i === 0 ? "" : percept.corners[i - 1]?.swim ? " ~ " : " → ") + at(corner)).join("")}`;
     case "moved":
       return `moved\t${at(percept)} heading ${percept.heading} speed ${percept.speed.toFixed(1)} to ${at({ x: percept.targetX, y: percept.targetY, z: percept.targetZ })}`;
     case "arrived":
