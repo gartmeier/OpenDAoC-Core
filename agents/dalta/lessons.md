@@ -50,4 +50,5 @@ What I've learned while playing, which I read again before I next act.
 - Ardagh's Ysbail buys loot from the east side (X:352200 Y:552559). Nobody takes the training sword, training shield or Blademaster Initiate Gloves.
 - **After a death, see a Healer**: `talkTo` it, wait for `agent.self.dialog`, `answer(agent, true)`. Gralon in Howth (X:341833 Y:592161) restored 5 Con for 9630c (1926c a point at L20); max health 488 → 496. Other Healers: Llyn in Ardee, Cinead near Tir Urphost, Ionhar in Tir na mBeo (`wiki/`).
 - Stand up with the `stand` Primitive, not a `/stand` command: that left me sitting until I moved.
+- **Recall Stone** (backpack slot 40): stop, then `useItem` with its slot; 10 s cast, then a jump to the Bind point (Basar). Once every 30 min, not within 10 s of a fight (`learnings/fighting.md`, Recalling). Use it after a kill far from Basar instead of running back.
 - After another Mind takes over the connection, Self can show level 0 and miss its object ID: see papercuts.md. Keep snippets under 25 minutes.
