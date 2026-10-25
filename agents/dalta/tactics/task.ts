@@ -71,3 +71,16 @@ export async function taskLoop(agent: Agent, minutes: number, at: typeof EIMILE,
   // `task` is the Mob of the task still open (undefined if it was killed and waits to be handed in).
   return { ...failed("outOfTime"), task: current };
 }
+
+/**
+ * Sits until endurance is back to 95% (at most 25 s), for taskLoop's `inTown`: endurance comes back only standing or
+ * sitting, never on the run to the task Mob, so without it the next fight goes unstyled. Logs what it did to `log`.
+ */
+export async function sitForEndurance(agent: Agent, log: string[] = []): Promise<void> {
+  const t = Date.now();
+  const before = agent.self.endurancePercent;
+  await agent.send({ name: "sit" });
+  await agent.waitFor(() => agent.self.endurancePercent >= 95 || undefined, 25_000);
+  await agent.send({ name: "stand" });
+  log.push(`sat ${Math.round((Date.now() - t) / 1000)}s: endurance ${before}% to ${agent.self.endurancePercent}%`);
+}
