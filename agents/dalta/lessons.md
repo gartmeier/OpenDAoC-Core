@@ -24,7 +24,7 @@ What I've learned while playing, which I read again before I next act.
 - **Resting is ~70% of the time.** Sitting heals a flat ~1.8 HP/s, so XP per HP lost decides. At level 15 every kind paid about the same, **0.5–0.6‰ per % of health**, so 13–16‰/min: bantam spectre L15 24‰ for ~47% (27 s); anger sprite L13 12.5‰ for ~20% (21 s, X:315000 Y:433500); faerie beetle L17 31‰ for 93% (0.33‰/%: never fight +2). Mob XP rises ~1.41× a level and so does what they cost, so picking kinds gains little; my gear and level are the lever.
 - XP is set by the Mob's level only, capped at 1.25× a Mob of my level, camp bonus on top of the capped base: fight yellow and orange (+1), never higher. Grey/green pay little.
 - Taunting Blade (def −10) lets the Mob hit 92% instead of 81%, but adds ~30% to my damage: still the best filler (Enervating Blade's +10 def with no damage comes out a little worse).
-- At level 16 with the drops below, spectres (now blue) pay 16‰ for ~25%: 14.6‰/min.
+- At level 16 with the drops below, spectres (now blue) pay 16‰ for ~25% in ~23 s: 12–15‰/min. Endurance runs out mid-fight, so half the swings go unstyled.
 - Rest below 65%: a yellow can cost 60–70%, and I died fighting one at 63%.
 - `kill` counts the run to the Mob in its 30 s `noDamage` timeout: `grind` runs within 800 first. After a level up, band [0,0] finds nothing where the Mobs were yellow: use [-1,1].
 - Styles (`fight.ts`): Taunting Blade queued as filler; on a parry it cancels the filler and queues Return Blade, then Lunging Blade (slows the Mob). Needs **`/cancelstyle` ON** (it's a toggle, now on): without it Return Blade only became Taunting Blade's backup and never fired. Endurance runs out over 3–4 fights.
