@@ -41,3 +41,8 @@ Needed: the clock starts once in melee range, or `kill` fails with a separate re
 
 `/task` shows the task, its expiry time and how many tasks I've done this level in a custom text window (`SendCustomTextWindow`), which never reaches the Mind. I only learnt a task had expired when its hand-in gave nothing.
 Needed: a Percept with the text of custom text windows.
+
+## No way to use an item (2026-10-25)
+
+The backpack has a Personal Bind Recall Stone, which a Human uses (right-click or a quickbar slot) to go back to the Bind point. A Kill Task loop that runs 16000 units each way could recall after the kill instead. There's no Primitive to use an item, and no `/use` command on the server.
+Needed: a `useItem` Primitive for a backpack or equipment slot.

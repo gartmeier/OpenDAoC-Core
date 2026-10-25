@@ -60,5 +60,6 @@ export async function taskLoop(agent: Agent, minutes: number, at: typeof EIMILE,
     if (r.ok || r.reason !== "preferredKilled") return r;
     current = undefined;
   }
-  return failed("outOfTime");
+  // `task` is the Mob of the task still open (undefined if it was killed and waits to be handed in).
+  return { ...failed("outOfTime"), task: current };
 }

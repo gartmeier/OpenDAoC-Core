@@ -54,24 +54,27 @@ export interface GrindOptions {
   exclude?: string[];
   /** Rest up to this percent. */
   restTo?: number;
+  /** After the `prefer` Mob dies, keep grinding, and end with `preferredKilled` only once health falls below `restBelow`: the run back to the task guard heals instead of sitting. */
+  stayAfterPrefer?: boolean;
   /** Seconds spent fighting, resting, roaming and dead, added up here. */
   times?: Record<string, number>;
 }
 
 /** Kills Mobs in a level band, nearest first but preferring higher levels, until `goal` level, resting between fights. */
-export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spots = [], minutes = 25, band = [-1, -1], restBelow = 90, money = Infinity, prefer, exclude = [], restTo = 100, times = {} }: GrindOptions): Promise<Outcome> {
+export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spots = [], minutes = 25, band = [-1, -1], restBelow = 90, money = Infinity, prefer, exclude = [], restTo = 100, times = {}, stayAfterPrefer = false }: GrindOptions): Promise<Outcome> {
   const deadline = Date.now() + minutes * 60_000;
   const levelOf = () => Math.max(agent.self.level, knownLevel);
   const avoid = new Map<number, number>();
   let spot = 0;
   let roams = 0;
+  let preferKilled = false;
   const timed = async <T>(what: string, p: Promise<T>): Promise<T> => {
     const t = Date.now();
     try { return await p; } finally { times[what] = Math.round((times[what] ?? 0) + (Date.now() - t) / 1000); }
   };
 
   while (levelOf() < goal) {
-    if (Date.now() > deadline) return failed("outOfTime");
+    if (Date.now() > deadline) return failed(preferKilled ? "preferredKilled" : "outOfTime");
     if (agent.inventory.money >= money) return failed("enoughMoney");
     if (agent.self.dead) {
       const alive = await timed("dead", agent.sendAndWait({ name: "command", text: "/release" }, () => !agent.self.dead, 30_000));
@@ -90,6 +93,7 @@ export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spot
       continue;
     }
 
+    if (preferKilled && (agent.self.healthPercent < restBelow || Date.now() > deadline)) return failed("preferredKilled");
     if (agent.self.healthPercent < restBelow) {
       await timed("rest", rest(agent, restTo));
       continue;
@@ -102,12 +106,13 @@ export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spot
     const low = level + band[0];
     const high = level + band[1];
     const mob = agent.surroundings.npcs
-      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && !exclude.includes(n.name) && (n.level >= low || n.name === prefer) && (n.level <= high || n.name === prefer) && (avoid.get(n.objectId) ?? 0) < 2)
+      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && !exclude.includes(n.name) && (!stayAfterPrefer || !prefer || preferKilled || n.name === prefer) && (n.level >= low || n.name === prefer) && (n.level <= high || n.name === prefer) && (avoid.get(n.objectId) ?? 0) < 2)
       // A Mob a level higher pays about double: worth running 1500 units further for.
       .map((n) => ({ n, d: Math.hypot(n.position.x - pos.x, n.position.y - pos.y) - (n.level - low) * 1500 - (n.name === prefer ? 3000 : 0) }))
       .sort((a, b) => a.d - b.d)[0]?.n;
     if (!mob) {
       // Nothing to fight here: roam to the next spot, if there are any.
+      if (preferKilled) return failed("preferredKilled");
       if (spots.length === 0) return failed("noMob");
       // Twice round every spot with nothing in the band: the area is camped out, so go elsewhere.
       if (++roams > spots.length * 2) return failed("areaEmpty");
@@ -130,7 +135,11 @@ export async function grind(agent: Agent, { goal, log = [], knownLevel = 0, spot
     const gained = agent.self.level * 1000 + agent.self.levelPermill - xpBefore;
     log.push(`${mob.name} L${mob.level} at X:${Math.round(mob.position.x)} Y:${Math.round(mob.position.y)}: ${describe(stats)} +${gained}‰ (lvl ${levelOf()}, hp ${agent.self.healthPercent}%, end ${agent.self.endurancePercent}%)`);
     if (!r.ok) avoid.set(mob.objectId, (avoid.get(mob.objectId) ?? 0) + 1);
-    if (r.ok && mob.name === prefer) return failed("preferredKilled");
+    // `kill` can end ok with no death (once, a trapper vanished mid-fight): only a kill that paid counts for the task.
+    if (r.ok && mob.name === prefer && gained > 0) {
+      if (!stayAfterPrefer) return failed("preferredKilled");
+      preferKilled = true;
+    }
   }
 
   await trainBlades(agent);

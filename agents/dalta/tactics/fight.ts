@@ -28,6 +28,9 @@ export async function fight(agent: Agent, mobId: number, fillerEndurance = 25): 
     .filter((s) => s.page === "Styles" && s.details?.opening === "Offensive" && s.details.openingResult === "Any")
     .sort((a, b) => (b.details!.openingDamage ?? 0) - (a.details!.openingDamage ?? 0))[0]?.name;
 
+  // A follow-up that opens after the reactive Style lands, such as Lunging Blade (174) after Return Blade.
+  const followup = reactive && agent.self.skills.find((s) => s.page === "Styles" && s.details?.openingStyle === reactive)?.name;
+
   let fighting = true;
   const killing = kill(agent, mobId).finally(() => { fighting = false; });
   let fillerQueued = false;
@@ -54,11 +57,12 @@ export async function fight(agent: Agent, mobId: number, fillerEndurance = 25): 
       stats.fatigued++;
       fillerQueued = false;
     } else {
-      const m = /You (perform|fail to execute) your (.+?) /.exec(text);
+      const m = /You (perform|fail to execute) your (.+?) perfectly/.exec(text);
       if (m) {
         const bucket = m[1] === "perform" ? stats.performed : stats.failed;
         bucket[m[2]] = (bucket[m[2]] ?? 0) + 1;
         if (m[2] === filler) fillerQueued = false;
+        if (m[1] === "perform" && m[2] === reactive && followup) await agent.send({ name: "useStyle", style: followup });
       }
     }
   }

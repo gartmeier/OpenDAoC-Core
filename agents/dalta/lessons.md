@@ -12,8 +12,9 @@ What I've learned while playing, which I read again before I next act.
 
 - Target a *named* guard and `/whisper task`; kill the Mob it names, then `talkTo` it. `tactics/task.ts` `taskLoop` does the loop with any guard (`ORNORA`, `EIMILE`) and grinds a `camp` once the guard gives no more.
 - Ornora's tasks: lough wolf (levels 10–11), badger "South East" (level 12, one at X:347387 Y:519877, near the blackthorns). Reward 45‰ at level 10, 61‰ at 11, 68‰ at 12, plus ~730–870c. A lough wolf loop takes ~90 s with no resting (regen while running covers the fight): **43‰/min**, against 20–25‰/min grinding.
-- Server rules (`KillTask.cs`): tasks only up to **level 20**; as many per level as the level (13 at 13); one task at a time across all guards; the Mob is the *first* NPC in the zone of level L-2..L, so it's the same kind all level; it expires after 2 hours. Guardians Andraste and J'akk (Tir na mBeo) give tasks too, but not on top of Ornora's.
+- Server rules (`KillTask.cs`): tasks only up to **level 20**; as many per level as the level (13 at 13); one task at a time across all guards; the Mob is the *first* NPC of level L-2..L in the zone's subzone order (not the nearest), so it's the same kind all level, often far off; it expires after 2 hours. Guardians Andraste and J'akk (Tir na mBeo) give tasks too, but not on top of Ornora's.
 - Loop only the task Mob (`band: [99,99]`): grabbing red wolfhounds on the way cost 50–70% HP each and dropped the loop to 26‰/min. Badger loop: ~115 s, 73‰ + ~10‰ kill at level 13, **43‰/min**; two thirds of it is running.
+- Level 14's task is the curmudgeon trapper at X:329900 Y:536600, 16000 units from Ornora: ~230 s a loop, **22‰/min**, no better than grinding. Grinding trappers there until 40% and healing on the run back (`stayAfterPrefer`) gave 21‰/min: trappers and ghostly siabras (L11–12, X:351000 Y:527800, 5500 east of Ornora) pay only ~13‰ per 25% HP at level 14. Next: find better-paying Mobs (yellow/orange) near a guard.
 - `tactics/junk.ts`: `equipBetterArmour` (by examined AF) and `sellJunk` (drops the unsellable training gear). Selling in the `inTown` hook kept me under the weight limit: I'd got encumbered (slow) at 63/58 lb.
 - Tasks expire: a kill for a task taken ~25 min earlier counted for nothing. `/task abort` drops one. `/task` answers in a text window the Mind can't see.
 
@@ -22,8 +23,8 @@ What I've learned while playing, which I read again before I next act.
 - No regen for ~20 s after a fight, then sitting heals ~0.9%/s and running ~0.4%/s. Rest time is set by HP lost, so pick Mobs by XP per % HP: wild lucradans and curmudgeon skinners ~1–1.15‰/% at level 11; badgers 0.7; red wolfhounds and curmudgeon harvesters 0.4–0.5. Grinding tops out near 25–30‰/min. Rest below 65%: a yellow can cost 60%, and I died fighting one at 63%.
 - Yellow Mobs pay double blue ones for about the same XP per HP, so fewer, longer fights: band [0,0], or [-1,0] when yellows are scarce. Grey/green ones pay little.
 - `kill` counts the run to the Mob in its 30 s `noDamage` timeout, so a Mob ~5500 units away fails. `grind` now runs within 800 first.
-- Styles: `fight.ts` keeps Taunting Blade queued (+8–17 damage for 10% end) and answers parries with Return Blade. Endurance runs out over 3–4 back-to-back fights. Queue again after every swing (see learnings/styles.md).
-- Blademasters get 2× level spec points; Blades can't pass my level. `trainBlades` puts Blades at my level, the rest into Parry and Celtic Dual. Quote the line: `/train "Celtic Dual" 7`.
+- Styles: `fight.ts` keeps Taunting Blade queued (+8–17 damage for 10% end), answers parries with Return Blade and follows it with Lunging Blade (Blades 12). Endurance runs out over 3–4 back-to-back fights. Queue again after every swing (see learnings/styles.md).
+- Blademasters get 2× level spec points; Blades can't pass my level. At 14 `trainBlades` left Parry untrained with 11 points: check `specPoints` after it. `trainBlades` puts Blades at my level, the rest into Parry and Celtic Dual. Quote the line: `/train "Celtic Dual" 7`.
 
 ## Gear and money
 
