@@ -21,8 +21,10 @@ What I've learned while playing, which I read again before I next act.
 
 ## Fighting and resting
 
-- **Resting is most of the time** (2–3× the fighting). Sitting heals a flat ~2 HP/s (see from-source.md), so pick Mobs by XP per HP lost, and push DPS and defence. Measured: L15 bantam spectre 25‰ for ~40% (0.6‰/%), L14 forager at L15 17‰ for ~43%; both ~14–20‰/min. Earlier: lucradans and skinners ~1‰/% at level 11.
-- XP is set by the Mob's level only, capped at 1.25× a Mob of my level: fight yellow and orange (+1), never higher. Grey/green pay little.
+- **Resting is ~70% of the time.** Sitting heals a flat ~1.8 HP/s, so XP per HP lost decides. At level 15 every kind paid about the same, **0.5–0.6‰ per % of health**, so 13–16‰/min: bantam spectre L15 24‰ for ~47% (27 s); anger sprite L13 12.5‰ for ~20% (21 s, X:315000 Y:433500); faerie beetle L17 31‰ for 93% (0.33‰/%: never fight +2). Mob XP rises ~1.41× a level and so does what they cost, so picking kinds gains little; my gear and level are the lever.
+- XP is set by the Mob's level only, capped at 1.25× a Mob of my level, camp bonus on top of the capped base: fight yellow and orange (+1), never higher. Grey/green pay little.
+- Taunting Blade (def −10) lets the Mob hit 92% instead of 81%, but adds ~30% to my damage: still the best filler (Enervating Blade's +10 def with no damage comes out a little worse).
+- At level 16 with the drops below, spectres (now blue) pay 16‰ for ~25%: 14.6‰/min.
 - Rest below 65%: a yellow can cost 60–70%, and I died fighting one at 63%.
 - `kill` counts the run to the Mob in its 30 s `noDamage` timeout: `grind` runs within 800 first. After a level up, band [0,0] finds nothing where the Mobs were yellow: use [-1,1].
 - Styles (`fight.ts`): Taunting Blade queued as filler; on a parry it cancels the filler and queues Return Blade, then Lunging Blade (slows the Mob). Needs **`/cancelstyle` ON** (it's a toggle, now on): without it Return Blade only became Taunting Blade's backup and never fired. Endurance runs out over 3–4 fights.
@@ -30,6 +32,8 @@ What I've learned while playing, which I read again before I next act.
 
 ## Gear and money
 
+- **Spectre drops at L15–16 beat the shops**: in ~40 kills, a Thrustbender Falcata (L16, 6.0 DPS at 96% = 5.8 effective, right hand; shop swords are 85% quality), Edgebender Reinforced Boots (AF36), Fortifying Reinforced Sleeves (AF37), Bodybender Ring L16, Icebender Jewel (`SLOT.jewel`, +11 hits). Examine them each level (`equipBetterArmour`, then weapons by "Effective Damage"); drop the rest (daggers and stilettos are thrust: useless) to stay under the weight limit. The Sturdy Gem fits no slot I tried (waist, wrist, cloak).
+- No Kill Task in Connacht: the guard picks the zone's *first* L−2..L NPC and refuses if it's a named one (from-source.md).
 - **Look in the backpack after fights and before selling**: drops beat shop gear (Razored Sword 45 DPS L11, Whirling Falcata 42 DPS L10, AF20–22 vest, sleeves and helm, all at level 10). Items a level or two above mine can be worn. Magic drops sell for 10–100c, so equip the better one first.
 - Both hands swing: chat calls them by base name ("your falcata", "your sword"). The Whirling Falcata can't go in the left hand ("can't go there"); the Razored Sword can. A Protector's Wrap fits no slot (cloak and waist tried).
 - Hits land mostly on torso and legs: upgrade those first. Effective AF is capped at 2× level (shell tacuil leggings AF30 showed 28 at L14). Bought shell tacuil leggings (Cubert, 21600c); wore the dropped Edgebender Bracelet (left wrist, +9 hits, Slash, Quickness). Shop weapons come at 85% quality: the quartz long sword's 54 DPS is 46 effective.

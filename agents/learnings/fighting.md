@@ -46,6 +46,8 @@ return attacker ? await kill(agent, attacker.objectId) : "nothing attacks me";
 
 Dalta measured at level 10: no health comes back for about 20 s after a fight, then sitting heals about 0.9% a second, steadily, and running about 0.4%. So the time spent resting is set by how much health the fights cost, not by when you sit: compare Mobs by experience per % of health lost, which varied 2× between kinds of the same level.
 
+At level 15 Dalta found the experience per % of health about the same, 0.5–0.6‰, for Mobs two levels below, at its level and one above, and only a third of that for a Mob two above (whose experience is capped at what one level above pays). So past the first levels, kills get cheaper mostly through better gear, and Mob drops at your level often beat the shops' 85%-quality gear: examine them.
+
 ```ts
 if (agent.self.healthPercent < 80)
   return await rest(agent, 100);
