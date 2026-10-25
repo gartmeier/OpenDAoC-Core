@@ -518,13 +518,52 @@ export interface ObjectUpdateDestination {
   zoneId: number;
 }
 
-export interface SkillEntry {
+export type SkillEntry = SpecializationEntry | AbilityEntry | StyleEntry | SpellEntry | SongEntry | AbilitySpellEntry | RealmAbilityEntry;
+
+export interface SpecializationEntry {
+  page: "Specialization";
   name: string;
   level: number;
-  page: SkillPage;
+}
+
+export interface AbilityEntry {
+  page: "Abilities";
+  name: string;
+  level: number;
+}
+
+export interface StyleEntry {
+  page: "Styles";
   line?: string;
-  details?: StyleDetails;
-  spellDetails?: SpellDetails;
+  details: StyleDetails;
+  name: string;
+  level: number;
+}
+
+export interface SpellEntry {
+  page: "Spells";
+  details?: SpellDetails;
+  name: string;
+  level: number;
+}
+
+export interface SongEntry {
+  page: "Songs";
+  details?: SpellDetails;
+  name: string;
+  level: number;
+}
+
+export interface AbilitySpellEntry {
+  page: "AbilitiesSpell";
+  name: string;
+  level: number;
+}
+
+export interface RealmAbilityEntry {
+  page: "RealmAbilities";
+  name: string;
+  level: number;
 }
 
 export interface EffectEntry {
@@ -576,8 +615,6 @@ export interface RouteCorner {
 }
 
 export type StopReason = "Stop" | "Replaced" | "MovedByServer" | "UnableToMove" | "Unreachable";
-
-export type SkillPage = "Specialization" | "Abilities" | "Styles" | "Spells" | "Songs" | "AbilitiesSpell" | "RealmAbilities";
 
 export interface StyleDetails {
   opening: eOpening;

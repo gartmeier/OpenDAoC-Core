@@ -152,8 +152,8 @@ namespace DOL.GS.Tests
         {
             SpellDetails barkSkin = new(2, null, null, "Realm", 1000, 3, null, null, "Increases the target's armor factor by 12.", ConcentrationCost: 1);
 
-            Assert.That(Write(new PerceptMessage(19, 3000, new SkillsPercept([new("Minor Bark Skin", 2, SkillPage.Spells, SpellDetails: barkSkin)]))),
-                Does.EndWith("""{"name":"Minor Bark Skin","level":2,"page":"Spells","spellDetails":{"level":2,"target":"Realm","range":1000,"castingSeconds":3,"description":"Increases the target's armor factor by 12.","concentrationCost":1}}]}}"""));
+            Assert.That(Write(new PerceptMessage(19, 3000, new SkillsPercept([new SpellEntry("Minor Bark Skin", 2, barkSkin)]))),
+                Does.EndWith("""{"page":"Spells","details":{"level":2,"target":"Realm","range":1000,"castingSeconds":3,"description":"Increases the target's armor factor by 12.","concentrationCost":1},"name":"Minor Bark Skin","level":2}]}}"""));
             Assert.That(Write(new PerceptMessage(20, 3100, new EffectsPercept([new("Minor Bark Skin", true, Disabled: true)]))),
                 Does.EndWith("""{"kind":"effects","effects":[{"name":"Minor Bark Skin","positive":true,"disabled":true}]}}"""));
         }
@@ -176,18 +176,20 @@ namespace DOL.GS.Tests
         [Test]
         public void Write_ShouldWriteASkillsPercept_WithAStylesLineAndNoneForAnythingElse()
         {
-            string json = Write(new PerceptMessage(13, 2400, new SkillsPercept([new("Blades", 5, SkillPage.Specialization), new("Shining Blade", 2, SkillPage.Styles, "Blades")])));
+            StyleDetails shiningBlade = new(Style.eOpening.Offensive, Style.eAttackResultRequirement.Any, null, null, [], 15, 0, 0, 100, false, null);
+            string json = Write(new PerceptMessage(13, 2400, new SkillsPercept([new SpecializationEntry("Blades", 5), new StyleEntry("Shining Blade", 2, "Blades", shiningBlade), new StyleEntry("Odd Style", 1, null, shiningBlade)])));
 
-            Assert.That(json, Does.EndWith("""{"kind":"skills","skills":[{"name":"Blades","level":5,"page":"Specialization"},{"name":"Shining Blade","level":2,"page":"Styles","line":"Blades"}]}}"""));
+            Assert.That(json, Does.Contain("""{"kind":"skills","skills":[{"page":"Specialization","name":"Blades","level":5},{"page":"Styles","line":"Blades","details":"""));
+            Assert.That(json, Does.Contain("""{"page":"Styles","details":"""));
         }
 
         [Test]
         public void Write_ShouldWriteAStylesDetails_WithItsOpeningAsNames()
         {
             StyleDetails glowingBlade = new(Style.eOpening.Positional, Style.eAttackResultRequirement.Any, Style.eOpeningPosition.Side, null, ["Auroric Blade"], 10, 0, 5, 0, false, null);
-            string json = Write(new PerceptMessage(14, 2500, new SkillsPercept([new("Glowing Blade", 10, SkillPage.Styles, "Blades", glowingBlade)])));
+            string json = Write(new PerceptMessage(14, 2500, new SkillsPercept([new StyleEntry("Glowing Blade", 10, "Blades", glowingBlade)])));
 
-            Assert.That(json, Does.EndWith("""{"name":"Glowing Blade","level":10,"page":"Styles","line":"Blades","details":{"opening":"Positional","openingResult":"Any","openingPosition":"Side","followupStyles":["Auroric Blade"],"fatigue":10,"attackMod":0,"defensiveMod":5,"openingDamage":0,"hidden":false}}]}}"""));
+            Assert.That(json, Does.EndWith("""{"page":"Styles","line":"Blades","details":{"opening":"Positional","openingResult":"Any","openingPosition":"Side","followupStyles":["Auroric Blade"],"fatigue":10,"attackMod":0,"defensiveMod":5,"openingDamage":0,"hidden":false},"name":"Glowing Blade","level":10}]}}"""));
         }
 
         [Test]

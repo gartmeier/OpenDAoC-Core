@@ -1019,7 +1019,13 @@ namespace DOL.GS.Tests
 
             SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(blades, blades), (sprint, sprint), (shiningBlade, blades)], [shiningBlade]);
 
-            Assert.That(entries.Select(static entry => entry with { Details = null }), Is.EqualTo(new SkillEntry[] { new("Blades", 3, SkillPage.Specialization), new("Sprint", 1, SkillPage.Abilities), new("Shining Blade", 2, SkillPage.Styles, "Blades") }));
+            Assert.That(entries[..2], Is.EqualTo(new SkillEntry[] { new SpecializationEntry("Blades", 3), new AbilityEntry("Sprint", 1) }));
+            Assert.That((StyleEntry) entries[2] with { Details = null }, Is.EqualTo(new StyleEntry("Shining Blade", 2, "Blades", null)));
+        }
+
+        private static StyleDetails StyleDetailsOf(SkillEntry entry)
+        {
+            return ((StyleEntry) entry).Details;
         }
 
         // A Blademaster's Blades styles, as in the database: Return Blade after a parry, Glowing Blade from the side, Lunging Blade after Return Blade.
@@ -1037,12 +1043,12 @@ namespace DOL.GS.Tests
 
             SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(blades, blades), (ShiningBlade, blades), (ReturnBlade, blades), (GlowingBlade, blades)], allStyles);
 
-            Assert.That(entries[0].Details, Is.Null, "a specialization has none");
-            Assert.That(entries[1].Details with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Offensive, Style.eAttackResultRequirement.Any, null, null, null, 15, 0, 0, 100, false, null)));
-            Assert.That(entries[2].Details with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Defensive, Style.eAttackResultRequirement.Parry, null, null, null, 5, 10, 0, 150, false, null)));
-            Assert.That(entries[2].Details.FollowupStyles, Is.EqualTo(new[] { "Lunging Blade" }), "styles it opens, even one not trained yet");
-            Assert.That(entries[3].Details with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Positional, Style.eAttackResultRequirement.Any, Style.eOpeningPosition.Side, null, null, 10, 0, 5, 0, false, null)));
-            Assert.That(entries[1].Details.FollowupStyles, Is.Empty);
+            Assert.That(entries[0], Is.EqualTo(new SpecializationEntry("Blades", 10)), "a specialization has none");
+            Assert.That(StyleDetailsOf(entries[1]) with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Offensive, Style.eAttackResultRequirement.Any, null, null, null, 15, 0, 0, 100, false, null)));
+            Assert.That(StyleDetailsOf(entries[2]) with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Defensive, Style.eAttackResultRequirement.Parry, null, null, null, 5, 10, 0, 150, false, null)));
+            Assert.That(StyleDetailsOf(entries[2]).FollowupStyles, Is.EqualTo(new[] { "Lunging Blade" }), "styles it opens, even one not trained yet");
+            Assert.That(StyleDetailsOf(entries[3]) with { FollowupStyles = null }, Is.EqualTo(new StyleDetails(Style.eOpening.Positional, Style.eAttackResultRequirement.Any, Style.eOpeningPosition.Side, null, null, 10, 0, 5, 0, false, null)));
+            Assert.That(StyleDetailsOf(entries[1]).FollowupStyles, Is.Empty);
         }
 
         [Test]
@@ -1052,9 +1058,9 @@ namespace DOL.GS.Tests
 
             SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(blades, blades), (LungingBlade, blades)], [ShiningBlade, ReturnBlade, GlowingBlade, LungingBlade]);
 
-            Assert.That(entries[1].Details.Opening, Is.EqualTo(Style.eOpening.Offensive));
-            Assert.That(entries[1].Details.OpeningResult, Is.EqualTo(Style.eAttackResultRequirement.Style));
-            Assert.That(entries[1].Details.OpeningStyle, Is.EqualTo("Return Blade"));
+            Assert.That(StyleDetailsOf(entries[1]).Opening, Is.EqualTo(Style.eOpening.Offensive));
+            Assert.That(StyleDetailsOf(entries[1]).OpeningResult, Is.EqualTo(Style.eAttackResultRequirement.Style));
+            Assert.That(StyleDetailsOf(entries[1]).OpeningStyle, Is.EqualTo("Return Blade"));
         }
 
         // A Naturalist's first heal and buff, as in the database. The tooltip shows a heal's power cost, and a Concentration buff's concentration cost instead.
@@ -1071,10 +1077,9 @@ namespace DOL.GS.Tests
 
             SkillEntry[] entries = PerceptProjection.SkillEntries(greeen, [(regrowth, regrowth), (MinorRevigoration, regrowthLine), (MinorBarkSkin, regrowthLine)], []);
 
-            Assert.That(entries[0].SpellDetails, Is.Null, "a specialization has none");
-            Assert.That(entries[1] with { SpellDetails = null }, Is.EqualTo(new SkillEntry("Minor Revigoration", 1, SkillPage.Spells)));
-            Assert.That(entries[1].SpellDetails, Is.EqualTo(new SpellDetails(1, null, 1, "Realm", 2000, 2.2f, null, null, "Heals the target for 6 hit points.")));
-            Assert.That(entries[2].SpellDetails with { Description = null }, Is.EqualTo(new SpellDetails(2, null, null, "Realm", 1000, 3, null, null, null, ConcentrationCost: 1)));
+            Assert.That(entries[0], Is.EqualTo(new SpecializationEntry("Regrowth", 2)), "a specialization has none");
+            Assert.That(entries[1], Is.EqualTo(new SpellEntry("Minor Revigoration", 1, new SpellDetails(1, null, 1, "Realm", 2000, 2.2f, null, null, "Heals the target for 6 hit points."))));
+            Assert.That(((SpellEntry) entries[2]).Details with { Description = null }, Is.EqualTo(new SpellDetails(2, null, null, "Realm", 1000, 3, null, null, null, ConcentrationCost: 1)));
         }
 
         [Test]
@@ -1084,7 +1089,7 @@ namespace DOL.GS.Tests
 
             SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(style, style)], [style]);
 
-            Assert.That(entries.Select(static entry => entry with { Details = null }), Is.EqualTo(new SkillEntry[] { new("Odd Style", 1, SkillPage.Styles) }));
+            Assert.That((StyleEntry) entries.Single() with { Details = null }, Is.EqualTo(new StyleEntry("Odd Style", 1, null, null)));
         }
 
         [Test]

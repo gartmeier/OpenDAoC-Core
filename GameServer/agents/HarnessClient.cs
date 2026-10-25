@@ -240,14 +240,14 @@ namespace DOL.GS.Agents
             {
                 case UseStylePrimitive useStyle:
                 {
-                    if (SkillIndex(SkillPage.Styles, useStyle.Style, useStyle.Line, out index) is string reason)
+                    if (StyleIndex(useStyle.Style, useStyle.Line, out index) is string reason)
                         return reason;
 
                     break;
                 }
                 case CastSpellPrimitive castSpell:
                 {
-                    if (SkillIndex(SkillPage.Spells, castSpell.Spell, null, out index) is string reason)
+                    if (SpellIndex(castSpell.Spell, out index) is string reason)
                         return reason;
 
                     break;
@@ -405,22 +405,33 @@ namespace DOL.GS.Agents
             return data is < 0 or > ushort.MaxValue ? $"A Dialog's data is 0 to {ushort.MaxValue}, not {data}." : null;
         }
 
-        // A style's or a hybrid's spell's index as the skill handler reads it: its place in the skill list the server last sent, counting from the first entry after the specializations.
-        // Only skills on `page` match. Without `line`, the first of that name does, as a Human clicks the first icon they see.
-        private string SkillIndex(SkillPage page, string name, string line, out int index)
+        // Only styles match. Without `line`, the first of that name does, as a Human clicks the first icon they see.
+        private string StyleIndex(string name, string line, out int index)
         {
-            int found = Array.FindIndex(_skills, skill => skill.Page == page && skill.Name == name && (line == null || skill.Line == line));
+            int found = Array.FindIndex(_skills, skill => skill is StyleEntry style && style.Name == name && (line == null || style.Line == line));
+            return SkillIndex(found, name, line == null ? $"{Player.Name} has no Style \"{name}\"." : $"{Player.Name} has no Style \"{name}\" in {line}.", out index);
+        }
+
+        // Only spells match: a hybrid's, which are in the skill list.
+        private string SpellIndex(string name, out int index)
+        {
+            int found = Array.FindIndex(_skills, skill => skill is SpellEntry && skill.Name == name);
+            return SkillIndex(found, name, $"{Player.Name} has no Spell \"{name}\".", out index);
+        }
+
+        // The index the skill handler reads for the skill at `found` in the skill list the server last sent, counting from the first entry after the specializations, or `missing` when it isn't there.
+        private string SkillIndex(int found, string name, string missing, out int index)
+        {
             index = 0;
-            string kind = page is SkillPage.Styles ? "Style" : "Spell";
 
             if (found < 0)
-                return line == null ? $"{Player.Name} has no {kind} \"{name}\"." : $"{Player.Name} has no {kind} \"{name}\" in {line}.";
+                return missing;
 
             // The server's skills packet stops at the 255th entry, so the client never got an icon for one past it.
             if (found >= byte.MaxValue)
                 return $"\"{name}\" is past the first {byte.MaxValue} skills the server sends a client.";
 
-            index = found - Math.Max(0, Array.FindIndex(_skills, static skill => skill.Page is not SkillPage.Specialization));
+            index = found - Math.Max(0, Array.FindIndex(_skills, static skill => skill is not SpecializationEntry));
             return null;
         }
 

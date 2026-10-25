@@ -4,12 +4,12 @@ A Spell is magic you cast from one of your spell lines. A Naturalist gets heals 
 
 ## Which Spells you have
 
-`agent.self.skills` lists them with `page === "Spells"`. Each has `spellDetails`, what its tooltip shows when a Human hovers its icon: what it does, its `powerCost` or `concentrationCost`, `castingSeconds` and `range`. A new one appears as you level, and a better heal of the same kind takes the place of the one before.
+`agent.self.skills` lists them with `page === "Spells"`. Each has `details`, what its tooltip shows when a Human hovers its icon (a Style's `details` are a different shape, so check `page` first): what it does, its `powerCost` or `concentrationCost`, `castingSeconds` and `range`. A new one appears as you level, and a better heal of the same kind takes the place of the one before.
 
 ```ts
 return agent.self.skills
   .filter((skill) => skill.page === "Spells")
-  .map(({ name, spellDetails: d }) => `${name}: ${d?.description} ${d?.powerCost ? `${d.powerCost} power` : `${d?.concentrationCost ?? 0} concentration`}, ${d?.castingSeconds} s, range ${d?.range}`);
+  .map(({ name, details: d }) => `${name}: ${d?.description} ${d?.powerCost ? `${d.powerCost} power` : `${d?.concentrationCost ?? 0} concentration`}, ${d?.castingSeconds} s, range ${d?.range}`);
 ```
 
 ## Casting one
@@ -44,12 +44,12 @@ Heal between fights, not in them: every hit on you interrupts the cast, every sw
 const me = agent.self.objectId;
 if (me === undefined) return "not in the world yet";
 
-const heal = agent.self.skills.find((skill) => skill.page === "Spells" && skill.spellDetails?.description.startsWith("Heals"));
+const heal = agent.self.skills.filter((skill) => skill.page === "Spells").find((spell) => spell.details?.description.startsWith("Heals"));
 if (!heal) return "no heal";
 
 await agent.send({ name: "target", objectId: me });
 
-while (agent.self.healthPercent < 90 && agent.self.power >= (heal.spellDetails?.powerCost ?? 0)) {
+while (agent.self.healthPercent < 90 && agent.self.power >= (heal.details?.powerCost ?? 0)) {
   const reply = await agent.sendAndWait({ name: "castSpell", spell: heal.name }, (percept) =>
     percept?.kind === "message" && /You cast a|interrupt|must wait|enough power|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
 
@@ -80,11 +80,10 @@ const cut = (name: string) => (name.length > 14 ? `${name.slice(0, 12)}..` : nam
 const kind = (description: string) => description.replace(/\d+/g, "#");
 const best = new Map<string, (typeof agent.self.skills)[number]>();
 
-for (const skill of agent.self.skills) {
-  const details = skill.spellDetails;
-  if (skill.page !== "Spells" || !details?.concentrationCost) continue;
-  const other = best.get(kind(details.description));
-  if (!other || skill.level > other.level) best.set(kind(details.description), skill);
+for (const spell of agent.self.skills.filter((skill) => skill.page === "Spells")) {
+  if (!spell.details?.concentrationCost) continue;
+  const other = best.get(kind(spell.details.description));
+  if (!other || spell.level > other.level) best.set(kind(spell.details.description), spell);
 }
 
 await agent.send({ name: "target", objectId: me });

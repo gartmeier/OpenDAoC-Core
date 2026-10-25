@@ -359,13 +359,13 @@ namespace DOL.GS.Tests
         private static SkillsPercept BlademasterSkills()
         {
             return new([
-                new("Blades", 5, SkillPage.Specialization),
-                new("Blunt", 8, SkillPage.Specialization),
-                new("Shields", 8, SkillPage.Specialization),
-                new("Sprint", 1, SkillPage.Abilities),
-                new("Shining Blade", 2, SkillPage.Styles, "Blades"),
-                new("Slam", 8, SkillPage.Styles, "Blunt"),
-                new("Slam", 5, SkillPage.Styles, "Shields")]);
+                new SpecializationEntry("Blades", 5),
+                new SpecializationEntry("Blunt", 8),
+                new SpecializationEntry("Shields", 8),
+                new AbilityEntry("Sprint", 1),
+                new StyleEntry("Shining Blade", 2, "Blades", null),
+                new StyleEntry("Slam", 8, "Blunt", null),
+                new StyleEntry("Slam", 5, "Shields", null)]);
         }
 
         // The index counts from Sprint, the first entry after the specializations, as the skill handler reads it.
@@ -410,10 +410,10 @@ namespace DOL.GS.Tests
             HarnessClient client = InWorld(mind.Link, 0x0101);
             client.OnPerceived(BlademasterSkills());
             client.OnPerceived(new SkillsPercept([
-                new("Blades", 6, SkillPage.Specialization),
-                new("Sprint", 1, SkillPage.Abilities),
-                new("Shining Blade", 2, SkillPage.Styles, "Blades"),
-                new("Taunting Blade", 6, SkillPage.Styles, "Blades")]));
+                new SpecializationEntry("Blades", 6),
+                new AbilityEntry("Sprint", 1),
+                new StyleEntry("Shining Blade", 2, "Blades", null),
+                new StyleEntry("Taunting Blade", 6, "Blades", null)]));
 
             client.Dispatch(new UseStylePrimitive("Taunting Blade"), mind.Link);
 
@@ -456,12 +456,12 @@ namespace DOL.GS.Tests
         private static SkillsPercept NaturalistSkills()
         {
             return new([
-                new("Regrowth", 2, SkillPage.Specialization),
-                new("Nurture", 2, SkillPage.Specialization),
-                new("Staves", 1, SkillPage.Abilities),
-                new("Minor Revigoration", 1, SkillPage.Spells),
-                new("Minor Bark Skin", 2, SkillPage.Spells),
-                new("Shining Blade", 2, SkillPage.Styles, "Blades")]);
+                new SpecializationEntry("Regrowth", 2),
+                new SpecializationEntry("Nurture", 2),
+                new AbilityEntry("Staves", 1),
+                new SpellEntry("Minor Revigoration", 1, null),
+                new SpellEntry("Minor Bark Skin", 2, null),
+                new StyleEntry("Shining Blade", 2, "Blades", null)]);
         }
 
         // The index counts from Staves, the first entry after the specializations, as for a style: a hybrid's spells are in the same skill list.

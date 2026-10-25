@@ -467,15 +467,37 @@ namespace DOL.GS.Agents
     // Everything on the Agent's Character's skill pages, in the order the client lists them: specializations with their trained levels, then abilities, styles and spells.
     public sealed record SkillsPercept(SkillEntry[] Skills) : Percept;
 
-    // One skill. `Level` is a specialization's trained level, an ability's or a spell's level, or the specialization level a style needs. `Page` is the skill page it's on.
-    // `Line` is a style's specialization, which the packet names by an index the client knows. `Details` are a style's, and `SpellDetails` a spell's, which their tooltips show. Anything else has none.
-    public sealed record SkillEntry(
+    // One skill, by the page of the client's skill window it's on, as the packet numbers them. `Level` is a specialization's trained level, an ability's or a spell's level, or the specialization level a style needs.
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "page")]
+    [JsonDerivedType(typeof(SpecializationEntry), "Specialization")]
+    [JsonDerivedType(typeof(AbilityEntry), "Abilities")]
+    [JsonDerivedType(typeof(StyleEntry), "Styles")]
+    [JsonDerivedType(typeof(SpellEntry), "Spells")]
+    [JsonDerivedType(typeof(SongEntry), "Songs")]
+    [JsonDerivedType(typeof(AbilitySpellEntry), "AbilitiesSpell")]
+    [JsonDerivedType(typeof(RealmAbilityEntry), "RealmAbilities")]
+    public abstract record SkillEntry(string Name, int Level);
+
+    public sealed record SpecializationEntry(string Name, int Level) : SkillEntry(Name, Level);
+
+    public sealed record AbilityEntry(string Name, int Level) : SkillEntry(Name, Level);
+
+    // `Line` is its specialization, which the packet names by an index the client knows, and none for 0. `Details` are what its tooltip shows.
+    public sealed record StyleEntry(
         string Name,
         int Level,
-        SkillPage Page,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line = null,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] StyleDetails Details = null,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] SpellDetails SpellDetails = null);
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Line,
+        StyleDetails Details) : SkillEntry(Name, Level);
+
+    // `Details` are what its tooltip shows, as for a spell's Effect, or none when the server has no handler for the spell.
+    public sealed record SpellEntry(string Name, int Level, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] SpellDetails Details) : SkillEntry(Name, Level);
+
+    // A song, a spell played on an instrument. `Details` as for a spell.
+    public sealed record SongEntry(string Name, int Level, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] SpellDetails Details) : SkillEntry(Name, Level);
+
+    public sealed record AbilitySpellEntry(string Name, int Level) : SkillEntry(Name, Level);
+
+    public sealed record RealmAbilityEntry(string Name, int Level) : SkillEntry(Name, Level);
 
     // What a style needs and does, as the server's forced tooltip update tells a 1.110+ client alongside the skill list, and the client shows when its icon is hovered.
     // `Opening` is what opens it: `Offensive` (your last attack's `OpeningResult` on the target, such as `Parry` when it parried, or `Style` after `OpeningStyle`),
@@ -494,18 +516,6 @@ namespace DOL.GS.Agents
         float OpeningDamage,
         bool Hidden,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string Weapon);
-
-    // The pages of the client's skill window, as the packet numbers them.
-    public enum SkillPage
-    {
-        Specialization,
-        Abilities,
-        Styles,
-        Spells,
-        Songs,
-        AbilitiesSpell,
-        RealmAbilities
-    }
 
     // The Agent's Character's buff bar: every Effect on it, in the order the client shows them.
     public sealed record EffectsPercept(EffectEntry[] Effects) : Percept;

@@ -617,12 +617,33 @@ namespace DOL.GS.Agents
         // A style also has the details its tooltip shows, with follow-ups and opening styles found among `allStyles`. So does a spell, as `caster` would cast it (`DetailDisplayHandler.DelveSpell`).
         public static SkillEntry[] SkillEntries(GameLiving caster, IEnumerable<(Skill Skill, Skill Related)> skills, IReadOnlyCollection<Style> allStyles)
         {
-            return skills.Select(entry => entry.Skill switch
+            return skills.Select(entry => SkillEntry(caster, entry.Skill, allStyles)).ToArray();
+        }
+
+        // On the page the packet lists it on.
+        private static SkillEntry SkillEntry(GameLiving caster, Skill skill, IReadOnlyCollection<Style> allStyles)
+        {
+            string name = Encoded(skill.Name);
+
+            return skill switch
             {
-                Style style => new SkillEntry(Encoded(style.Name), style.SpecLevelRequirement, SkillPage.Styles, GlobalConstants.GetSpecToInternalIndex(style.Spec) != 0 ? Encoded(style.Spec) : null, Details(style, allStyles)),
-                Spell spell => new SkillEntry(Encoded(spell.Name), spell.Level, (SkillPage) spell.SkillType, SpellDetails: ScriptMgr.CreateSpellHandler(caster, spell, null) is ISpellHandler handler ? Details(handler) : null),
-                Skill skill => new SkillEntry(Encoded(skill.Name), skill.Level, (SkillPage) skill.SkillType)
-            }).ToArray();
+                Style style => new StyleEntry(name, style.SpecLevelRequirement, GlobalConstants.GetSpecToInternalIndex(style.Spec) != 0 ? Encoded(style.Spec) : null, Details(style, allStyles)),
+                Spell { SkillType: eSkillPage.Songs } song => new SongEntry(name, song.Level, Details(caster, song)),
+                Spell spell => new SpellEntry(name, spell.Level, Details(caster, spell)),
+                _ => skill.SkillType switch
+                {
+                    eSkillPage.Specialization => new SpecializationEntry(name, skill.Level),
+                    eSkillPage.AbilitiesSpell => new AbilitySpellEntry(name, skill.Level),
+                    eSkillPage.RealmAbilities => new RealmAbilityEntry(name, skill.Level),
+                    _ => new AbilityEntry(name, skill.Level)
+                }
+            };
+        }
+
+        // As `caster` would cast it, which is how `DetailDisplayHandler.DelveSpell` describes it. None when the server has no handler for it.
+        private static SpellDetails Details(GameLiving caster, Spell spell)
+        {
+            return ScriptMgr.CreateSpellHandler(caster, spell, null) is ISpellHandler handler ? Details(handler) : null;
         }
 
         // Mirrors `SpellDelve.GetStyleString`, without the icon and the proc, which is a spell's delve of its own.

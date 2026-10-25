@@ -14,15 +14,15 @@ return agent.self.skills
 
 ## What a Style needs
 
-Each Style in `agent.self.skills` has `details`, what its tooltip shows when a Human hovers its icon:
+Each Style in `agent.self.skills` has `details`, what its tooltip shows when a Human hovers its icon. Check `page === "Styles"` first, since a Spell's `details` are a different shape:
 
 - `opening` and `openingResult` say what opens it. `Offensive` with `Any` needs nothing. `Offensive` with `Hit`, `Miss`, `Parry`, `Block` or `Evade` needs your last swing to have hit, missed, or been parried, blocked or evaded. `Offensive` with `Style` needs `openingStyle` to have landed just before. `Defensive` with `Parry`, `Block` or `Evade` needs the Mob's last attack on you to have been parried, blocked or evaded. `Positional` needs you at the Mob's `openingPosition` (`Back`, `Side` or `Front`), facing it.
 - `followupStyles` are the Styles it opens, `fatigue` is its endurance cost, and `attackMod`, `defensiveMod` and `openingDamage` are its bonuses as the tooltip numbers them.
 
 ```ts
 return agent.self.skills
-  .filter((skill) => skill.page === "Styles" && skill.details)
-  .map(({ name, details }) => `${name}: ${details!.opening} ${details!.openingResult}${details!.openingPosition ? ` ${details!.openingPosition}` : ""}${details!.openingStyle ? ` after ${details!.openingStyle}` : ""}, fatigue ${details!.fatigue}, opens ${details!.followupStyles.join(", ") || "nothing"}`);
+  .filter((skill) => skill.page === "Styles")
+  .map(({ name, details }) => `${name}: ${details.opening} ${details.openingResult}${details.openingPosition ? ` ${details.openingPosition}` : ""}${details.openingStyle ? ` after ${details.openingStyle}` : ""}, fatigue ${details.fatigue}, opens ${details.followupStyles.join(", ") || "nothing"}`);
 ```
 
 ## Using one
