@@ -59,7 +59,7 @@ interface Waiter {
  * Stopping it ends every Tactic running on it: whatever they wait on or send next throws `Stopped`.
  */
 export class Agent {
-  readonly self = new Self();
+  readonly self: Self;
   readonly surroundings = new Surroundings();
   readonly inventory = new Inventory();
   readonly clock: Clock;
@@ -72,6 +72,7 @@ export class Agent {
   constructor({ send, clock = systemClock, random = Math.random, log = () => {} }: AgentOptions) {
     this.#send = send;
     this.clock = clock;
+    this.self = new Self(clock);
     this.random = random;
     this.log = log;
   }

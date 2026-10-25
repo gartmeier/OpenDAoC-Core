@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import type { JumpPercept, MovedPercept, OwnPositionPercept, Percept, PerceptMessage } from "./protocol.ts";
 import { ownPositionIn, Self } from "./self.ts";
-import { died, player, points, revived, skills, spec, status } from "./test-percepts.ts";
+import { FakeClock } from "./test-agent.ts";
+import { died, effects, player, points, revived, skills, spec, status } from "./test-percepts.ts";
 
 function message(percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs: 1000, percept };
@@ -20,13 +21,13 @@ function jump(x: number, y: number, z: number, heading: number): JumpPercept {
 }
 
 function selfAt(x: number, y: number, z: number): Self {
-  const agentSelf = new Self();
+  const agentSelf = new Self(new FakeClock());
   agentSelf.perceive(message(ownPosition(x, y, z, 1523)));
   return agentSelf;
 }
 
 test("knows nothing about where it is before the server says", () => {
-  const agentSelf = new Self();
+  const agentSelf = new Self(new FakeClock());
 
   expect(agentSelf.position).toBeUndefined();
   expect(agentSelf.maxSpeed).toBe(0);
@@ -153,7 +154,7 @@ test("the Percepts that say where its own Character is give that position, and n
 });
 
 test("works out its maximum speed from the percentage the server sends", () => {
-  const agentSelf = new Self();
+  const agentSelf = new Self(new FakeClock());
 
   agentSelf.perceive(message({ kind: "maxSpeed", maxSpeedPercent: 100, turningDisabled: false, waterSpeed: 0 }));
   expect(agentSelf.maxSpeed).toBe(191);
@@ -176,7 +177,7 @@ test("other Percepts change nothing", () => {
 
 test("knows its object ID from the server at world entry", () => {
   expect(selfAt(296600, 642629, 4848).objectId).toBe(17);
-  expect(new Self().objectId).toBeUndefined();
+  expect(new Self(new FakeClock()).objectId).toBeUndefined();
 });
 
 test("takes its health, endurance and whether it sits from the status Percept", () => {
@@ -234,4 +235,37 @@ test("is dead with no health, as when the Mind starts while its Character lies d
   agentSelf.perceive(message(status(0, { health: 0 })));
 
   expect(agentSelf.dead).toBe(true);
+});
+
+test("knows no Effects before the server says, then every Effect in the buff bar with its time left", () => {
+  const agentSelf = new Self(new FakeClock());
+  expect(agentSelf.effects).toEqual([]);
+
+  agentSelf.perceive(message(effects({ name: "speed", positive: true, secondsLeft: 600 }, { name: "slow", positive: false })));
+
+  expect(agentSelf.effects.map(({ name, positive, secondsLeft }) => ({ name, positive, secondsLeft }))).toEqual([
+    { name: "speed", positive: true, secondsLeft: 600 },
+    { name: "slow", positive: false, secondsLeft: undefined },
+  ]);
+});
+
+test("counts an Effect's time left down as the client's buff bar does, and keeps it at 0 until the server takes it off", async () => {
+  const clock = new FakeClock();
+  const agentSelf = new Self(clock);
+  agentSelf.perceive(message(effects({ name: "speed", positive: true, secondsLeft: 600 })));
+
+  await clock.advance(90_500);
+  expect(agentSelf.effects[0]?.secondsLeft).toBe(510);
+
+  await clock.advance(600_000);
+  expect(agentSelf.effects.map(({ name, secondsLeft }) => ({ name, secondsLeft }))).toEqual([{ name: "speed", secondsLeft: 0 }]);
+});
+
+test("takes the whole buff bar from each Effects Percept, so an Effect the server took off is gone", () => {
+  const agentSelf = new Self(new FakeClock());
+  agentSelf.perceive(message(effects({ name: "speed", positive: true, secondsLeft: 600 }, { name: "slow", positive: false, secondsLeft: 20 })));
+
+  agentSelf.perceive(message(effects({ name: "slow", positive: false, secondsLeft: 19 })));
+
+  expect(agentSelf.effects.map(({ name, secondsLeft }) => ({ name, secondsLeft }))).toEqual([{ name: "slow", secondsLeft: 19 }]);
 });

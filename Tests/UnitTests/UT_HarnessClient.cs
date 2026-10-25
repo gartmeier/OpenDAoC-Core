@@ -527,6 +527,7 @@ namespace DOL.GS.Tests
                 nameof(IPacketLib.SendUpdatePlayerSkills),
                 nameof(IPacketLib.SendUpdatePlayer),
                 nameof(IPacketLib.SendUpdateMoney),
+                nameof(IPacketLib.SendUpdateIcons),
                 nameof(IPacketLib.SendUpdatePoints),
                 nameof(IPacketLib.SendStatusUpdate),
                 nameof(IPacketLib.SendEncumbrance)

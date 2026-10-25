@@ -39,6 +39,8 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendObjectRemove = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendObjectRemove));
         private static readonly MethodInfo SendPlayerPositionAndObjectID = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerPositionAndObjectID));
         private static readonly MethodInfo SendUpdateMaxSpeed = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateMaxSpeed));
+        private static readonly MethodInfo SendUpdateIcons = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateIcons), [typeof(int).MakeByRefType(), typeof(bool)]);
+        private static readonly MethodInfo SendUpdateIconsOld = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateIcons), [typeof(System.Collections.IList), typeof(int).MakeByRefType()]);
         private static readonly MethodInfo SendPlayerJump = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerJump));
         private static readonly MethodInfo SendStatusUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), []);
         private static readonly MethodInfo SendStatusUpdateWithFlag = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), [typeof(byte)]);
@@ -673,6 +675,52 @@ namespace DOL.GS.Tests
         public void Project_ShouldGiveNothing_ForTheMaxSpeedCallBeforeTheAgentHasACharacter()
         {
             Assert.That(PerceptProjection.Project(Playing(), SendUpdateMaxSpeed, []), Is.Null);
+        }
+
+        // The packet carries whole seconds left, and 0 for an Effect without a timer. The client lists the Effects by when they started.
+        [Test]
+        public void Project_ShouldGiveEveryEffectInTheBuffBar_ForTheIconsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0]);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            WorldDoubles.Effect(greeen, "speed", 3060, true, 599_500).StartTick = 2;
+            WorldDoubles.Effect(greeen, "slow", 4200, false, 0).StartTick = 1;
+
+            EffectsPercept percept = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIcons, [0, false]);
+            EffectsPercept fromOldOverload = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIconsOld, [null, 0]);
+
+            Assert.That(percept.Effects, Is.EqualTo(new EffectEntry[] { new("slow", false), new("speed", true, 599) }));
+            Assert.That(fromOldOverload.Effects, Is.EqualTo(percept.Effects));
+        }
+
+        [Test]
+        public void Project_ShouldLeaveOutEffectsTheBuffBarDoesntShow_ForTheIconsCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0]);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            WorldDoubles.Effect(greeen, "speed", 3060, true, 600_000);
+            WorldDoubles.Effect(greeen, "no icon", 0, true, 600_000);
+            WorldDoubles.Effect(greeen, "pulse", 3061, true, 600_000, eEffect.Pulse);
+
+            EffectsPercept percept = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIcons, [0, false]);
+
+            Assert.That(percept.Effects, Is.EqualTo(new EffectEntry[] { new("speed", true, 600) }));
+        }
+
+        [Test]
+        public void Project_ShouldGiveAnEmptyBuffBar_ForTheIconsCallWithoutEffects()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Region(201, (201, 524288, 458752, 65536, 65536)).Zones[0]);
+
+            EffectsPercept percept = (EffectsPercept) PerceptProjection.Project(client, SendUpdateIcons, [0, true]);
+
+            Assert.That(percept.Effects, Is.Empty);
+        }
+
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheIconsCallBeforeTheAgentHasACharacter()
+        {
+            Assert.That(PerceptProjection.Project(Playing(), SendUpdateIcons, [0, false]), Is.Null);
         }
 
         [Test]

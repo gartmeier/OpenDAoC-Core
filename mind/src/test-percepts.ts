@@ -2,6 +2,8 @@
 import type {
   ArrivedPercept,
   DiedPercept,
+  EffectEntry,
+  EffectsPercept,
   EncumbrancePercept,
   ExaminedPercept,
   InventoryItem,
@@ -201,6 +203,10 @@ export function skills(...entries: SkillEntry[]): SkillsPercept {
 /** A specialization at its trained level. */
 export function spec(name: string, level: number): SkillEntry {
   return { name, level, page: "Specialization" };
+}
+
+export function effects(...entries: EffectEntry[]): EffectsPercept {
+  return { kind: "effects", effects: entries };
 }
 
 export function died(objectId: number, killerId = 0): DiedPercept {

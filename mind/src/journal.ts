@@ -1,6 +1,6 @@
 // The Journal's lines: one for every Percept the Agent gets and every Primitive it sends, naming players, NPCs and items from its beliefs.
 import { merchantIndex } from "./inventory.ts";
-import type { InventoryItem, Percept, PerceptMessage, Primitive } from "./protocol.ts";
+import type { EffectEntry, InventoryItem, Percept, PerceptMessage, Primitive } from "./protocol.ts";
 import type { Position } from "./surroundings.ts";
 import type { Agent } from "./tactic.ts";
 
@@ -57,6 +57,8 @@ function describe(agent: Agent, character: string, percept: Percept): string {
       return `player\tlevel ${percept.level} ${percept.name} the ${percept.className}`;
     case "skills":
       return `skills\t${percept.skills.map((skill) => `${skill.name} ${skill.level}`).join(", ")}`;
+    case "effects":
+      return `effects\t${percept.effects.map(describeEffect).join(", ") || "none"}`;
     case "died":
       return `died #${percept.objectId} ${nameOf(percept.objectId)}, killed by #${percept.killerId} ${nameOf(percept.killerId)}`;
     case "revived":
@@ -115,6 +117,10 @@ function nameIn({ self, surroundings }: Agent, character: string, objectId: numb
 
 function describeItem(item: InventoryItem): string {
   return `${item.name} level ${item.level}${item.dpsAf ? ` dps/af ${item.dpsAf}` : ""}`;
+}
+
+function describeEffect(effect: EffectEntry): string {
+  return `${effect.name} (${effect.positive ? "buff" : "debuff"}${effect.secondsLeft === undefined ? "" : `, ${effect.secondsLeft} s`})`;
 }
 
 function merchantItemName({ inventory }: Agent, index: number): string {

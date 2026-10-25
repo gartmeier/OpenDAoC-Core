@@ -140,7 +140,7 @@ export interface UseStylePrimitive {
   line?: string;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -347,6 +347,11 @@ export interface SkillsPercept {
   skills: SkillEntry[];
 }
 
+export interface EffectsPercept {
+  kind: "effects";
+  effects: EffectEntry[];
+}
+
 export interface DiedPercept {
   kind: "died";
   objectId: number;
@@ -453,6 +458,12 @@ export interface SkillEntry {
   page: SkillPage;
   line?: string;
   details?: StyleDetails;
+}
+
+export interface EffectEntry {
+  name: string;
+  positive: boolean;
+  secondsLeft?: number;
 }
 
 export type eInventoryWindowType = "Update" | "Equipment" | "Inventory" | "PlayerVault" | "HouseVault" | "ConsignmentOwner" | "ConsignmentViewer" | "HorseBags";

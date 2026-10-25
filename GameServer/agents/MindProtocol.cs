@@ -217,6 +217,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(PointsPercept), "points")]
     [JsonDerivedType(typeof(PlayerPercept), "player")]
     [JsonDerivedType(typeof(SkillsPercept), "skills")]
+    [JsonDerivedType(typeof(EffectsPercept), "effects")]
     [JsonDerivedType(typeof(DiedPercept), "died")]
     [JsonDerivedType(typeof(RevivedPercept), "revived")]
     [JsonDerivedType(typeof(InventoryPercept), "inventory")]
@@ -452,6 +453,15 @@ namespace DOL.GS.Agents
         AbilitiesSpell,
         RealmAbilities
     }
+
+    // The Agent's Character's buff bar: every Effect on it, in the order the client shows them.
+    public sealed record EffectsPercept(EffectEntry[] Effects) : Percept;
+
+    // One Effect. `Positive` says it's a buff rather than a debuff. `SecondsLeft` is its time left in whole seconds when the server sent the bar, or none for an Effect without a timer.
+    public sealed record EffectEntry(
+        string Name,
+        bool Positive,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SecondsLeft = null);
 
     // A player died, the Agent's Character included: its object ID, and the object ID of what killed it, or 0.
     public sealed record DiedPercept(int ObjectId, int KillerId) : Percept;

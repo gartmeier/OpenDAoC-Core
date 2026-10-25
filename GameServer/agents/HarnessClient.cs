@@ -153,6 +153,9 @@ namespace DOL.GS.Agents
             packetLib.SendUpdatePlayerSkills(false);
             packetLib.SendUpdatePlayer();
             packetLib.SendUpdateMoney();
+            // Every Effect, as for a client that has shown none.
+            int effectsCount = 0;
+            packetLib.SendUpdateIcons(ref effectsCount, true);
             packetLib.SendUpdatePoints();
             packetLib.SendStatusUpdate();
             packetLib.SendEncumbrance();

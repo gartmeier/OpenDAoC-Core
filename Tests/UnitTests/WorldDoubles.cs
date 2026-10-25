@@ -94,6 +94,20 @@ namespace DOL.GS.Tests
             return cache;
         }
 
+        // Puts an Effect on the player as the server keeps it once started, with `msLeft` on its timer, or none for 0.
+        public static TestEffect Effect(TestPlayer player, string name, ushort icon, bool positive, int msLeft, eEffect type = eEffect.Unknown)
+        {
+            TestEffect effect = new(player, name, icon, positive, msLeft, type);
+            var effects = (Dictionary<eEffect, List<ECSGameEffect>>) typeof(EffectListComponent).GetField("_effects", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(player.effectListComponent);
+
+            if (effects.TryGetValue(type, out List<ECSGameEffect> ofType))
+                ofType.Add(effect);
+            else
+                effects[type] = [effect];
+
+            return effect;
+        }
+
         public static TestNpc Npc(string name)
         {
             TestNpc npc = (TestNpc) RuntimeHelpers.GetUninitializedObject(typeof(TestNpc));
@@ -262,6 +276,7 @@ namespace DOL.GS.Tests
             m_name = name;
             m_customFaceAttributes = new byte[(int) eCharFacePart._Last + 1];
             movementComponent = new PlayerMovementComponent(this);
+            effectListComponent = EffectListComponent.Create(this);
             Modified = [];
             // No abilities, but the lock the constructor would have made to look them up.
             typeof(GameLiving).GetField("_abilitiesLock", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new System.Threading.Lock());
@@ -398,5 +413,27 @@ namespace DOL.GS.Tests
                 _ => throw new NotSupportedException(targetMethod.Name)
             };
         }
+    }
+
+    /// <summary>
+    /// An Effect a test puts on a living with <see cref="WorldDoubles.Effect"/>, with only what the buff bar shows of it.
+    /// </summary>
+    public sealed class TestEffect : ECSGameEffect
+    {
+        private readonly string _name;
+        private readonly ushort _icon;
+        private readonly bool _positive;
+
+        public TestEffect(GameLiving owner, string name, ushort icon, bool positive, int duration, eEffect type) : base(new ECSGameEffectInitParams(owner, duration, 1))
+        {
+            _name = name;
+            _icon = icon;
+            _positive = positive;
+            EffectType = type;
+        }
+
+        public override string Name => _name;
+        public override ushort Icon => _icon;
+        public override bool HasPositiveEffect => _positive;
     }
 }

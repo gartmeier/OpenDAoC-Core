@@ -1,5 +1,6 @@
-import type { JumpPercept, Percept, PerceptMessage, SkillEntry, StopReason } from "./protocol.ts";
+import type { EffectEntry, JumpPercept, Percept, PerceptMessage, SkillEntry, StopReason } from "./protocol.ts";
 import type { Position } from "./surroundings.ts";
+import type { Clock } from "./tactic.ts";
 
 /** The speed, in game units per second, that a maximum speed of 100% stands for (`GamePlayer.PLAYER_BASE_SPEED` in the server). Static knowledge, as the client has it. */
 export const BASE_SPEED = 191;
@@ -15,13 +16,23 @@ export type MovementStatus =
   /** Its last run ended short of its target, for `reason`. */
   | { readonly kind: "stopped"; readonly reason: StopReason };
 
+/** A buff or debuff on the Character, as its buff bar shows it (see `CONTEXT.md`). */
+export interface Effect {
+  readonly name: string;
+  /** A buff rather than a debuff. */
+  readonly positive: boolean;
+  /** Whole seconds until it ends, counting down as the client's buff bar does. 0 once its time is up, until the server takes it off. `undefined` for an Effect without a timer. */
+  readonly secondsLeft: number | undefined;
+}
+
 /**
  * What the Agent currently believes about its own Character, built only from Percepts (see `CONTEXT.md`).
  * The server says where the Character is at world entry and whenever it moves it itself (a jump), and how fast it may run. The Harness says where it is while it runs, and how each run ended, as the Agent's client works that out itself.
- * The server also says how healthy it is, whether it sits, its level, experience and spec points, its skills, and when it dies and comes back to life.
+ * The server also says how healthy it is, whether it sits, its level, experience and spec points, its skills, which Effects are on it, and when it dies and comes back to life.
  * It doesn't track the Primitives the Mind sent, so there's one answer to "where am I and am I there yet".
  */
 export class Self {
+  readonly #clock: Clock;
   #position: Position | undefined;
   #heading = 0;
   #maxSpeed = 0;
@@ -39,6 +50,12 @@ export class Self {
   #specPoints = 0;
   #skills: readonly SkillEntry[] = [];
   #specs: ReadonlyMap<string, number> = new Map();
+  #effects: readonly Effect[] = [];
+
+  /** `clock` is the Agent's, which an Effect's time left counts down on. */
+  constructor(clock: Clock) {
+    this.#clock = clock;
+  }
 
   perceive({ percept }: PerceptMessage): void {
     this.#position = ownPositionIn(percept) ?? this.#position;
@@ -93,6 +110,9 @@ export class Self {
       case "skills":
         this.#skills = percept.skills;
         this.#specs = new Map(percept.skills.filter((skill) => skill.page === "Specialization").map((skill) => [skill.name, skill.level]));
+        break;
+      case "effects":
+        this.#effects = percept.effects.map((entry) => effectFrom(entry, this.#clock));
         break;
       case "died":
         if (percept.objectId === this.#objectId)
@@ -168,6 +188,11 @@ export class Self {
     return this.#specs;
   }
 
+  /** Every Effect on it, in the order its buff bar shows them. */
+  get effects(): readonly Effect[] {
+    return this.#effects;
+  }
+
   /** Where the Character is, in global coordinates. Unknown until the server has said, at world entry. */
   get position(): Position | undefined {
     return this.#position;
@@ -201,6 +226,19 @@ export function ownPositionIn(percept: Percept): Position | undefined {
     default:
       return undefined;
   }
+}
+
+/** The Effect `entry` names, ending on `clock` as many seconds from now as it has left. */
+function effectFrom(entry: EffectEntry, clock: Clock): Effect {
+  const endsAt = entry.secondsLeft === undefined ? undefined : clock.now() + entry.secondsLeft * 1000;
+
+  return {
+    name: entry.name,
+    positive: entry.positive,
+    get secondsLeft() {
+      return endsAt === undefined ? undefined : Math.max(0, Math.ceil((endsAt - clock.now()) / 1000));
+    },
+  };
 }
 
 /** A jump without a position, as for `/faceloc`: the client keeps its position and takes only the heading. */

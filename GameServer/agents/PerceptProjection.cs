@@ -52,6 +52,7 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendPlayerPositionAndObjectID) => OwnPosition(client),
                 nameof(IPacketLib.SendPlayerJump) => Jump(client, (bool) args[0]),
                 nameof(IPacketLib.SendUpdateMaxSpeed) => MaxSpeed(client),
+                nameof(IPacketLib.SendUpdateIcons) => Effects(client),
                 nameof(IPacketLib.SendStatusUpdate) => Status(client, args.Length > 0 ? (byte) args[0] : null),
                 nameof(IPacketLib.SendUpdatePoints) => Points(client),
                 nameof(IPacketLib.SendUpdatePlayer) => Player(client),
@@ -423,6 +424,26 @@ namespace DOL.GS.Agents
                 return null;
 
             return new MaxSpeedPercept((ushort) player.movementComponent.MaxSpeedPercent, player.IsTurningDisabled, (byte) player.GetModified(eProperty.WaterSpeed));
+        }
+
+        // Mirrors `PacketLib1110.SendUpdateIcons`, which no later library overrides, for both overloads. The packet holds only the slots that changed since the last one, and the Percept the whole bar the client then shows.
+        private static EffectsPercept Effects(GameClient client)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new EffectsPercept([.. player.effectListComponent.GetSortedEffects(static effect => effect.EffectType is not eEffect.Pulse)
+                .Where(static effect => effect.Icon != 0)
+                .Select(static effect => new EffectEntry(Encoded(effect.Name), effect.HasPositiveEffect, SecondsLeft(effect)))]);
+        }
+
+        // The packet's whole seconds left, where 0 stands for no timer.
+        private static int? SecondsLeft(ECSGameEffect effect)
+        {
+            ushort secondsLeft = (ushort) (effect.GetRemainingTimeForClient() / 1000);
+            return secondsLeft > 0 ? secondsLeft : null;
         }
 
         // Mirrors `PacketLib190.SendStatusUpdate`, which no later library overrides. `sittingFlag` is the one the server passed, or null for `PacketLib168.SendStatusUpdate()`, which passes whether the Character sits.

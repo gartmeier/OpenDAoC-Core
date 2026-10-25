@@ -32,6 +32,10 @@ _Avoid_: skill, special attack
 Magic a Character casts from one of its spell lines, such as a bolt, a heal or a buff.
 _Avoid_: skill
 
+**Effect**:
+A buff or debuff on a Character, shown in its buff bar with its time left.
+_Avoid_: buff (when meaning both)
+
 **Navmesh**:
 A zone's static map of where a Character can walk, built from the game client's zone data; it says nothing about what changes, such as whether a door is open or where NPCs are.
 _Avoid_: pathing grid, nav data
@@ -69,7 +73,7 @@ One thing the Harness tells the Mind; only what a real game client would know, w
 _Avoid_: event, observation
 
 **Self**:
-What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run and whether it's on its way somewhere, built only from Percepts.
+What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere and which Effects are on it, built only from Percepts.
 _Avoid_: player, status, me
 
 **Surroundings**:
