@@ -34,9 +34,10 @@ export async function takeTask(agent: Agent, log: string[] = [], at = EIMILE): P
 /**
  * Takes a Kill Task at `at`, grinds (with `opts`) until the task Mob dies, runs back and hands it in, over and over.
  * Grinding also kills what's in the band on the way. `current` is the Mob of a task already taken.
- * When the guard gives no more tasks (the limit per level), grinds `camp` (other options, such as spots and band) until the next level, then goes back for tasks.
+ * `inTown` runs after each hand-in, e.g. to sell loot.
+ * Guards give tasks only up to level 20, and as many per level as the level. When the guard gives no more tasks (the limit per level), grinds `camp` (other options, such as spots and band) until the next level, then goes back for tasks.
  */
-export async function taskLoop(agent: Agent, minutes: number, at: typeof EIMILE, opts: Omit<GrindOptions, "minutes" | "prefer" | "goal">, current?: string, camp?: Partial<GrindOptions>): Promise<Outcome> {
+export async function taskLoop(agent: Agent, minutes: number, at: typeof EIMILE, opts: Omit<GrindOptions, "minutes" | "prefer" | "goal">, current?: string, camp?: Partial<GrindOptions>, inTown?: () => Promise<unknown>): Promise<Outcome> {
   const deadline = Date.now() + minutes * 60_000;
   const log = opts.log ?? [];
   const times = opts.times ?? {};
@@ -45,6 +46,7 @@ export async function taskLoop(agent: Agent, minutes: number, at: typeof EIMILE,
     if (!current) {
       const t = Date.now();
       const task = await takeTask(agent, log, at);
+      if (inTown) await inTown();
       times.town = Math.round((times.town ?? 0) + (Date.now() - t) / 1000);
       if (!task.ok || !task.mob) {
         if (!camp) return task;

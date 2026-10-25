@@ -12,7 +12,9 @@ What I've learned while playing, which I read again before I next act.
 
 - Target a *named* guard and `/whisper task`; kill the Mob it names, then `talkTo` it. `tactics/task.ts` `taskLoop` does the loop with any guard (`ORNORA`, `EIMILE`) and grinds a `camp` once the guard gives no more.
 - Ornora's tasks: lough wolf (levels 10–11), badger "South East" (level 12, one at X:347387 Y:519877, near the blackthorns). Reward 45‰ at level 10, 61‰ at 11, 68‰ at 12, plus ~730–870c. A lough wolf loop takes ~90 s with no resting (regen while running covers the fight): **43‰/min**, against 20–25‰/min grinding.
-- About 10 tasks per level, then `noTask` until the next level: grind the rest of the level.
+- Server rules (`KillTask.cs`): tasks only up to **level 20**; as many per level as the level (13 at 13); one task at a time across all guards; the Mob is the *first* NPC in the zone of level L-2..L, so it's the same kind all level; it expires after 2 hours. Guardians Andraste and J'akk (Tir na mBeo) give tasks too, but not on top of Ornora's.
+- Loop only the task Mob (`band: [99,99]`): grabbing red wolfhounds on the way cost 50–70% HP each and dropped the loop to 26‰/min. Badger loop: ~115 s, 73‰ + ~10‰ kill at level 13, **43‰/min**; two thirds of it is running.
+- `tactics/junk.ts`: `equipBetterArmour` (by examined AF) and `sellJunk` (drops the unsellable training gear). Selling in the `inTown` hook kept me under the weight limit: I'd got encumbered (slow) at 63/58 lb.
 - Tasks expire: a kill for a task taken ~25 min earlier counted for nothing. `/task abort` drops one. `/task` answers in a text window the Mind can't see.
 
 ## Fighting and resting
