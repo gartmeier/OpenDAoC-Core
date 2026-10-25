@@ -17,6 +17,12 @@ export async function healSelf(agent: Agent, below = 70): Promise<void> {
   while (agent.self.healthPercent < below && agent.self.power >= (heal.details?.powerCost ?? 0)) {
     const reply = await agent.sendAndWait({ name: "castSpell", spell: heal.name }, (percept) =>
       percept?.kind === "message" && /You cast a|interrupt|must wait|enough power|can't cast|select a target/.test(percept.text) ? percept.text : undefined, 10_000);
+    // Just after a swing or a hit the server holds casts off for a few seconds: wait that out and cast again.
+    const wait = reply?.match(/must wait (\d+) seconds?/);
+    if (wait) {
+      await agent.waitFor(() => undefined, Number(wait[1]) * 1000 + 300);
+      continue;
+    }
     if (!reply?.startsWith("You cast")) return;
   }
 }
