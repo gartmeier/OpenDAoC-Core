@@ -1,6 +1,6 @@
 # Using an item
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -129,3 +129,4 @@ Acceptance: Dalta, in a new Claude Code session, told that `useItem` exists and 
 ## Comments
 
 - **2026-10-25, acceptance run, half done.** Dalta logged in at its Bind point, the Basar Bindstone, and used the stone there with the Learning's snippet. `useItem` on slot 40 worked: "You attempt to use…", "You use…", "You begin casting a Personal Recall Stone spell!", 10 s later "You cast a Personal Recall Stone spell!" and a `jump` to the same X:338704 Y:444627. The snippet counted only a jump that moved it, so it returned "no jump within 15 s". Dalta struck the item-use papercut and wrote a new one about this. The Learning now lists the cast lines and waits for "You cast…" instead of a position change. Still to check: a recall from far away, after the 30-minute reuse, and the server log for speed-check entries.
+- **2026-10-25, resolved.** The Human resolved the spec without running the last two checks, assuming they pass: a recall from far away after a Kill Task kill moves Dalta to her Bind point, and the server log has no speed-check entries for her. Dalta's two fixed papercuts are deleted.
