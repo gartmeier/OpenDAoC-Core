@@ -100,11 +100,9 @@ function fightNews(percept: Percept | undefined, mobId: number, ownId: number | 
   switch (percept?.kind) {
     case "died":
       return percept.objectId === ownId ? "died" : undefined;
+    // Not death even at 0%: the server rounds health down, so a Mob with a few health points left shows 0% and fights on.
     case "objectUpdate":
-      if (percept.objectId !== mobId)
-        return undefined;
-
-      return percept.healthPercent === 0 ? "mobDied" : "news";
+      return percept.objectId === mobId ? "news" : undefined;
     // A dead NPC leaves the world as object type 0.
     case "objectRemove":
       if (percept.objectId !== mobId)

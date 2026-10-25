@@ -42,21 +42,24 @@ test("faces the Mob once the run to it has arrived", async () => {
   expect(t.take()).toEqual([{ name: "face", heading: headingTowards({ x: 296420, y: 642000, z: 4848 }, { x: 296500, y: 642000, z: 4848 })! }]);
 });
 
-test("succeeds once the Mob's health is 0, and turns attack off", async () => {
-  const { t, outcome } = await nextToIt();
-
-  await t.perceive(objectUpdate(WOLF, 296500, 642000, 4848, { healthPercent: 0 }));
-
-  expect(await outcome).toEqual({ ok: true });
-  expect(t.take()).toEqual([{ name: "attack", on: false }]);
-});
-
-test("succeeds once the Mob leaves the world dead", async () => {
+test("succeeds once the Mob leaves the world dead, and turns attack off", async () => {
   const { t, outcome } = await nextToIt();
 
   await t.perceive(objectRemove(WOLF, 0));
 
   expect(await outcome).toEqual({ ok: true });
+  expect(t.take()).toEqual([{ name: "attack", on: false }]);
+});
+
+test("fights on while the Mob shows 0% health but is still in the world", async () => {
+  const { t, outcome } = await nextToIt();
+  let ended = false;
+  void outcome.then(() => (ended = true));
+
+  await t.perceive(objectUpdate(WOLF, 296500, 642000, 4848, { healthPercent: 0 }));
+
+  expect(ended).toBe(false);
+  expect(t.take()).toEqual([]);
 });
 
 test("runs after the Mob when it moves out of melee range, from the news of where it is", async () => {

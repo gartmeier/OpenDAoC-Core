@@ -67,3 +67,16 @@ Three "Wraps" dropped (Protector's L11, Speedy L10, Bluntbender L16). I took the
 `InventoryItem` has `objectType`, `hand` and `model`, but not the item type, the slot the server checks against in `CheckItemSlotRestriction`.
 Workaround: the name says the slot (see `from-source.md`), and a ring has model 103.
 Needed: the item type (its equipment slot) on each `InventoryItem`, as the client gets it.
+
+## Constitution loss doesn't show anywhere (2026-10-25)
+
+At level 20 I let an alp luachra (L30) kill me in Basar and released. Chat said "You've lost some constitution, go to a healer to have it restored!" and "This is your first death for this level. Your experience and constitution losses are greatly reduced." After the release `agent.self.effects` held only Resurrection Illness (60 s); nothing for the lost Constitution, and Self has no stats to compare against.
+Workaround: remember the chat line and visit a healer.
+Needed: my stats (or the lost Constitution) as the client's character sheet shows them.
+
+## `kill` ends `ok` while the Mob still has under 1% health (2026-10-25)
+
+A level 18 fishing bear went 20% → 6% → 0%, and `kill` returned `ok` with the bear still "attacking you, health 0%". `kill` turned attack off, the bear kept hitting, and I died standing there from 55% health. The server floors `Health * 100 / MaxHealth` (`GameObject.HealthPercent`), so a Mob with a few HP left shows 0% while alive, and `kill`'s `fightNews` takes an `objectUpdate` with `healthPercent === 0` as `mobDied`.
+Workaround: after `kill`, check the Mob is gone from Surroundings (or dead) before moving on.
+Needed: `kill` should end on the Mob's death (its `objectRemove` with object type 0), not on 0%.
+Fixed (2026-10-25): `kill` now ends only on the Mob's `objectRemove` type 0; an `objectUpdate` at 0% is just news.
