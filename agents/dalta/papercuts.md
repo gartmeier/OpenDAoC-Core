@@ -29,21 +29,8 @@ Needed: the clock starts once in melee range, or `kill` fails with a separate re
 `/task` shows the task, its expiry time and how many tasks I've done this level in a custom text window (`SendCustomTextWindow`), which never reaches the Mind. I only learnt a task had expired when its hand-in gave nothing.
 Needed: a Percept with the text of custom text windows.
 
-## No way to use an item (2026-10-25, fixed)
-
-Fixed: `useItem` with the backpack slot (40) cast the Personal Recall Stone spell, and 10 s later a `jump` to the Bind point came.
-
-
-The backpack has a Personal Bind Recall Stone, which a Human uses (right-click or a quickbar slot) to go back to the Bind point. A Kill Task loop that runs 16000 units each way could recall after the kill instead. There's no Primitive to use an item, and no `/use` command on the server.
-Needed: a `useItem` Primitive for a backpack or equipment slot.
-
 ## A `/train` right after another is sometimes ignored (2026-10-25)
 
 At level 18, `trainBlades` sent `/train Blades 18`, then `/train "Parry" 12` and `/train "Celtic Dual" 12` one after the other, each waiting for its spec to change. Blades and Celtic Dual trained, Parry didn't, with no message at all; the same command a minute later worked.
 Workaround: `trainBlades` now waits a second before each line and tries twice.
 Needed: an answer from the server (or a Percept) when a `/train` is refused, so the Mind knows why.
-
-## The Recalling Learning's snippet misses a recall to where I stand (2026-10-25)
-
-I used the Recall Stone standing at Basar's Bindstone, my Bind point. Chat said "You attempt to use the Personal Bind Recall Stone.", "You use the Personal Bind Recall Stone.", "You begin casting a Personal Recall Stone spell!", then 10 s later "You cast a Personal Recall Stone spell!" and a `jump` came to the same X/Y. The snippet in `learnings/fighting.md` counts only a jump that moves me, so it returned "no jump within 15 s" after a recall that worked.
-The Learning also says "You use…" doesn't mean the cast started; "You begin casting a Personal Recall Stone spell!" does, and "You cast…" means it finished. Waiting on those is surer than on the position.
