@@ -33,9 +33,16 @@ export async function pull(agent: Agent, objectId: number): Promise<Outcome> {
 
   if (spell) {
     const range = (spell.details?.range ?? 1500) - 150;
-    if (distance(agent, first.position) > range) {
+    const away = distance(agent, first.position);
+    if (away > range) {
       const ran = await runTo(agent, first.position, range);
       if (!ran.ok) return ran;
+    } else if (away < 800 && first.targetId !== agent.self.objectId) {
+      // Too close for more than one cast: back off from it first, while it doesn't care about me yet.
+      const at = agent.self.position!;
+      const length = away || 1;
+      const back = range - away;
+      await runTo(agent, { x: Math.round(at.x + ((at.x - first.position.x) / length) * back), y: Math.round(at.y + ((at.y - first.position.y) / length) * back), z: at.z });
     }
 
     let hit = false;
@@ -63,6 +70,20 @@ export async function pull(agent: Agent, objectId: number): Promise<Outcome> {
   }
 
   return await kill(agent, objectId);
+}
+
+/** Casts the best armour buff on yourself if it isn't up, then rests the Power back. */
+export async function buffUp(agent: Agent): Promise<void> {
+  const me = agent.self.objectId;
+  const ward = agent.self.skills
+    .filter((skill) => skill.page === "Spells" && skill.details?.description.startsWith("Increases your armor factor"))
+    .sort((a, b) => b.level - a.level)[0];
+  if (me === undefined || !ward || agent.self.effects.some((effect) => effect.name === ward.name)) return;
+
+  await agent.send({ name: "target", objectId: me });
+  await agent.sendAndWait({ name: "castSpell", spell: ward.name }, (percept) =>
+    percept?.kind === "message" && /You cast a|interrupt|must wait|enough power|can't cast|select a target/.test(percept.text) ? percept.text : undefined, 10_000);
+  await rest(agent, 100);
 }
 
 /**
@@ -99,6 +120,8 @@ export async function hunt(agent: Agent, levels: (level: number) => number[], un
       await rest(agent, 100);
       continue;
     }
+
+    await buffUp(agent);
 
     const wanted = levels(agent.self.level);
     const mob = agent.surroundings.npcs
