@@ -1,6 +1,6 @@
 # Milestone 8: Damage spells
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -178,3 +178,16 @@ Acceptance: Orla goes from 1 to 5 in a new Claude Code session, killing Mobs wit
 - **`TestPlayer` gained list spells,** cached as the server caches them, and the specialization and skill-list fields the projection reads.
 - **`agents/orla`** was already created by the Human, the same as the template with Orla's name.
 - **The Learning hasn't been run in a fight.** Its message texts are the server's, and its snippets typecheck. Orla's run is the test, Kiting above all: whether `runTo` takes a point 900 units away on uneven ground is untested.
+
+**2026-10-25 (agent):** After Orla's run: a `useAbility { ability }` Primitive for Quick Cast, which Orla gets as an Eldritch. A client sends it as the skill packet with the ability's index, as in the Human's capture `Debug/packet-captures/admin-20261025-203702-240.tsv` (Vue, index 3). The server refuses it while attack is on. Then the spells Learning gains the Human's routine: cast, let the Mob reach you, Quick Cast, and if it's still alive, the staff, or kite.
+
+**2026-10-26 (agent):** Orla's run, from its Journal (`agents/orla/journal/2026-10-25T20-48-19-162Z.log`), Lessons, papercuts and commits:
+
+- **How far and how long.** Level 1 to 5 and promoted to Eldritch in one session of about 61 minutes: 17 kills from 1 to 3 on sand crabs and beach rats south of Connla, 16 from 3 to 4 mostly on mudmen, 8 from 4 to 5. It died 6 times: to a sand crab, charging in with the staff before it pulled from range, twice to a level 1 large frog at level 1, once to a sandman, and twice at level 4 fighting back with the staff alone. Fearnan played in Connla at the same time.
+- **Casting.** 260 casts: 29 Gleam Ray, 39 Gleam Streak, 188 Gleam Blast and 4 Powerward. 168 hits, 21 resists, 4 interrupts and 6 "too far away". 25 casts went at a Mob that had just died or gone out of view, and the server said "You must select a target for this spell!". `castSpell` by name worked from the first cast, and each new Spell appeared after levelling.
+- **Kiting.** It never kited: no `/sprint`, no running away to cast. On the Human's advice it opened every fight with Gleam Ray from about 1350 units and cast until the Mob first hit it, then finished it with the staff, which hit harder at level 1. Later it learned to answer a Mob that came at it with Spells, not the staff. That's the Human's routine without Quick Cast, which a Magician doesn't have. The Learning's Kiting section is still untested.
+- **The trainer.** It found Nainsi, the Eldritch Trainer in Connla, talked to Nainsi with `talkTo` and whispered "Eldritch".
+- **Nudges.** Its Lessons record two from the Human: open every fight from range, and rest to full Power before the next pull. Why the session stopped otherwise isn't in the Journal.
+- **Papercuts.** Two, neither about this milestone: a Tactic that once failed to import kept failing after the fix (renaming the file got around it), and `train` with "Light Magic", the name `specs` shows, fails where `/train Light` works.
+- **Between Orla and Fearnan.** Nothing got in the way. Orla saw Fearnan with `/who all` and noted it in its Lessons.
+- **Speed checks.** None for Orla in the server log.
