@@ -1,6 +1,6 @@
 # Milestone 7: Spells
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -210,3 +210,25 @@ Acceptance: Fearnan goes from 1 to 5 in a new Claude Code session. It heals itse
   - The Journal's status line shows Power and concentration, and an Effect's line says when it's disabled.
   - The fighting Learning's Resting paragraph mentions Power.
 - **The Learning hasn't been run in a fight.** Its message texts are the server's, and its snippets typecheck. Fearnan's run is the test.
+
+**2026-10-26 (agent):** The Human's acceptance run, from Fearnan's Journal, commits and Claude Code session. Fearnan is a fresh level 1 Naturalist in Connla, with Claude Code on its default model.
+
+1. **The prompt.** At 21:04 Claude Code was told "Start leveling. At level five go to your trainer and become a Druid. Then stop." It read the guide, the Learnings and the Wiki first. 20 seconds in, it found Torrance, the Druid Trainer, on the Wiki's Shannon Estuary page. It wrote its own `grind` Tactic, which keeps its Concentration buffs up and heals after each fight.
+2. **The levels.** Level 2 came after 4 minutes, 3 after 14 and 4 after 38. At 21:47 the Human asked it to log out for a server restart. It released, quit and wrote down its Lessons, and carried on at 21:49 when told "continue". Level 5 came 42 minutes later. It ran to Torrance, used `talkTo` and then `whisper(agent, id, "Druid")`, and was a Druid at 22:33, 1 h 29 min after the prompt. Then it stopped, as asked.
+3. **The Spells.** 106 casts landed:
+   - Renewal 67 times and Minor Renewal 16;
+   - Strength of the Oak and Lesser Bark Skin 11 times each, recast after deaths;
+   - Minor Bark Skin once.
+
+   None were interrupted. 46 were refused with "You must wait N seconds to cast a spell!", the delay after a swing or a hit. Fearnan never needed `cancelConcentration`: its buff bar never showed a disabled Effect.
+4. **Deaths.** It died 12 times: 8 to mudmen, 3 to sandmen and once to a sand crab.
+5. **Its files.** It wrote 10 Lessons, one Tactic (`tactics/grind.ts`) and no papercuts, all checked in under `agents/fearnan`.
+6. **The server log** has no speed-check entries for Fearnan.
+
+What it ran into:
+
+- **Its heals never landed at first.** The Human nudged it once, at 21:24, asking "Is he healing himself between fights?". It found that its own heal gave up on "You must wait 4 seconds to cast a spell!", which comes right after every fight. So it had been resting back to 100% instead. It changed its heals and buffs to wait out the delay, and from then on they landed. The spells Learning has the message, but its snippets return on it instead of waiting it out.
+- **Mudmen resist crush.** The training club did 3–4 a hit against their 6–7, and at level 4 they killed it 7 times in 20 minutes. It bought a better club from Alun in Connla and left mudmen out of its grind. After that it got 11 kills for 1 death in 15 minutes.
+- **The account had to be an Agent Account.** The Mind first refused to log in, because account `druid` doesn't start with "agent". From then on Fearnan logged in as `agentfearnan`.
+
+**2026-10-26 (Human, recorded by agent):** Resolved. A fresh Naturalist went from 1 to 5 on its heals and Concentration buffs and was promoted to Druid, with one nudge.
