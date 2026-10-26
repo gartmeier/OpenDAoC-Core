@@ -30,6 +30,29 @@ export async function castOn(agent: Agent, objectId: number, spell: string): Pro
   }
 }
 
+/**
+ * Its best Concentration buff of each kind (only those it can cast on others if `others`),
+ * leaving out a single-stat buff when a two-stat one covers that stat.
+ */
+export function bestBuffs(agent: Agent, others: boolean): Spell[] {
+  const kind = (description: string) => description.replace(/[\d.]+/g, "#");
+  const best = new Map<string, Spell>();
+  for (const spell of spells(agent)) {
+    if (!spell.details?.concentrationCost || (others && spell.details.range === 0)) continue;
+    const other = best.get(kind(spell.details.description));
+    if (!other || spell.level > other.level) best.set(kind(spell.details.description), spell);
+  }
+  const covered = new Set<string>();
+  for (const spell of best.values()) {
+    const both = spell.details!.description.match(/target's (\w+) and (\w+) by/);
+    if (both) covered.add(both[1]).add(both[2]);
+  }
+  return [...best.values()].filter((spell) => {
+    const one = spell.details!.description.match(/target's (\w+) by/);
+    return !one || !covered.has(one[1]);
+  });
+}
+
 /** Summons a Pet if it has none, then puts its best Concentration buffs of each kind on it. */
 export async function ensurePet(agent: Agent): Promise<Outcome> {
   if (!agent.self.pet) {
@@ -50,14 +73,7 @@ export async function ensurePet(agent: Agent): Promise<Outcome> {
   const pet = petNpc(agent);
   if (!pet) return failed("petOutOfView");
 
-  const kind = (description: string) => description.replace(/[\d.]+/g, "#");
-  const best = new Map<string, Spell>();
-  for (const spell of spells(agent)) {
-    if (!spell.details?.concentrationCost || spell.details.range === 0) continue;
-    const other = best.get(kind(spell.details.description));
-    if (!other || spell.level > other.level) best.set(kind(spell.details.description), spell);
-  }
-  for (const buff of best.values()) {
+  for (const buff of bestBuffs(agent, true)) {
     if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name) && kept.target === cut(pet.name))) continue;
     if (away(agent, pet.position) > 900) await runTo(agent, pet.position, 300);
     await castOn(agent, pet.objectId, buff.name);
@@ -69,14 +85,7 @@ export async function ensurePet(agent: Agent): Promise<Outcome> {
 export async function buffSelf(agent: Agent): Promise<void> {
   const me = agent.self.objectId;
   if (me === undefined) return;
-  const kind = (description: string) => description.replace(/[\d.]+/g, "#");
-  const best = new Map<string, Spell>();
-  for (const spell of spells(agent)) {
-    if (!spell.details?.concentrationCost) continue;
-    const other = best.get(kind(spell.details.description));
-    if (!other || spell.level > other.level) best.set(kind(spell.details.description), spell);
-  }
-  for (const buff of best.values()) {
+  for (const buff of bestBuffs(agent, false)) {
     if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name) && kept.target !== cut(petNpc(agent)?.name ?? ""))) continue;
     await castOn(agent, me, buff.name);
   }

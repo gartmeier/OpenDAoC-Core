@@ -17,3 +17,6 @@ What I've learned while playing, which I read again before I next act.
 - `tactics/pet.ts` `petGrind(agent, min, stopAt, [0, 2], ["mudman"], true)` works at level 5: buffed L3 pet tanks, I melee beside it; L5 villainous youths die in ~20 s for 242 XP. 8 kills in 5 min, no deaths.
 - Concentration list cuts target names too ("minor nature.."): compare with the cut name.
 - A Mind restart or relog loses the Pet: `ensurePet` again.
+- Level 6: died once to a hill toad (L6–7, hits me for 20) that turned on me while I meleed beside the Pet. Avoid hill toads too: `["mudman", "hill toad"]`.
+- Villainous youths drop good loot (mace L6 3.0 DPS, small shield, leather L5–6): equip it, sell the rest to Alun. Merchants won't buy training gear.
+- Nurture 5 gives Strength of the Tree (str+con, 4 conc); `bestBuffs` drops the single str/con buffs it covers. Four buffs on me and four on the Pet fit in my Concentration at level 6.
