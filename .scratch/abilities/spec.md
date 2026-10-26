@@ -1,6 +1,6 @@
 # Abilities
 
-Status: ready-for-human
+Status: resolved
 
 ## Problem Statement
 
@@ -48,3 +48,17 @@ Orla became an Eldritch at the end of milestone 8, and an Eldritch has Quick Cas
 
 - **Quick Cast, from the server's code.** Eldritch, Enchanter and Mentalist have it from promotion. It lasts 3 s, and ends without a message if no Spell starts. The quickcasted Spell can't be interrupted and costs twice the Power. Its cast time doesn't change, whatever the tooltip says. After it, Quick Cast can't be used for 30 s. It's refused while attack is on, while casting, and when dead. Using it again while it's up turns it off.
 - Follows the note on `.scratch/damage-spells/spec.md`.
+
+## Comments
+
+**2026-10-26 (agent):** The acceptance run, from Orla's Claude Code session `23679387-da03-4840-9861-3de702024605` (about 7 minutes):
+
+- **Finding it.** Asked to show what it saw, Orla listed Sprint, Quickcast, Weaponry: Staves and Armor Ability: Cloth on its Abilities page, and noticed "Quickcast" is one word. The Learning still said "Quick Cast" then. The Human fixed it, and Orla read it again. In town, `useAbility "Quickcast"` answered "You have activated quickcast.", a second use "Your next spell will not be quickcasted.", and the "Quick Cast" Effect ended after 3 s without a cast. Once, `effects` was still empty when it read it right after the message, so Orla waits for the message.
+- **In a fight.** The Human told it to try Quickcast on a Mob. Two mudmen:
+  - Level 4: Quickcast never went off. Orla tried it right after the first hit, while it was still casting, and the server refused: "You can't prepare a quickcast while casting a spell!". It finished the fight with the staff at 16% health.
+  - Orla then gave its own `hunt.ts` a `quickCast` that waits for the running cast to land or break and tries once more.
+  - Level 3: two casts from range hit for 15 and 18. A third was hit mid-cast without being interrupted, then resisted. Then "You have activated quickcast.", and the quickcasted Major Ethereal Concussion hit for 28 with the mudman on Orla. One staff hit killed it, and Orla ended at 80% health.
+- **What it got wrong in the Learning.** The Learning said every hit interrupts a cast. On this server a hit starts an interrupt timer as long as the attacker's swing. A cast is interrupted only if it reaches its halfway point while the timer runs, and no new cast can start meanwhile. Quickcast skips both. The Learning now says so, and its snippet waits for a running cast before trying Quickcast again.
+- **Power.** A quickcasted Major Ethereal Concussion cost 8, twice as much. Orla keeps that much back.
+- **Papercuts.** None about `useAbility`. Orla's own `pull` reported a kill as `outOfView` because the corpse left its Surroundings first, and it will fix that itself.
+- **Speed checks.** None for Orla in the server log.

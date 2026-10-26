@@ -24,6 +24,13 @@ Stand still and stand up: moving interrupts the cast, and you can't cast sitting
 - "You must wait 3 seconds to cast a spell!" just after you swung or were hit;
 - "You don't have enough power to cast that!", "You can't cast while sitting!" or "You must select a target for this spell!" when it can't start.
 
+How a hit interrupts, from the server's code:
+
+- A hit doesn't stop your cast on the spot. It starts an interrupt timer as long as the attacker's swing, a few seconds, unless it misses its roll: the chance drops by 5% for each level the attacker is below you.
+- While that timer runs, a cast you've started is interrupted when it reaches its halfway point, and you can't start a new one: "You must wait 2 seconds to cast a spell!".
+- A hit after your cast's halfway point doesn't interrupt it. So a cast often lands with the Mob already on you.
+- Your own swing holds your next cast off the same way, for as long as your swing.
+
 ```ts
 const me = agent.self.objectId;
 if (me === undefined) return "not in the world yet";
@@ -38,7 +45,7 @@ A `castSpell` the Harness refuses (`queued: false`) says why in `reason`: a Spel
 
 ## Healing between fights
 
-Heal between fights, not in them: every hit on you interrupts the cast, every swing of yours holds the next cast off for a few seconds, and casting turns your attack off. Heals cost Power, which `agent.self.power` and `powerPercent` show. `rest` sits until both your health and your Power are back.
+Heal between fights, not in them: a Mob hitting you keeps interrupting your casts and stops you starting new ones, every swing of yours holds the next cast off for a few seconds, and casting turns your attack off. Heals cost Power, which `agent.self.power` and `powerPercent` show. `rest` sits until both your health and your Power are back.
 
 ```ts
 const me = agent.self.objectId;
@@ -158,7 +165,7 @@ return `${damage.name} at the ${mob.name}: ${reply ?? "no answer within 10 s"}`;
 
 ## Kiting
 
-A Mob next to you hits you, and every hit interrupts your cast. Kiting keeps it away: sprint away from it, turn round, and cast at it before it reaches you, again and again.
+A Mob next to you keeps hitting you, and its hits interrupt your casts and stop you starting new ones. Kiting keeps it away: sprint away from it, turn round, and cast at it before it reaches you, again and again.
 
 The numbers it rests on, from the server:
 
@@ -214,7 +221,7 @@ Prismatic Flare's 3 s stun buys you a cast without running. Your buffs from Way 
 
 `useAbility` uses an Ability by its name in `agent.self.skills` (`page` "Abilities" or "RealmAbilities"), as a click on its icon does: Sprint, Quickcast, or a Realm Ability. Give the name exactly as `skills` has it: Quick Cast is "Quickcast" there, one word. One you don't have is refused (`queued: false`) with the reason. A passive one, such as Staves, does nothing.
 
-An Eldritch, an Enchanter and a Mentalist get Quick Cast when they're promoted. It makes the next Spell you start within 3 s one that nothing interrupts, at twice the Power. It doesn't make the cast shorter. The server says:
+An Eldritch, an Enchanter and a Mentalist get Quick Cast when they're promoted. It makes the next Spell you start within 3 s one that nothing interrupts, at twice the Power, and it lets you start that Spell while a hit's interrupt timer runs. It doesn't make the cast shorter. The server says:
 
 - "You have activated quickcast." when it's ready, and "Quick Cast", two words, is in `agent.self.effects` until you cast or the 3 s run out, which the server doesn't announce;
 - "Your next spell will not be quickcasted." when you use it again to turn it off;
@@ -222,11 +229,13 @@ An Eldritch, an Enchanter and a Mentalist get Quick Cast when they're promoted. 
 - "You must wait 12 more second to attempt to quick cast!" for 30 s after a quickcasted Spell;
 - "You can't prepare a quickcast while casting a spell!" mid-cast.
 
-It saves a fight once the Mob has reached you, when every hit would interrupt a normal cast. The Human's routine:
+It saves a fight once the Mob has reached you, when its hits would interrupt a normal cast or keep you from starting one. The Human's routine:
 
 1. Cast at the Mob from range until it reaches you.
 2. Quick Cast, and cast once more: the hits don't interrupt it.
 3. If it's still alive, finish it with your staff, or kite if you're losing.
+
+The Mob's first hit usually lands while you're still casting, and a cast past its halfway point carries on. Quick Cast is refused until that cast lands or breaks, so wait for it and try again. Orla's first try failed that way, and Orla finished the fight with the staff at 16% health. Keep twice your damage Spell's Power back for the quickcasted one.
 
 Steps 2 and 3, once the Mob is on you:
 
@@ -243,8 +252,16 @@ if (!damage) return "no damage Spell";
 await agent.send({ name: "attack", on: false });
 await agent.send({ name: "target", objectId: mob.objectId });
 
-const ready = await agent.sendAndWait({ name: "useAbility", ability: "Quickcast" }, (percept) =>
-  percept?.kind === "message" && /activated quickcast|must wait|melee combat|while casting/.test(percept.text) ? percept.text : undefined, 3_000);
+const quickcast = () =>
+  agent.sendAndWait({ name: "useAbility", ability: "Quickcast" }, (percept) =>
+    percept?.kind === "message" && /activated quickcast|must wait|melee combat|while casting/.test(percept.text) ? percept.text : undefined, 3_000);
+
+let ready = await quickcast();
+if (ready?.includes("while casting")) {
+  // Still on the cast the Mob's first hit didn't break: wait for it to land or break, then try again.
+  await agent.waitFor((percept) => percept?.kind === "message" && /You hit|resists|interrupted/.test(percept.text), 5_000);
+  ready = await quickcast();
+}
 if (!ready?.includes("activated")) return `no Quick Cast: ${ready ?? "no answer"}`;
 
 const reply = await agent.sendAndWait({ name: "castSpell", spell: damage.name }, (percept) =>
