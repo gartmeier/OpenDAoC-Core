@@ -222,7 +222,7 @@ namespace DOL.GS.Agents
     // What a spell does and costs is in its `skills` entry, from the tooltip the server sent with the skill list.
     public sealed record CastSpellPrimitive([property: JsonRequired] string Spell) : Primitive;
 
-    // Uses the ability named `Ability`, such as Sprint, Quick Cast or a realm ability, as a click on its icon does.
+    // Uses the ability named `Ability`, such as Sprint, Quickcast or a realm ability, as a click on its icon does.
     // The Harness refuses an ability or realm ability the server's last `skills` didn't list. Whether it worked, and why not, the server says in `message` Percepts, and an ability with an Effect shows in `effects`.
     public sealed record UseAbilityPrimitive([property: JsonRequired] string Ability) : Primitive;
 

@@ -128,7 +128,7 @@ namespace DOL.GS.Tests
         [Test]
         public void Read_ShouldReadAUseAbilityPrimitive()
         {
-            Assert.That(Read("""{"type":"primitive","id":31,"primitive":{"name":"useAbility","ability":"Quick Cast"}}"""), Is.EqualTo(new PrimitiveMessage(31, new UseAbilityPrimitive("Quick Cast"))));
+            Assert.That(Read("""{"type":"primitive","id":31,"primitive":{"name":"useAbility","ability":"Quickcast"}}"""), Is.EqualTo(new PrimitiveMessage(31, new UseAbilityPrimitive("Quickcast"))));
         }
 
         [Test]

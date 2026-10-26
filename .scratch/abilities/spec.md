@@ -14,6 +14,7 @@ Orla became an Eldritch at the end of milestone 8, and an Eldritch has Quick Cas
 
 - **Capture.** The Human's capture from account `admin` on 2026-10-25, of Vue, a level 50 Mentalist, clicking Quick Cast four times, is checked in as `quick-cast.tsv` with an Abilities section in the fixtures README. Quick Cast is the skill packet (0xBB), byte for byte as a Style or a hybrid's Spell, at index 3.
 - **Primitive (ADR 0002).** `useAbility { ability }` sends the skill packet with the index of the Ability or Realm Ability of that name in the skill list the server last sent, counting as for `useStyle`. Anything else of that name, or nothing, is refused at dispatch: `Orla has no Ability "X".`. Whether it worked comes from the server's messages (ADR 0004).
+- **Names** are the Ability's name in the database, as the skill list carries them: Quick Cast is "Quickcast", one word. Its Effect in the buff bar is "Quick Cast", from the server's language file.
 - **Realm Abilities** are Abilities to the server, used by the same handler, so the same Primitive covers them.
 - **`/sprint`** keeps working through `command`.
 - **Codegen.** As before: the C# record, regenerated TypeScript. The Journal names the ability it used.

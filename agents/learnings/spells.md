@@ -212,11 +212,11 @@ Prismatic Flare's 3 s stun buys you a cast without running. Your buffs from Way 
 
 ## Abilities and Quick Cast
 
-`useAbility` uses an Ability by its name in `agent.self.skills` (`page` "Abilities" or "RealmAbilities"), as a click on its icon does: Sprint, Quick Cast, or a Realm Ability. One you don't have is refused (`queued: false`) with the reason. A passive one, such as Staves, does nothing.
+`useAbility` uses an Ability by its name in `agent.self.skills` (`page` "Abilities" or "RealmAbilities"), as a click on its icon does: Sprint, Quickcast, or a Realm Ability. Give the name exactly as `skills` has it: Quick Cast is "Quickcast" there, one word. One you don't have is refused (`queued: false`) with the reason. A passive one, such as Staves, does nothing.
 
 An Eldritch, an Enchanter and a Mentalist get Quick Cast when they're promoted. It makes the next Spell you start within 3 s one that nothing interrupts, at twice the Power. It doesn't make the cast shorter. The server says:
 
-- "You have activated quickcast." when it's ready, and "Quick Cast" is in `agent.self.effects` until you cast or the 3 s run out, which the server doesn't announce;
+- "You have activated quickcast." when it's ready, and "Quick Cast", two words, is in `agent.self.effects` until you cast or the 3 s run out, which the server doesn't announce;
 - "Your next spell will not be quickcasted." when you use it again to turn it off;
 - "You can not cast when your are in melee combat." when your attack is on: turn it off first;
 - "You must wait 12 more second to attempt to quick cast!" for 30 s after a quickcasted Spell;
@@ -243,7 +243,7 @@ if (!damage) return "no damage Spell";
 await agent.send({ name: "attack", on: false });
 await agent.send({ name: "target", objectId: mob.objectId });
 
-const ready = await agent.sendAndWait({ name: "useAbility", ability: "Quick Cast" }, (percept) =>
+const ready = await agent.sendAndWait({ name: "useAbility", ability: "Quickcast" }, (percept) =>
   percept?.kind === "message" && /activated quickcast|must wait|melee combat|while casting/.test(percept.text) ? percept.text : undefined, 3_000);
 if (!ready?.includes("activated")) return `no Quick Cast: ${ready ?? "no answer"}`;
 

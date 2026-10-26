@@ -492,7 +492,7 @@ namespace DOL.GS.Tests
                 new SpecializationEntry("Void", 5),
                 new AbilityEntry("Staves", 1),
                 new AbilityEntry("Sprint", 1),
-                new AbilityEntry("Quick Cast", 1),
+                new AbilityEntry("Quickcast", 1),
                 new RealmAbilityEntry("Purge", 1),
                 new SpellEntry("Minor Revigoration", 1, null),
                 new StyleEntry("Shining Blade", 2, "Blades", null)]);
@@ -507,7 +507,7 @@ namespace DOL.GS.Tests
             client.OnPerceived(EldritchSkills());
 
             Assert.That(client.Dispatch(new UseAbilityPrimitive("Sprint"), mind.Link), Is.Null);
-            Assert.That(client.Dispatch(new UseAbilityPrimitive("Quick Cast"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new UseAbilityPrimitive("Quickcast"), mind.Link), Is.Null);
             Assert.That(client.Dispatch(new UseAbilityPrimitive("Purge"), mind.Link), Is.Null);
 
             Vector3 at = new(296516, 641415, 4848);
@@ -525,7 +525,7 @@ namespace DOL.GS.Tests
             yield return new TestCaseData(new UseAbilityPrimitive("Void"), "Greeen has no Ability \"Void\".");
             yield return new TestCaseData(new UseAbilityPrimitive("Minor Revigoration"), "Greeen has no Ability \"Minor Revigoration\".");
             yield return new TestCaseData(new UseAbilityPrimitive("Shining Blade"), "Greeen has no Ability \"Shining Blade\".");
-            yield return new TestCaseData(new CastSpellPrimitive("Quick Cast"), "Greeen has no Spell \"Quick Cast\".");
+            yield return new TestCaseData(new CastSpellPrimitive("Quickcast"), "Greeen has no Spell \"Quickcast\".");
             yield return new TestCaseData(new UseStylePrimitive("Sprint"), "Greeen has no Style \"Sprint\".");
         }
 
