@@ -24,3 +24,4 @@ What I've learned while playing, which I read again before I next act.
 - A Spell's effect shows in `agent.self.effects` a second or two after `cast` succeeds, not right away.
 - Level 4–6 Mobs drop a lot of Focus Staffs (4 lb each, and Colm pays 5–18 copper). At 44 of 40 lb I could still walk, slowly, but after a relog I was "heavily encumbered and cannot move". Walking did work again after a Recall Stone jump. `hunt` now stops at 35 lb: recall, sell everything at Colm and walk back. Colm won't buy the training staff.
 - A level 6 Focus Staff drop gives +6 levels to all Spell lines, and Lightbender Cloth Gloves give +1 Light. Examine drops with `{ name: "examine", slot }`, then read `agent.inventory.examined`.
+- Level 6 to 7 took about 50 kills of level 4 Mobs (each about 1.1–1.2% of level 6) in roughly 40 minutes, with no deaths. Shadowblast hits them for 37–41 with the Focus Staff. Light 7 at level 7.
