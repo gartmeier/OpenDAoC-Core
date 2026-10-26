@@ -80,6 +80,15 @@ test("fails with interrupted when its own cast is interrupted, and not when anot
   expect(await outcome).toEqual({ ok: false, reason: "interrupted" });
 });
 
+// The server sends the hit's line, as a refusal, just before the interrupt itself.
+test("fails with interrupted, not refused, on the line a hit sends as it interrupts the cast", async () => {
+  const { t, outcome } = await casting();
+
+  await t.perceive(castStarted(ME, 2500), gameMessage("The feccan attacks you and your spell is interrupted!"), interrupted(ME));
+
+  expect(await outcome).toEqual({ ok: false, reason: "interrupted" });
+});
+
 test("waits out \"You must wait\" and casts again, then succeeds", async () => {
   const { t, outcome } = await casting();
   t.take();

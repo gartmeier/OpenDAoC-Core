@@ -13,6 +13,8 @@ const WAIT_MARGIN_MS = 300;
 
 /** The refusals and failures the server gives only as chat, all as `CT_SpellResisted`, with the reason each ends the cast with. Any other is `refused`. */
 const REASONS: [RegExp, string][] = [
+  // A hit's line, which comes just before the interrupt itself.
+  [/your spell is interrupted/, "interrupted"],
   [/too far away|out of range/, "tooFar"],
   [/can't see your target|not visible/, "notInView"],
   [/select a target/, "noTarget"],
