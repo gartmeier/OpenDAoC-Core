@@ -1,4 +1,4 @@
-import type { ConcentrationBuff, DialogPercept, EffectEntry, JumpPercept, Percept, PerceptMessage, Primitive, SkillEntry, SpellDetails, StopReason } from "./protocol.ts";
+import type { ConcentrationBuff, DialogPercept, EffectEntry, JumpPercept, Percept, PerceptMessage, PetWindowPercept, Primitive, SkillEntry, SpellDetails, StopReason } from "./protocol.ts";
 import type { Position } from "./surroundings.ts";
 import type { Clock } from "./tactic.ts";
 
@@ -32,11 +32,14 @@ export interface Effect {
 /** A question the server put to the Character in a window (see `CONTEXT.md`): its text, whether it asks yes or no or only says OK, and what an `answerDialog` echoes back. */
 export type Dialog = Omit<DialogPercept, "kind">;
 
+/** The Character's Pet (see `CONTEXT.md`), as its pet window shows it: the Pet's object ID, which its Surroundings know it by, and its aggression and walk settings. */
+export type Pet = Omit<PetWindowPercept, "kind" | "action">;
+
 /**
  * What the Agent currently believes about its own Character, built from Percepts (see `CONTEXT.md`).
  * The server says where the Character is at world entry and whenever it moves it itself (a jump), and how fast it may run. The Harness says where it is while it runs, and how each run ended, as the Agent's client works that out itself.
  * The server also says how healthy it is, how much Power and concentration it has, whether it sits, its level, experience and spec points, its skills, which Effects are on it, which Concentration buffs it keeps up,
- * how much Constitution it has lost, when it dies and comes back to life, and which Dialog it opened.
+ * how much Constitution it has lost, when it dies and comes back to life, which Pet it has and which Dialog it opened.
  * Of the Primitives the Mind sent it tracks only answering the Dialog, which closes it as a click does in the client, so there's one answer to "where am I and am I there yet".
  */
 export class Self {
@@ -66,6 +69,7 @@ export class Self {
   #specs: ReadonlyMap<string, number> = new Map();
   #effects: readonly Effect[] = [];
   #constitutionLost: number | undefined;
+  #pet: Pet | undefined;
   #dialog: Dialog | undefined;
 
   /** `clock` is the Agent's, which an Effect's time left counts down on. */
@@ -142,6 +146,11 @@ export class Self {
         this.#constitutionLost = percept.constitutionLost;
         this.#maxHealth = percept.maxHealth;
         break;
+      case "petWindow": {
+        const { kind, action, ...pet } = percept;
+        this.#pet = action === "Close" ? undefined : pet;
+        break;
+      }
       case "dialog": {
         const { kind, ...dialog } = percept;
         this.#dialog = dialog;
@@ -262,6 +271,11 @@ export class Self {
   /** The Constitution it has lost by dying, which a Healer restores. Unknown until the server has said, at world entry. */
   get constitutionLost(): number | undefined {
     return this.#constitutionLost;
+  }
+
+  /** Its Pet, from when the server opens the pet window until it closes it, when the Pet dies or is released. */
+  get pet(): Pet | undefined {
+    return this.#pet;
   }
 
   /** The Dialog the server opened, until it's answered or a newer one takes its place. */

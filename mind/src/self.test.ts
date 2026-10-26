@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import type { JumpPercept, MovedPercept, OwnPositionPercept, Percept, PerceptMessage } from "./protocol.ts";
 import { ownPositionIn, Self } from "./self.ts";
 import { FakeClock } from "./test-agent.ts";
-import { concentration, dialog, died, effects, player, points, revived, skills, spec, stats, status } from "./test-percepts.ts";
+import { concentration, dialog, died, effects, petWindow, player, points, revived, skills, spec, stats, status } from "./test-percepts.ts";
 
 function message(percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs: 1000, percept };
@@ -202,6 +202,20 @@ test("takes its Power and the concentration it has left from the status Percept"
   expect(agentSelf.maxPower).toBe(12);
   expect(agentSelf.concentration).toBe(16);
   expect(agentSelf.maxConcentration).toBe(18);
+});
+
+test("knows no pet before the server opens the pet window, then its pet and settings from each one, and none once it closes", () => {
+  const agentSelf = new Self(new FakeClock());
+  expect(agentSelf.pet).toBeUndefined();
+
+  agentSelf.perceive(message(petWindow("Open", 0x0456)));
+  expect(agentSelf.pet).toEqual({ objectId: 0x0456, aggression: "Defensive", walk: "Follow" });
+
+  agentSelf.perceive(message(petWindow("Update", 0x0456, "Passive", "Stay")));
+  expect(agentSelf.pet).toEqual({ objectId: 0x0456, aggression: "Passive", walk: "Stay" });
+
+  agentSelf.perceive(message(petWindow("Close", 0, "Aggressive", "Follow")));
+  expect(agentSelf.pet).toBeUndefined();
 });
 
 test("knows no Concentration buffs before the server says, then each it keeps up from the latest concentration Percept", () => {

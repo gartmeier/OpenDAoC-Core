@@ -401,6 +401,19 @@ namespace DOL.GS.Tests
                 AssertMatches(ClientPackets1127.RemoveConcentrationEffect(0), packet);
         }
 
+        // Fearnan's clicks on each button in the pet window, in the order the Human announced them: aggressive, defensive, passive, stay, go to target, here, follow, attack twice, release.
+        // One byte per row of the window, the others 0, then a 0 the server doesn't read.
+        [Test]
+        public void PetWindow_ShouldMatchCapture()
+        {
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.PET_WINDOW, eClientPackets.PetWindow);
+            (byte Aggression, byte Walk, byte Command)[] clicks = [(1, 0, 0), (2, 0, 0), (3, 0, 0), (0, 2, 0), (0, 3, 0), (0, 4, 0), (0, 1, 0), (0, 0, 1), (0, 0, 1), (0, 0, 2)];
+            Assert.That(captured, Has.Length.EqualTo(clicks.Length));
+
+            for (int i = 0; i < captured.Length; i++)
+                AssertMatches(ClientPackets1127.PetWindow(clicks[i].Aggression, clicks[i].Walk, clicks[i].Command), captured[i]);
+        }
+
         // The right-click on the Recall Stone in backpack slot 40, standing with nothing targeted.
         [Test]
         public void UseSlot_ShouldMatchCapture_FromTheBackpack()

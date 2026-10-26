@@ -23,6 +23,7 @@ import type {
   OwnPositionPercept,
   Percept,
   PerceptMessage,
+  PetWindowPercept,
   PlayerCreatePercept,
   PlayerPercept,
   PlayerPositionPercept,
@@ -221,6 +222,11 @@ export function effects(...entries: EffectEntry[]): EffectsPercept {
 
 export function concentration(...buffs: ConcentrationBuff[]): ConcentrationPercept {
   return { kind: "concentration", buffs };
+}
+
+/** The pet window, for the pet with object ID `objectId` (0 when it closes), defensive and following unless said otherwise. */
+export function petWindow(action: PetWindowPercept["action"], objectId: number, aggression: PetWindowPercept["aggression"] = "Defensive", walk: PetWindowPercept["walk"] = "Follow"): PetWindowPercept {
+  return { kind: "petWindow", objectId, action, aggression, walk };
 }
 
 /** A custom Dialog to the Character with session ID 0x0101, asking yes or no unless `yesNo` is false. */

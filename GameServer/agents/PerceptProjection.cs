@@ -58,6 +58,7 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendUpdateMaxSpeed) => MaxSpeed(client),
                 nameof(IPacketLib.SendUpdateIcons) => Effects(client),
                 nameof(IPacketLib.SendConcentrationList) => Concentration(client),
+                nameof(IPacketLib.SendPetWindow) => PetWindow((GameLiving) args[0], (ePetWindowAction) args[1], (eAggressionState) args[2], (eWalkState) args[3]),
                 nameof(IPacketLib.SendStatusUpdate) => Status(client, args.Length > 0 ? (byte) args[0] : null),
                 nameof(IPacketLib.SendUpdatePoints) => Points(client),
                 nameof(IPacketLib.SendUpdatePlayer) => Player(client),
@@ -499,6 +500,12 @@ namespace DOL.GS.Agents
             return new ConcentrationPercept([.. player.effectListComponent.GetConcentrationEffects()
                 .Cast<IConcentrationEffect>()
                 .Select(static effect => new ConcentrationBuff(Encoded(ConcentrationName(effect.Name)), Encoded(ConcentrationName(effect.OwnerName)), effect.Concentration))]);
+        }
+
+        // Mirrors `PacketLib181.SendPetWindow`, which no later library overrides. The window closes with no Pet, which the packet carries as object ID 0.
+        private static PetWindowPercept PetWindow(GameLiving pet, ePetWindowAction action, eAggressionState aggression, eWalkState walk)
+        {
+            return new PetWindowPercept(pet?.ObjectID ?? 0, action, aggression, walk);
         }
 
         // Mirrors `WriteTruncatedName` in `PacketLib191.SendConcentrationList`: a name longer than 14 characters becomes its first 12 and "..".

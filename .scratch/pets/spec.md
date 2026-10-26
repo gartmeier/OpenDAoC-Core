@@ -16,7 +16,7 @@ Fearnan can summon the pet today, since that's an ordinary `castSpell`. Everythi
 
 Fearnan keeps its memory and Lessons and plays the Druid solo from level 5 to 7, fighting with its pet.
 
-- `commandPet { order }` clicks one button in the pet window. `order` is one of `aggressive`, `defensive`, `passive`, `follow`, `stay`, `goTarget`, `here`, `attack` or `release`. `attack` and `goTarget` act on the current target, as in the client, so the Agent sends `target` first.
+- `commandPet { order }` clicks one button in the pet window. `order` is one of `Aggressive`, `Defensive`, `Passive`, `Follow`, `Stay`, `GoTarget`, `ComeHere`, `Attack` or `Release`, as enums go over the wire. `Attack` and `GoTarget` act on the current target, as in the client, so the Agent sends `target` first.
 - A new `petWindow` Percept carries what the client's pet window shows: which NPC is the pet, whether the window opened, changed or closed, and the pet's aggression and walk settings. Self keeps them as `pet`, which is cleared when the window closes. The pet's health and target come from Surroundings, by its id.
 - A new `pets` Learning shows how to work with them.
 
@@ -28,7 +28,7 @@ Meanwhile Orla waits at level 5, apart from its run for the `abilities` spec, wh
 
 ## User Stories
 
-1. As the Human, I want a capture with the real 1.127 client from account `druid`, of summoning a pet and then clicking every button in the pet window, each announced with `/say` first, so that the pet command packet is built byte for byte as the client sends it and the capture is easy to read.
+1. As the Human, I want a capture with the real 1.127 client from Fearnan's account, of summoning a pet and then clicking every button in the pet window, each announced with `/say` first, so that the pet command packet is built byte for byte as the client sends it and the capture is easy to read.
 2. As the Human, I want Fearnan to keep its memory and Lessons, so that what it learned about cast delays and resting carries into the run to 20.
 3. As the Human, I want to start a new Claude Code session in Fearnan's folder and tell it to keep levelling to 7, so that a run starts as earlier milestones' did.
 4. As the Human, I want to nudge Fearnan only when it stops, so that I learn when and why it stops.
@@ -52,14 +52,14 @@ Meanwhile Orla waits at level 5, apart from its run for the `abilities` spec, wh
 22. As the coding agent, I want a Learning with working snippets that summon the pet, find it in my Surroundings, send it at a Mob and wait for the fight to end, and summon it again when it's gone, so that I don't have to rediscover the pattern.
 23. As the coding agent, I want the Learning to say how the pet behaves on its own:
     - it starts defensive and following;
-    - it doesn't join my attacks unless I order `attack`;
+    - it doesn't join my attacks unless I order `Attack`;
     - it defends me when I'm hit and fights back when it's hit;
     - it is released if it gets too far from me;
     - a Mob it hits puts some of its anger on me too.
 
     So that I plan fights around it.
 24. As the coding agent, I want the Learning to say that a second summon is refused while a pet is out, that the summon costs a quarter of my Power, that the pet's level follows mine, and that the next pet comes at Nature 7, so that I avoid the gotchas.
-25. As the coding agent, I want the Learning to say that each order changes only its own row of the pet window, so that I know `attack` doesn't undo `passive` and the like.
+25. As the coding agent, I want the Learning to say that each order changes only its own row of the pet window, so that I know `Attack` doesn't undo `Passive` and the like.
 26. As a Mind developer, I want the TypeScript types for `commandPet` and the `petWindow` Percept generated from C#, so that both sides agree.
 27. As a Mind developer, I want the Learning's snippets typechecked by the existing Learnings test, so that it never teaches code that doesn't compile.
 28. As a Harness developer, I want `commandPet` handled by the real pet window handler on the client tick, so that the server decides everything as it does for a Human (ADR 0002).
@@ -68,22 +68,22 @@ Meanwhile Orla waits at level 5, apart from its run for the `abilities` spec, wh
 ## Implementation Decisions
 
 - **Vocabulary.** The root glossary gains **Pet**: a creature a Character summons and commands, which fights for it until it dies or is released (_Avoid_: summon, minion). **Self** now names the Character's pet and its settings. No ADR changes.
-- **Capture.** The Human's capture from account `druid`, of Fearnan summoning a pet and then clicking each of the nine buttons once, each announced with `/say`, is checked in as `pet-window.tsv` with a Pets section in the fixtures README. The README documents the 0x8A layout as the capture shows it and which fields vary.
+- **Capture.** The Human's capture from Fearnan's account, `agentfearnan`, of Fearnan summoning a pet and then clicking each of the nine buttons once, each announced with `/say`, is checked in as `pet-window.tsv` with a Pets section in the fixtures README. The README documents the 0x8A layout as the capture shows it and which fields vary.
 - **Primitive (ADR 0002).** `commandPet { order }` sends the pet command packet (0x8A) as the captured client sends it for that button, handled by the real handler on the client tick. The handler reads three bytes, one per row of the pet window, with 0 meaning "leave alone":
-  - aggression: `aggressive` 1, `defensive` 2, `passive` 3;
-  - walk: `follow` 1, `stay` 2, `goTarget` 3, `here` 4;
-  - command: `attack` 1, `release` 2.
+  - aggression: `Aggressive` 1, `Defensive` 2, `Passive` 3;
+  - walk: `Follow` 1, `Stay` 2, `GoTarget` 3, `ComeHere` 4 (the server's own name for it, as in the Percept);
+  - command: `Attack` 1, `Release` 2.
 
   One `order` sets one byte, so each Primitive is one click.
-- **No pet check at dispatch.** The Harness keeps no pet state for dispatch. It sends the packet whether or not a pet is out, and whatever the server does, likely nothing, is the answer (ADR 0004). Only an unknown or missing `order` is refused, when the Primitive is read.
+- **No pet check at dispatch.** The Harness keeps no pet state for dispatch. It sends the packet whether or not a pet is out, and whatever the server does, likely nothing, is the answer (ADR 0004). Only an unknown or missing `order` is refused: a missing one or an unknown name when the Primitive is read, and a number that isn't an order, which JSON may carry for an enum, at dispatch.
 - **`petWindow` Percept (ADR 0001).** Projected from the server's pet window packet. It carries:
   - the pet's `objectId`;
-  - `action`: `open`, `update` or `close`;
-  - `aggression`: `aggressive`, `defensive` or `passive`;
-  - `walk`: `follow`, `stay`, `goTarget` or `here`.
+  - `action`: `Open`, `Update` or `Close`;
+  - `aggression`: `Aggressive`, `Defensive` or `Passive`;
+  - `walk`: `Follow`, `Stay`, `GoTarget` or `ComeHere`.
 
   The packet's effect icons aren't carried. A Mind that takes over is sent the current pet window with the other Percepts that describe its Character, as it is sent the concentration list.
-- **Self.** Keeps `pet: { objectId, aggression, walk } | undefined`. It is set on `open`, updated on `update` and cleared on `close`.
+- **Self.** Keeps `pet: { objectId, aggression, walk } | undefined`. It is set on `Open`, updated on `Update` and cleared on `Close`.
 - **Surroundings.** Unchanged. The pet already arrives as an NPC with `pet: true`, a health percent and a target. The Agent finds its own by `agent.self.pet.objectId`.
 - **Feedback.** No new Percepts for orders or the pet's fight. The server's messages already come as `message` Percepts: the summon, each order, the refusals and losing control, and the pet's hits and the hits on it.
 - **Porcelain.** `rest`, `kill` and the other porcelain Tactics are unchanged. Neither knows about the pet, and Fearnan works around them in its own code. Better porcelain is a later decision.
@@ -91,7 +91,7 @@ Meanwhile Orla waits at level 5, apart from its run for the `abilities` spec, wh
 - **Learning.** A new `pets` Learning beside fighting, moving, spells, styles and trading, written as `execute_code` snippets:
   - summoning the pet and waiting for "now under your control";
   - finding it in Surroundings by `agent.self.pet.objectId`, and reading its health and target;
-  - targeting a Mob and sending the pet in with `attack`, then waiting for the Mob to die;
+  - targeting a Mob and sending the pet in with `Attack`, then waiting for the Mob to die;
   - summoning it again when `agent.self.pet` is cleared;
   - the pet's behaviour and gotchas, as in stories 23–25.
 - **Code placement.** As before: the Harness folder and namespace, with no core code changes. On the Mind side: Self, the Learning and the regenerated types.
@@ -146,7 +146,7 @@ Meanwhile Orla waits at level 5, apart from its run for the `abilities` spec, wh
   - ADR 0009: Primitives and Percepts are added when the coding agent needs them.
 - **Facts this spec relies on**, from the server and its database as they stand:
   - **Fearnan now:** level 5, Druid (class 47), with specs Nurture 4, Regrowth 1 and Nature 1. A Naturalist has no pet. Nature comes with the Druid.
-  - **Druid pet Spells** are in the Druid Nature Spec line, of type `SummonDruidPet`. All are Target Self, cast in 3 s, cost 25% of Power, and last until the pet dies or is released.
+  - **Druid pet Spells** are in the Druid Nature Spec line, of type `SummonDruidPet`. All are Target Self, cast in 6 s, cost 25% of Power, and last until the pet dies or is released.
 
     | Nature | Spell | Max pet level |
     |---|---|---|
@@ -164,15 +164,15 @@ Meanwhile Orla waits at level 5, apart from its run for the `abilities` spec, wh
     - Passive never fights back.
     - It doesn't join the owner's attacks.
     - It defends the owner when the owner is attacked (unless Passive), and fights back when hit.
-    - An `attack` order switches a Passive pet to Defensive.
+    - An `Attack` order switches a Passive pet to Defensive.
     - Follow, Stay and Here make it disengage first, and an Aggressive pet with a target becomes Defensive.
     - It is released when more than 10,000 from its owner.
     - Its damage gives the Mob aggro on the pet and an extra 30% on its owner.
   - **Orders:**
-    - `attack` needs a target the Character may attack within 2000, and doesn't check line of sight. Otherwise the server says "Your target is too far away to attack with your pet!".
-    - `goTarget` needs a target within 1250. Otherwise it says "You must select a destination for your controlled creature." or "Your target is too far away for your pet to reach!".
+    - `Attack` needs a target the Character may attack within 2000, and doesn't check line of sight. Otherwise the server says "Your target is too far away to attack with your pet!".
+    - `GoTarget` needs a target within 1250. Otherwise it says "You must select a destination for your controlled creature." or "Your target is too far away for your pet to reach!".
     - Each accepted order says "You command {0} to …" (follow you, stay in this position, come to you, go to your target, kill your target, attack all enemies, defend you, disengage from combat).
-    - `release` releases the pet. Losing control says "You lose control of {0}!".
+    - `Release` releases the pet. Losing control says "You lose control of {0}!".
   - **The pet window packet** (0x88) carries:
     - the pet's object id (0 when there is none);
     - the action (open, update or close);

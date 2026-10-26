@@ -46,7 +46,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | AnswerDialogPrimitive | UseItemPrimitive | CastSpellPrimitive | CancelConcentrationPrimitive | UseAbilityPrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | AnswerDialogPrimitive | UseItemPrimitive | CastSpellPrimitive | CancelConcentrationPrimitive | UseAbilityPrimitive | CommandPetPrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -171,7 +171,12 @@ export interface UseAbilityPrimitive {
   ability: string;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | ConcentrationPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export interface CommandPetPrimitive {
+  name: "commandPet";
+  order: PetOrder;
+}
+
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | ConcentrationPercept | PetWindowPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -405,6 +410,14 @@ export interface ConcentrationPercept {
   buffs: ConcentrationBuff[];
 }
 
+export interface PetWindowPercept {
+  kind: "petWindow";
+  objectId: number;
+  action: ePetWindowAction;
+  aggression: eAggressionState;
+  walk: eWalkState;
+}
+
 export interface DiedPercept {
   kind: "died";
   objectId: number;
@@ -500,6 +513,8 @@ export interface StoppedPercept {
 
 export type eDialogCode = "SimpleWarning" | "GuildInvite" | "GroupInvite" | "CustomDialog" | "GuildLeave" | "HousePayRent" | "MasterLevelWindow" | "KeepClaim" | "BuyRespec" | "WarmapWindowHibernia" | "WarmapWindowAlbion" | "WarmapWindowMidgard" | "QuestSubscribe";
 
+export type PetOrder = "Aggressive" | "Defensive" | "Passive" | "Follow" | "Stay" | "GoTarget" | "ComeHere" | "Attack" | "Release";
+
 export type eChatType = "CT_Say" | "CT_Send" | "CT_Group" | "CT_Guild" | "CT_Broadcast" | "CT_Emote" | "CT_Help" | "CT_Chat" | "CT_Advise" | "CT_Officer" | "CT_Alliance" | "CT_BattleGroup" | "CT_BattleGroupLeader" | "CT_Staff" | "CT_Spell" | "CT_YouHit" | "CT_System" | "CT_Items" | "CT_Merchant" | "CT_YourDeath" | "CT_OthersDeath" | "CT_OthersCombat" | "CT_ResistsChanged" | "CT_SpellExpires" | "CT_Loot" | "CT_SpellResisted" | "CT_Important" | "CT_Damaged" | "CT_Action" | "CT_SpellPulse" | "CT_KilledByAlb" | "CT_KilledByMid" | "CT_KilledByHib" | "CT_LookingForGroup" | "CT_Trade" | "CT_SocialInterface" | "CT_ScreenCenter" | "CT_ScreenCenterSmaller" | "CT_ScreenCenter_And_CT_System" | "CT_ScreenCenterSmaller_And_CT_System";
 
 export type eChatLoc = "CL_ChatWindow" | "CL_PopupWindow" | "CL_SystemWindow";
@@ -584,6 +599,12 @@ export interface ConcentrationBuff {
   target: string;
   cost: number;
 }
+
+export type ePetWindowAction = "Open" | "Update" | "Close";
+
+export type eAggressionState = "Aggressive" | "Defensive" | "Passive";
+
+export type eWalkState = "Follow" | "Stay" | "ComeHere" | "GoTarget";
 
 export type eInventoryWindowType = "Update" | "Equipment" | "Inventory" | "PlayerVault" | "HouseVault" | "ConsignmentOwner" | "ConsignmentViewer" | "HorseBags";
 

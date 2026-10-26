@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
+using DOL.AI.Brain;
 using DOL.Database;
 using DOL.Events;
 using DOL.GS.PacketHandler;
@@ -150,7 +151,7 @@ namespace DOL.GS.Agents
 
         // The new Mind knows nothing of what the old one was told, though a real client never forgets. So the server tells the client again what it tells one entering the world (`WorldInitRequestHandler`), with the status and encumbrance it sends just after.
         // The client also forgets which NPCs, items and doors the server sent it, so that the server creates them anew, and which players it knows, so that it asks for them again.
-        // A Dialog it hasn't answered is told again last.
+        // The pet window it still shows is opened again, which world entry never does, as a Character enters the world without a pet. A Dialog it hasn't answered is told again last.
         private void TellAnew()
         {
             GamePlayer player = Player;
@@ -170,6 +171,9 @@ namespace DOL.GS.Agents
             packetLib.SendConcentrationList();
             packetLib.SendStatusUpdate();
             packetLib.SendEncumbrance();
+
+            if (player.ControlledBrain is IControlledBrain pet)
+                packetLib.SendPetWindow(pet.Body, ePetWindowAction.Open, pet.AggressionState, pet.WalkState);
 
             PlayerObjectCache cache = player.PlayerObjectCache;
 
@@ -355,6 +359,13 @@ namespace DOL.GS.Agents
 
                     break;
                 }
+                case CommandPetPrimitive commandPet:
+                {
+                    if (!Enum.IsDefined(commandPet.Order))
+                        return $"There's no pet order {(int) commandPet.Order}.";
+
+                    break;
+                }
                 case AnswerDialogPrimitive answer:
                 {
                     if ((BadDialogData(answer.Data1) ?? BadDialogData(answer.Data2) ?? BadDialogData(answer.Data3)) is string reason)
@@ -393,6 +404,7 @@ namespace DOL.GS.Agents
                 UseItemPrimitive useItem => ClientPackets1127.UseSlot(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) useItem.Slot,
                     useItem.Second is true ? eUseType.Use2 : eUseType.Use1),
                 CancelConcentrationPrimitive => ClientPackets1127.RemoveConcentrationEffect((byte) index),
+                CommandPetPrimitive commandPet => PetWindow(commandPet.Order),
                 _ => null
             };
 
@@ -401,6 +413,24 @@ namespace DOL.GS.Agents
 
             Enqueue(packet);
             return null;
+        }
+
+        // The button's byte on its row of the pet window, as `PetWindowHandler` reads them.
+        private static ClientPacket PetWindow(PetOrder order)
+        {
+            return order switch
+            {
+                PetOrder.Aggressive => ClientPackets1127.PetWindow(1, 0, 0),
+                PetOrder.Defensive => ClientPackets1127.PetWindow(2, 0, 0),
+                PetOrder.Passive => ClientPackets1127.PetWindow(3, 0, 0),
+                PetOrder.Follow => ClientPackets1127.PetWindow(0, 1, 0),
+                PetOrder.Stay => ClientPackets1127.PetWindow(0, 2, 0),
+                PetOrder.GoTarget => ClientPackets1127.PetWindow(0, 3, 0),
+                PetOrder.ComeHere => ClientPackets1127.PetWindow(0, 4, 0),
+                PetOrder.Attack => ClientPackets1127.PetWindow(0, 0, 1),
+                PetOrder.Release => ClientPackets1127.PetWindow(0, 0, 2),
+                _ => null
+            };
         }
 
         // Slots are 16 bits in every packet that carries one, except the use slot packet.

@@ -58,7 +58,10 @@ namespace DOL.GS.Tests
         // A Mentalist clicking Quick Cast, mostly before a spell.
         public const string QUICK_CAST = "quick-cast";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG, USE_ITEM, CAST_HEAL, CAST_BUFFS, CAST_DAMAGE, QUICK_CAST];
+        // A Druid summoning its pet and clicking each button in the pet window once.
+        public const string PET_WINDOW = "pet-window";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG, USE_ITEM, CAST_HEAL, CAST_BUFFS, CAST_DAMAGE, QUICK_CAST, PET_WINDOW];
 
         public static CapturedPacket[] Load(string capture)
         {

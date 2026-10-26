@@ -2,6 +2,7 @@ using System;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DOL.AI.Brain;
 using DOL.GS.PacketHandler;
 using DOL.GS.Styles;
 
@@ -132,6 +133,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(CastSpellPrimitive), "castSpell")]
     [JsonDerivedType(typeof(CancelConcentrationPrimitive), "cancelConcentration")]
     [JsonDerivedType(typeof(UseAbilityPrimitive), "useAbility")]
+    [JsonDerivedType(typeof(CommandPetPrimitive), "commandPet")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -226,6 +228,24 @@ namespace DOL.GS.Agents
     // The Harness refuses an ability or realm ability the server's last `skills` didn't list. Whether it worked, and why not, the server says in `message` Percepts, and an ability with an Effect shows in `effects`.
     public sealed record UseAbilityPrimitive([property: JsonRequired] string Ability) : Primitive;
 
+    // Clicks one button in the pet window, as a Human does: `Order` changes one row of the window, its aggression, its walk or a command, and leaves the other rows as they were.
+    // `Attack` and `GoTarget` act on what the client targets: `target` it first. The Harness doesn't check that there's a Pet. What the Pet does, and why not, the server says in `message` Percepts, and its settings in `petWindow`.
+    public sealed record CommandPetPrimitive([property: JsonRequired] PetOrder Order) : Primitive;
+
+    // The pet window's buttons, row by row: aggression, walk, then the commands.
+    public enum PetOrder
+    {
+        Aggressive,
+        Defensive,
+        Passive,
+        Follow,
+        Stay,
+        GoTarget,
+        ComeHere,
+        Attack,
+        Release
+    }
+
     // Cancels the Concentration buff `Spell` that the Character keeps up, as a click on it in the concentration window does. `Target` names who wears it: without it, the first of that spell in the window.
     // Names are matched as the `concentration` Percept cuts them, so a whole name and a cut one both do. The Harness refuses a buff the server's last `concentration` didn't list.
     public sealed record CancelConcentrationPrimitive(
@@ -255,6 +275,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(SkillsPercept), "skills")]
     [JsonDerivedType(typeof(EffectsPercept), "effects")]
     [JsonDerivedType(typeof(ConcentrationPercept), "concentration")]
+    [JsonDerivedType(typeof(PetWindowPercept), "petWindow")]
     [JsonDerivedType(typeof(DiedPercept), "died")]
     [JsonDerivedType(typeof(RevivedPercept), "revived")]
     [JsonDerivedType(typeof(InventoryPercept), "inventory")]
@@ -558,6 +579,10 @@ namespace DOL.GS.Agents
 
     // One Concentration buff: its spell, who wears it, the Agent's Character included, and the concentration it uses. The packet cuts both names longer than 14 characters to their first 12 and "..".
     public sealed record ConcentrationBuff(string Spell, string Target, int Cost);
+
+    // The Agent's Character's pet window: `Open` when it gets a pet, `Update` when the Pet's aggression or walk changes, `Close` when it loses the Pet, which then has `ObjectId` 0.
+    // `ObjectId` is the Pet's, as its `npcCreate` has it. The packet's effect icons aren't carried.
+    public sealed record PetWindowPercept(int ObjectId, ePetWindowAction Action, eAggressionState Aggression, eWalkState Walk) : Percept;
 
     // A player died, the Agent's Character included: its object ID, and the object ID of what killed it, or 0.
     public sealed record DiedPercept(int ObjectId, int KillerId) : Percept;

@@ -1,4 +1,5 @@
 using System.Text;
+using DOL.AI.Brain;
 using DOL.GS.Agents;
 using DOL.GS.PacketHandler;
 using DOL.GS.Styles;
@@ -132,6 +133,19 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Read_ShouldReadACommandPetPrimitive_WithItsOrderAsAName()
+        {
+            Assert.That(Read("""{"type":"primitive","id":32,"primitive":{"name":"commandPet","order":"ComeHere"}}"""), Is.EqualTo(new PrimitiveMessage(32, new CommandPetPrimitive(PetOrder.ComeHere))));
+        }
+
+        [Test]
+        public void Read_ShouldSayWhy_ForACommandPetWithAnOrderThatIsntOne()
+        {
+            Assert.That(MindProtocol.Read("""{"type":"primitive","id":1,"primitive":{"name":"commandPet","order":"Sit"}}"""u8, out string error), Is.Null);
+            Assert.That(error, Does.Contain("order"));
+        }
+
+        [Test]
         public void Read_ShouldReadACancelConcentrationPrimitive_WithOrWithoutATarget()
         {
             Assert.That(Read("""{"type":"primitive","id":31,"primitive":{"name":"cancelConcentration","spell":"Minor Bark Skin"}}"""), Is.EqualTo(new PrimitiveMessage(31, new CancelConcentrationPrimitive("Minor Bark Skin"))));
@@ -227,6 +241,7 @@ namespace DOL.GS.Tests
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"castSpell"}}""", "spell")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"useAbility"}}""", "ability")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"cancelConcentration","target":"Vue"}}""", "spell")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"commandPet"}}""", "order")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"answerDialog","code":"CustomDialog","data1":257,"data2":1,"data3":0}}""", "accept")]
         public void Read_ShouldSayWhy_ForAPrimitiveWithoutItsField(string json, string field)
         {
@@ -252,6 +267,13 @@ namespace DOL.GS.Tests
 
             Assert.That(message, Is.Null);
             Assert.That(error, Does.Contain("'z'"));
+        }
+
+        [Test]
+        public void Write_ShouldWriteAPetWindowPercept_WithItsActionAndSettingsAsNames()
+        {
+            Assert.That(Write(new PerceptMessage(18, 2900, new PetWindowPercept(0x1D2C, ePetWindowAction.Update, eAggressionState.Passive, eWalkState.ComeHere))),
+                Does.EndWith("""{"kind":"petWindow","objectId":7468,"action":"Update","aggression":"Passive","walk":"ComeHere"}}"""));
         }
 
         [Test]

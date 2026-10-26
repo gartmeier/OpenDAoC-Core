@@ -64,6 +64,10 @@ _Avoid_: conc, const, permanent buff
 A buff or debuff on a Character, shown in its buff bar with its time left.
 _Avoid_: buff (when meaning both)
 
+**Pet**:
+A creature a Character summons and commands, which fights for it until it dies or is released.
+_Avoid_: summon, minion
+
 **Dialog**:
 A question the server puts to a Character in a window, answered with Accept or Decline, or only acknowledged with OK.
 _Avoid_: popup, prompt
@@ -113,7 +117,7 @@ One thing the Harness tells the Mind; only what a real game client would know, w
 _Avoid_: event, observation
 
 **Self**:
-What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere, which Effects are on it, how much Power it has, which Concentration buffs it keeps up and on whom, how much Constitution it has lost and which Dialog is open, built from Percepts. Only that a Dialog was answered comes from the Primitives it sent, as a client closes the window on the click.
+What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere, which Effects are on it, how much Power it has, which Concentration buffs it keeps up and on whom, how much Constitution it has lost, which Pet it has and which Dialog is open, built from Percepts. Only that a Dialog was answered comes from the Primitives it sent, as a client closes the window on the click.
 _Avoid_: player, status, me
 
 **Surroundings**:

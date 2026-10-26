@@ -54,6 +54,7 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendUpdateIconsOld = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdateIcons), [typeof(System.Collections.IList), typeof(int).MakeByRefType()]);
         private static readonly MethodInfo SendPlayerJump = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerJump));
         private static readonly MethodInfo SendConcentrationList = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendConcentrationList));
+        private static readonly MethodInfo SendPetWindow = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPetWindow));
         private static readonly MethodInfo SendStatusUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), []);
         private static readonly MethodInfo SendStatusUpdateWithFlag = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), [typeof(byte)]);
         private static readonly MethodInfo SendUpdatePlayer = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePlayer));
@@ -885,6 +886,27 @@ namespace DOL.GS.Tests
             ConcentrationPercept percept = (ConcentrationPercept) PerceptProjection.Project(client, SendConcentrationList, []);
 
             Assert.That(percept.Buffs, Is.EqualTo(new ConcentrationBuff[] { new("Minor Bark S..", "Greeen", 1), new("Strength of ..", "Vue", 1) }));
+        }
+
+        // Mirrors `PacketLib181.SendPetWindow`: the pet's object ID, the action and both settings, which `ControlledMobBrain.UpdatePetWindow` sends when one changes.
+        [Test]
+        public void Project_ShouldGiveThePetAndItsSettings_ForThePetWindowCall()
+        {
+            TestNpc pet = WorldDoubles.Npc("wolf cub");
+            pet.ObjectID = 0x0456;
+
+            Percept percept = PerceptProjection.Project(Playing(), SendPetWindow, [pet, ePetWindowAction.Update, eAggressionState.Passive, eWalkState.Stay]);
+
+            Assert.That(percept, Is.EqualTo(new PetWindowPercept(0x0456, ePetWindowAction.Update, eAggressionState.Passive, eWalkState.Stay)));
+        }
+
+        // `CharacterClassBase.SetControlledBrain` closes the window with no pet, which the packet carries as object ID 0.
+        [Test]
+        public void Project_ShouldGiveObjectId0_ForThePetWindowClosingWithNoPet()
+        {
+            Percept percept = PerceptProjection.Project(Playing(), SendPetWindow, [null, ePetWindowAction.Close, eAggressionState.Aggressive, eWalkState.Follow]);
+
+            Assert.That(percept, Is.EqualTo(new PetWindowPercept(0, ePetWindowAction.Close, eAggressionState.Aggressive, eWalkState.Follow)));
         }
 
         [Test]

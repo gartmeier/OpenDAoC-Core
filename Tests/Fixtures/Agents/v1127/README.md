@@ -17,6 +17,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `cast-heal.tsv` and `cast-buffs.tsv` are 13 s and 19 s of account `druid`'s Character Fearnan, a Naturalist, already in the world at Connla. In the first, at level 1, it casts Minor Revigoration twice. In the second, at level 2, it casts Minor Revigoration and Minor Bark Skin on another and on itself, then cancels two buffs in the concentration window. Recorded with `/agent capture druid` on 2026-10-25, unmodified apart from their first lines. See Spells.
 - `cast-damage.tsv` is 640 s of account `agentorla`'s Character Orla, a level 1 Magician, from login in Shannon Estuary: it casts Lesser Powerward on itself, targets a Mob and casts Gleam Ray at it until it dies, then targets itself and quits. Recorded with `/agent capture agentorla` on 2026-10-25, unmodified apart from its first line. See Spells of a list caster.
 - `quick-cast.tsv` is 71 s of account `admin`'s Character Vue, a level 50 Mentalist, already in the world: it clicks Quick Cast on the quickbar four times, three of them followed by a spell, with a Mob, nothing or itself targeted. Recorded with `/agent capture admin` on 2026-10-25, unmodified apart from its first line. See Abilities.
+- `pet-window.tsv` is 207 s of account `agentfearnan`'s Character Fearnan, a level 5 Druid, from login: it summons its pet, then clicks each button in the pet window once, each announced with a say, casts spells from the quickbar while the pet is out, and releases it. Recorded with `/agent capture agentfearnan` on 2026-10-26, unmodified apart from its first line. See Pets.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
 ## Format
@@ -270,6 +271,21 @@ From `quick-cast.tsv`. The Human played Vue, a Mentalist, and clicked Quick Cast
 
 - **An ability is a skill (0xBB).** It's sent exactly as a style or a hybrid's spell is: the same 24 bytes, flags `A000` with something targeted and `0000` without, type `01`, and the index counting from the first entry after the specializations. Quick Cast was 3 every time.
 
+## Pets
+
+From `pet-window.tsv`. The Human played Fearnan, a Druid, and said the name of each button in the pet window before clicking it.
+
+| ms | Part |
+|----|------|
+| 40130 | summons the pet (skill 15) |
+| 73330–88263 | aggressive, defensive, passive |
+| 96330–116430 | stay, go to target, here, follow |
+| 127496, 132930 | attack, before and after saying it |
+| 143130–186163 | casts spells from the quickbar while the pet is out |
+| 203663, 205803 | release |
+
+- **A click is one byte on its row (0x8A).** Each sends 4 bytes: aggression (1 aggressive, 2 defensive, 3 passive), walk (1 follow, 2 stay, 3 go to target, 4 here) and command (1 attack, 2 release), with 0 on the two rows not clicked, then a 0 that `PetWindowHandler` doesn't read. Parameter 0x0000. Nothing else varies.
+
 ## Fields that vary between captures
 
 These hold for every packet:
@@ -279,7 +295,7 @@ These hold for every packet:
 - **Wire byte 8** (high byte of the code): leftover memory in the client. The server ignores it. Builders can write 0x00.
 - **Checksum** (last 2 bytes): follows from everything else.
 
-Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79, 0xB5, 0xBB, 0x71, 0x76 and 0x7D; 0xFFFE for 0xFC; 0xFFFF for the rest.
+Parameter is fixed per packet type: 0x0000 for 0x10, 0x9D, 0xA3, 0xBE, 0xC7, 0xD5, 0x1D, 0xAC, 0xB8, 0xDD, 0xD8, 0x7A, 0x78, 0x79, 0xB5, 0xBB, 0x71, 0x76, 0x7D and 0x8A; 0xFFFE for 0xFC; 0xFFFF for the rest.
 
 Packet data, by data offset:
 

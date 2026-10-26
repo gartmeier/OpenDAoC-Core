@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using DOL.AI;
+using DOL.AI.Brain;
 using DOL.Database;
 using DOL.GS.ServerRules;
 using DOL.GS.Spells;
@@ -124,6 +125,15 @@ namespace DOL.GS.Tests
         {
             var concentrationEffects = (List<ECSGameSpellEffect>) typeof(EffectListComponent).GetField("_concentrationEffects", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(caster.effectListComponent);
             concentrationEffects.Add(effect);
+        }
+
+        // Gives the player `npc` as its pet, defensive and following as a summoned one starts, without the pet window and create the server sends on summoning.
+        public static ControlledMobBrain Pet(TestPlayer player, TestNpc npc)
+        {
+            ControlledMobBrain brain = new(player) { Body = npc };
+            player.InitControlledBrainArray(1);
+            player.ControlledBrain = brain;
+            return brain;
         }
 
         private static void AddToEffectList(TestPlayer player, ECSGameEffect effect)

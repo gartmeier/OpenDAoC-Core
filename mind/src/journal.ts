@@ -64,6 +64,8 @@ function describe(agent: Agent, character: string, percept: Percept): string {
       return `effects\t${percept.effects.map(describeEffect).join(", ") || "none"}`;
     case "concentration":
       return `concentration\t${percept.buffs.map((buff) => `${buff.spell} on ${buff.target} (${buff.cost})`).join(", ") || "none"}`;
+    case "petWindow":
+      return percept.action === "Close" ? "petWindow Close" : `petWindow ${percept.action}\t#${percept.objectId} ${nameOf(percept.objectId)} ${percept.aggression} ${percept.walk}`;
     case "died":
       return `died #${percept.objectId} ${nameOf(percept.objectId)}, killed by #${percept.killerId} ${nameOf(percept.killerId)}`;
     case "revived":
@@ -120,6 +122,8 @@ export function describePrimitive(agent: Agent, character: string, primitive: Pr
       return `castSpell ${primitive.spell}`;
     case "useAbility":
       return `useAbility ${primitive.ability}`;
+    case "commandPet":
+      return `commandPet ${primitive.order}`;
     case "cancelConcentration":
       return primitive.target === undefined ? `cancelConcentration ${primitive.spell}` : `cancelConcentration ${primitive.spell} on ${primitive.target}`;
     default:

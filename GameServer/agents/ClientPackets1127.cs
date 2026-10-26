@@ -260,6 +260,13 @@ namespace DOL.GS.Agents
             return new((byte) eClientPackets.RemoveConcentrationEffect, NO_PARAMETER, [index, 0x00, 0x72, 0x04]);
         }
 
+        // A click on one button in the pet window: `aggression` 1-3 (aggressive, defensive, passive), `walk` 1-4 (follow, stay, go to target, here) or `command` 1-2 (attack, release), the other two 0.
+        // As captured in `pet-window.tsv`, read by `PetWindowHandler`: the three bytes, then a 0 it doesn't read.
+        public static ClientPacket PetWindow(byte aggression, byte walk, byte command)
+        {
+            return new((byte) eClientPackets.PetWindow, NO_PARAMETER, [aggression, walk, command, 0x00]);
+        }
+
         // Picks up the object the client has targeted, which the server reads instead of anything in the packet: the captured client sent a single 0.
         public static ClientPacket PickUpRequest()
         {

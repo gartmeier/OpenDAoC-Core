@@ -551,6 +551,41 @@ namespace DOL.GS.Tests
             await Close(mind);
         }
 
+        // One click per order, on its row of the pet window, as in `pet-window.tsv`. Whether there's a pet, the server decides.
+        [Test]
+        public async Task CommandPet_ShouldQueueThePetWindowPacketWithTheOrdersByteOnItsRow_WithOrWithoutAPet()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            foreach (PetOrder order in Enum.GetValues<PetOrder>())
+                Assert.That(client.Dispatch(new CommandPetPrimitive(order), mind.Link), Is.Null);
+
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
+                ClientPackets1127.PetWindow(1, 0, 0),
+                ClientPackets1127.PetWindow(2, 0, 0),
+                ClientPackets1127.PetWindow(3, 0, 0),
+                ClientPackets1127.PetWindow(0, 1, 0),
+                ClientPackets1127.PetWindow(0, 2, 0),
+                ClientPackets1127.PetWindow(0, 3, 0),
+                ClientPackets1127.PetWindow(0, 4, 0),
+                ClientPackets1127.PetWindow(0, 0, 1),
+                ClientPackets1127.PetWindow(0, 0, 2)])));
+            await Close(mind);
+        }
+
+        // JSON may carry an enum as a number.
+        [Test]
+        public async Task CommandPet_ShouldBeRefusedWithAReason_ForAnOrderThatIsntOne()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            Assert.That(client.Dispatch(new CommandPetPrimitive((PetOrder) 42), mind.Link), Is.EqualTo("There's no pet order 42."));
+            Assert.That(Inbound(client), Is.Empty);
+            await Close(mind);
+        }
+
         // A Magician's first spells, in its spell lines: Gleam Ray from Way of the Sun, Lesser Powerward from Way of the Moon, and Gleam Streak, which Way of the Sun gains at level 2.
         private static readonly SpellLine WayOfTheSun = new("Light", "Way of the Sun", "Light", true);
         private static readonly SpellLine WayOfTheMoon = new("Mana", "Way of the Moon", "Mana", true);
@@ -852,6 +887,24 @@ namespace DOL.GS.Tests
             {
                 new DialogPercept(eDialogCode.CustomDialog, 1, 1, 0, true, "And now?")
             }));
+        }
+
+        // The pet window the client still shows, which `WorldInitRequestHandler` doesn't send: a Character enters the world without a pet.
+        [Test]
+        public async Task TakeOver_ShouldHaveTheServerOpenThePetWindowAgain_AfterWhatWorldEntryTells_WhileTheCharacterHasAPet()
+        {
+            FakeMind oldMind = new();
+            FakeMind newMind = new();
+            HarnessClient client = InWorld(oldMind.Link, 1);
+            WorldDoubles.Inventory((TestPlayer) client.Player);
+            RecordingPacketLib calls = RecordingPacketLib.Install(client);
+            WorldDoubles.ObjectCache((TestPlayer) client.Player);
+            WorldDoubles.Pet((TestPlayer) client.Player, WorldDoubles.Npc("wolf cub"));
+
+            client.TakeOver(newMind.Link);
+            await Close(newMind);
+
+            Assert.That(calls.Names.TakeLast(2), Is.EqualTo(new[] { nameof(IPacketLib.SendEncumbrance), nameof(IPacketLib.SendPetWindow) }));
         }
 
         [Test]
