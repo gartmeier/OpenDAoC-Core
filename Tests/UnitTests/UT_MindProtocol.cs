@@ -126,6 +126,12 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Read_ShouldReadAUseAbilityPrimitive()
+        {
+            Assert.That(Read("""{"type":"primitive","id":31,"primitive":{"name":"useAbility","ability":"Quick Cast"}}"""), Is.EqualTo(new PrimitiveMessage(31, new UseAbilityPrimitive("Quick Cast"))));
+        }
+
+        [Test]
         public void Read_ShouldReadACancelConcentrationPrimitive_WithOrWithoutATarget()
         {
             Assert.That(Read("""{"type":"primitive","id":31,"primitive":{"name":"cancelConcentration","spell":"Minor Bark Skin"}}"""), Is.EqualTo(new PrimitiveMessage(31, new CancelConcentrationPrimitive("Minor Bark Skin"))));
@@ -219,6 +225,7 @@ namespace DOL.GS.Tests
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"command"}}""", "text")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"useStyle","line":"Blades"}}""", "style")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"castSpell"}}""", "spell")]
+        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"useAbility"}}""", "ability")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"cancelConcentration","target":"Vue"}}""", "spell")]
         [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"answerDialog","code":"CustomDialog","data1":257,"data2":1,"data3":0}}""", "accept")]
         public void Read_ShouldSayWhy_ForAPrimitiveWithoutItsField(string json, string field)

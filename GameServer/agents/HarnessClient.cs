@@ -260,6 +260,13 @@ namespace DOL.GS.Agents
 
                     break;
                 }
+                case UseAbilityPrimitive useAbility:
+                {
+                    if (AbilityIndex(useAbility.Ability, out index) is string reason)
+                        return reason;
+
+                    break;
+                }
                 case CancelConcentrationPrimitive cancel:
                 {
                     if (ConcentrationIndex(cancel.Spell, cancel.Target, out index) is string reason)
@@ -381,7 +388,7 @@ namespace DOL.GS.Agents
                 AnswerDialogPrimitive answer => ClientPackets1127.DialogResponse((byte) answer.Code, (ushort) answer.Data1, (ushort) answer.Data2, (ushort) answer.Data3, answer.Accept),
                 // Where the server has the Character, so the position it takes from the packet moves it nowhere.
                 CastSpellPrimitive when listSpell is (byte level, byte lineIndex) => ClientPackets1127.UseSpell(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, level, lineIndex),
-                UseStylePrimitive or CastSpellPrimitive => ClientPackets1127.UseSkill(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) index),
+                UseStylePrimitive or CastSpellPrimitive or UseAbilityPrimitive => ClientPackets1127.UseSkill(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) index),
                 // As a right-click in the backpack, never the quickbar's click, which on a weapon or horse slot means something else.
                 UseItemPrimitive useItem => ClientPackets1127.UseSlot(new Vector3(player.X, player.Y, player.Z), player.CurrentSpeed, _queuedHeading ?? player.Heading, SkillFlags, (byte) useItem.Slot,
                     useItem.Second is true ? eUseType.Use2 : eUseType.Use1),
@@ -426,6 +433,13 @@ namespace DOL.GS.Agents
         {
             int found = Array.FindIndex(_skills, skill => skill is SpellEntry && skill.Name == name);
             return SkillIndex(found, name, $"{Player.Name} has no Spell \"{name}\".", out index);
+        }
+
+        // Only abilities and realm abilities match, which the skill handler uses alike.
+        private string AbilityIndex(string name, out int index)
+        {
+            int found = Array.FindIndex(_skills, skill => skill is AbilityEntry or RealmAbilityEntry && skill.Name == name);
+            return SkillIndex(found, name, $"{Player.Name} has no Ability \"{name}\".", out index);
         }
 
         // The level and line index the use spell handler reads for a list caster's spell, among the spell lines the server last sent, or none when it isn't there.

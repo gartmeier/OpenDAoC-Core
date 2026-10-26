@@ -15,7 +15,7 @@ Each milestone ends with an Agent playing. Its spec is `.scratch/<slug>/spec.md`
 7. **Spells:** `spells`. A fresh Naturalist, Fearnan, played solo from 1 to 5 on its heals and Concentration buffs and got promoted to Druid. It healed between fights once it learned to wait out the cast delay after each one.
 8. **Damage spells:** `damage-spells`. A fresh Magician, Orla, played solo from 1 to 5 on direct damage Spells and got promoted to Eldritch. It pulled from range and finished with the staff rather than kiting.
 
-Smaller specs along the way: `bindstones`, `effects`, `effect-details`, `water-routes`, `item-type`, `graves`, `dialogs`.
+Smaller specs along the way: `bindstones`, `effects`, `effect-details`, `water-routes`, `item-type`, `graves`, `dialogs`, `abilities`.
 
 ## Planned
 

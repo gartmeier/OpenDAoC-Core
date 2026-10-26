@@ -206,4 +206,50 @@ const reply = await agent.sendAndWait({ name: "castSpell", spell: "Gleam Ray" },
 return `${Math.round(gap)} away: ${reply ?? "no answer within 10 s"}`;
 ```
 
+You can also sprint with `useAbility` (see below): Sprint is an Ability, and using it turns sprint on or off, as `/sprint` does.
+
 Prismatic Flare's 3 s stun buys you a cast without running. Your buffs from Way of the Moon last 20 minutes: cast them on yourself between fights, as a Naturalist keeps its Concentration buffs up.
+
+## Abilities and Quick Cast
+
+`useAbility` uses an Ability by its name in `agent.self.skills` (`page` "Abilities" or "RealmAbilities"), as a click on its icon does: Sprint, Quick Cast, or a Realm Ability. One you don't have is refused (`queued: false`) with the reason. A passive one, such as Staves, does nothing.
+
+An Eldritch, an Enchanter and a Mentalist get Quick Cast when they're promoted. It makes the next Spell you start within 3 s one that nothing interrupts, at twice the Power. It doesn't make the cast shorter. The server says:
+
+- "You have activated quickcast." when it's ready, and "Quick Cast" is in `agent.self.effects` until you cast or the 3 s run out, which the server doesn't announce;
+- "Your next spell will not be quickcasted." when you use it again to turn it off;
+- "You can not cast when your are in melee combat." when your attack is on: turn it off first;
+- "You must wait 12 more second to attempt to quick cast!" for 30 s after a quickcasted Spell;
+- "You can't prepare a quickcast while casting a spell!" mid-cast.
+
+It saves a fight once the Mob has reached you, when every hit would interrupt a normal cast. The Human's routine:
+
+1. Cast at the Mob from range until it reaches you.
+2. Quick Cast, and cast once more: the hits don't interrupt it.
+3. If it's still alive, finish it with your staff, or kite if you're losing.
+
+Steps 2 and 3, once the Mob is on you:
+
+```ts
+const mob = agent.surroundings.npcs.find((npc) => npc.targetId === agent.self.objectId);
+if (!mob) return "nothing is after you";
+
+const damage = agent.self.skills
+  .filter((skill) => skill.page === "Spells")
+  .filter((spell) => spell.details?.description.startsWith("Inflicts"))
+  .sort((a, b) => b.level - a.level)[0];
+if (!damage) return "no damage Spell";
+
+await agent.send({ name: "attack", on: false });
+await agent.send({ name: "target", objectId: mob.objectId });
+
+const ready = await agent.sendAndWait({ name: "useAbility", ability: "Quick Cast" }, (percept) =>
+  percept?.kind === "message" && /activated quickcast|must wait|melee combat|while casting/.test(percept.text) ? percept.text : undefined, 3_000);
+if (!ready?.includes("activated")) return `no Quick Cast: ${ready ?? "no answer"}`;
+
+const reply = await agent.sendAndWait({ name: "castSpell", spell: damage.name }, (percept) =>
+  percept?.kind === "message" && /You hit|resists|too far away|not visible|can't see|enough power/.test(percept.text) ? percept.text : undefined, 10_000);
+if (!agent.surroundings.npcs.some((npc) => npc.objectId === mob.objectId && npc.healthPercent > 0)) return `${reply}, and it's dead`;
+
+return await kill(agent, mob.objectId);
+```

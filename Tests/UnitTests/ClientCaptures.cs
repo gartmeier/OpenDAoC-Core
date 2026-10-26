@@ -55,7 +55,10 @@ namespace DOL.GS.Tests
         // A Magician casting a buff on itself, then killing a Mob with a damage spell.
         public const string CAST_DAMAGE = "cast-damage";
 
-        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG, USE_ITEM, CAST_HEAL, CAST_BUFFS, CAST_DAMAGE];
+        // A Mentalist clicking Quick Cast, mostly before a spell.
+        public const string QUICK_CAST = "quick-cast";
+
+        public static readonly string[] All = [.. Names, SAY, MOVEMENT, LOGIN_NEXT_TO_AGENT, FIGHT, SIT_KEY, ITEMS, STYLES, SWIM_STRAIGHT, SWIM_TURN, SWIM_STOP_SIT_STAND, HEALER_DIALOG, USE_ITEM, CAST_HEAL, CAST_BUFFS, CAST_DAMAGE, QUICK_CAST];
 
         public static CapturedPacket[] Load(string capture)
         {

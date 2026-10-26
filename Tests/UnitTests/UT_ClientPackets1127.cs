@@ -359,6 +359,21 @@ namespace DOL.GS.Tests
                 AssertMatches(ClientPackets1127.UseSkill(new(294695.78f, 641726.6f, 4848), 0, 0x048C, 0xA000, indexes[i]), captured[i]);
         }
 
+        // Vue's clicks on Quick Cast: an ability is a skill like a style, 3 after the specializations, with something targeted but the second time.
+        [Test]
+        public void UseSkill_ShouldMatchCapture_ForAnAbility()
+        {
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.QUICK_CAST, eClientPackets.UseSkill);
+            Assert.That(captured, Has.Length.EqualTo(4));
+
+            for (int i = 0; i < captured.Length; i++)
+            {
+                byte[] data = captured[i].Data;
+                Vector3 position = new(BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(0)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(4)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(8)));
+                AssertMatches(ClientPackets1127.UseSkill(position, ClientCaptures.Speed(captured[i]), Short(captured[i], 16), i == 1 ? (ushort) 0 : (ushort) 0xA000, 3), captured[i]);
+            }
+        }
+
         // Orla's casts from the quickbar: Lesser Powerward, level 1 of Way of the Moon (line 1), with nothing targeted, then Gleam Ray, level 1 of Way of the Sun (line 0), at a Mob.
         [Test]
         public void UseSpell_ShouldMatchCapture()

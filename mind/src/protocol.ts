@@ -46,7 +46,7 @@ export interface ReplacedMessage {
   type: "replaced";
 }
 
-export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | AnswerDialogPrimitive | UseItemPrimitive | CastSpellPrimitive | CancelConcentrationPrimitive;
+export type Primitive = QuitPrimitive | SayPrimitive | MoveToPrimitive | StopPrimitive | FacePrimitive | TargetPrimitive | AttackPrimitive | SitPrimitive | StandPrimitive | CommandPrimitive | MoveItemPrimitive | ExaminePrimitive | ExamineMerchantItemPrimitive | PickUpPrimitive | TalkToPrimitive | BuyPrimitive | SellPrimitive | UseStylePrimitive | AnswerDialogPrimitive | UseItemPrimitive | CastSpellPrimitive | CancelConcentrationPrimitive | UseAbilityPrimitive;
 
 export interface QuitPrimitive {
   name: "quit";
@@ -164,6 +164,11 @@ export interface CancelConcentrationPrimitive {
   name: "cancelConcentration";
   spell: string;
   target?: string;
+}
+
+export interface UseAbilityPrimitive {
+  name: "useAbility";
+  ability: string;
 }
 
 export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | ConcentrationPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;

@@ -484,6 +484,73 @@ namespace DOL.GS.Tests
             await Close(mind);
         }
 
+        // Specializations first, then abilities, as the server lists an Eldritch's. A realm ability is used the same way, and the spell and style are there only to be told apart.
+        private static SkillsPercept EldritchSkills()
+        {
+            return new([
+                new SpecializationEntry("Light", 5),
+                new SpecializationEntry("Void", 5),
+                new AbilityEntry("Staves", 1),
+                new AbilityEntry("Sprint", 1),
+                new AbilityEntry("Quick Cast", 1),
+                new RealmAbilityEntry("Purge", 1),
+                new SpellEntry("Minor Revigoration", 1, null),
+                new StyleEntry("Shining Blade", 2, "Blades", null)]);
+        }
+
+        // The index counts from Staves, the first entry after the specializations, as in `quick-cast.tsv`.
+        [Test]
+        public async Task UseAbility_ShouldQueueTheSkillPacketWithTheAbilitysIndexInTheSkillListLastSent()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(EldritchSkills());
+
+            Assert.That(client.Dispatch(new UseAbilityPrimitive("Sprint"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new UseAbilityPrimitive("Quick Cast"), mind.Link), Is.Null);
+            Assert.That(client.Dispatch(new UseAbilityPrimitive("Purge"), mind.Link), Is.Null);
+
+            Vector3 at = new(296516, 641415, 4848);
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([
+                ClientPackets1127.UseSkill(at, 0, 0, 0, 1),
+                ClientPackets1127.UseSkill(at, 0, 0, 0, 2),
+                ClientPackets1127.UseSkill(at, 0, 0, 0, 3)])));
+            await Close(mind);
+        }
+
+        private static IEnumerable<TestCaseData> AbilitiesTheCharacterDoesntHave()
+        {
+            yield return new TestCaseData(new UseAbilityPrimitive("Mastery of Concentration"), "Greeen has no Ability \"Mastery of Concentration\".");
+            // Only abilities and realm abilities match, never a specialization, a spell or a style of that name.
+            yield return new TestCaseData(new UseAbilityPrimitive("Void"), "Greeen has no Ability \"Void\".");
+            yield return new TestCaseData(new UseAbilityPrimitive("Minor Revigoration"), "Greeen has no Ability \"Minor Revigoration\".");
+            yield return new TestCaseData(new UseAbilityPrimitive("Shining Blade"), "Greeen has no Ability \"Shining Blade\".");
+            yield return new TestCaseData(new CastSpellPrimitive("Quick Cast"), "Greeen has no Spell \"Quick Cast\".");
+            yield return new TestCaseData(new UseStylePrimitive("Sprint"), "Greeen has no Style \"Sprint\".");
+        }
+
+        [TestCaseSource(nameof(AbilitiesTheCharacterDoesntHave))]
+        public async Task UseAbility_ShouldBeRefusedWithAReason_ForAnAbilityTheCharacterDoesntHave(Primitive primitive, string reason)
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.OnPerceived(EldritchSkills());
+
+            Assert.That(client.Dispatch(primitive, mind.Link), Is.EqualTo(reason));
+            Assert.That(Inbound(client), Is.Empty);
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task UseAbility_ShouldBeRefusedWithAReason_BeforeTheServerSentASkillList()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            Assert.That(client.Dispatch(new UseAbilityPrimitive("Sprint"), mind.Link), Is.EqualTo("Greeen has no Ability \"Sprint\"."));
+            await Close(mind);
+        }
+
         // A Magician's first spells, in its spell lines: Gleam Ray from Way of the Sun, Lesser Powerward from Way of the Moon, and Gleam Streak, which Way of the Sun gains at level 2.
         private static readonly SpellLine WayOfTheSun = new("Light", "Way of the Sun", "Light", true);
         private static readonly SpellLine WayOfTheMoon = new("Mana", "Way of the Moon", "Mana", true);

@@ -16,6 +16,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `swim-straight.tsv`, `swim-turn.tsv` and `swim-stop-sit-stand.tsv` are 43 s, 31 s and 54 s of the same Character, unbuffed, at a river in zone 207. In the first it runs down the bank, swims straight across and runs up the other bank. In the second it swims in, turns about while swimming, and swims back out. In the third it swims in and stops in the water, sits, stands, swims on and runs out. Recorded with `/agent capture agent2` on 2026-10-25, unmodified. See Swimming.
 - `cast-heal.tsv` and `cast-buffs.tsv` are 13 s and 19 s of account `druid`'s Character Fearnan, a Naturalist, already in the world at Connla. In the first, at level 1, it casts Minor Revigoration twice. In the second, at level 2, it casts Minor Revigoration and Minor Bark Skin on another and on itself, then cancels two buffs in the concentration window. Recorded with `/agent capture druid` on 2026-10-25, unmodified apart from their first lines. See Spells.
 - `cast-damage.tsv` is 640 s of account `agentorla`'s Character Orla, a level 1 Magician, from login in Shannon Estuary: it casts Lesser Powerward on itself, targets a Mob and casts Gleam Ray at it until it dies, then targets itself and quits. Recorded with `/agent capture agentorla` on 2026-10-25, unmodified apart from its first line. See Spells of a list caster.
+- `quick-cast.tsv` is 71 s of account `admin`'s Character Vue, a level 50 Mentalist, already in the world: it clicks Quick Cast on the quickbar four times, three of them followed by a spell, with a Mob, nothing or itself targeted. Recorded with `/agent capture admin` on 2026-10-25, unmodified apart from its first line. See Abilities.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
 ## Format
@@ -252,6 +253,22 @@ From `cast-damage.tsv`. The Human played Orla, a Magician (object ID 0x4548), an
 - **Line of sight check response (0xD0).** As for a hybrid's spell, but sent again and again through a cast at a Mob, as the server checks during the cast.
 
 Full packet, the second Gleam Ray: `0018 0084 0005 0000 707D 424D8F48 D7FF1C49 7CE59745 00000000 0065 A000 01 00 0000 50C0`.
+
+## Abilities
+
+From `quick-cast.tsv`. The Human played Vue, a Mentalist, and clicked Quick Cast on the quickbar, then mostly a spell.
+
+| ms | Part |
+|----|------|
+| 40599 | targets a Mob (0x3B73) |
+| 44265, 45165 | Quick Cast, then a level 50 spell of line 0 |
+| 47432 | attack on, and the target cleared |
+| 48065, 48965 | Quick Cast, then the same spell, with nothing targeted |
+| 55232–60699 | targets a Mob (0x0704), Quick Cast, then a level 1 spell of line 0 three times, the last two after moving |
+| 62666 | attack on, and the target cleared |
+| 64298, 66032 | targets itself (0x4637), then Quick Cast |
+
+- **An ability is a skill (0xBB).** It's sent exactly as a style or a hybrid's spell is: the same 24 bytes, flags `A000` with something targeted and `0000` without, type `01`, and the index counting from the first entry after the specializations. Quick Cast was 3 every time.
 
 ## Fields that vary between captures
 

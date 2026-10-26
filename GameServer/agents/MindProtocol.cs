@@ -131,6 +131,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(UseItemPrimitive), "useItem")]
     [JsonDerivedType(typeof(CastSpellPrimitive), "castSpell")]
     [JsonDerivedType(typeof(CancelConcentrationPrimitive), "cancelConcentration")]
+    [JsonDerivedType(typeof(UseAbilityPrimitive), "useAbility")]
     public abstract record Primitive;
 
     // Types `/quit`, as a Human does. The server's quit path takes it from there, quit delay included.
@@ -220,6 +221,10 @@ namespace DOL.GS.Agents
     // The Harness refuses a spell the server's last `skills` didn't list. Whether the cast begins, lands or is interrupted, and why not, the server says in `message` Percepts.
     // What a spell does and costs is in its `skills` entry, from the tooltip the server sent with the skill list.
     public sealed record CastSpellPrimitive([property: JsonRequired] string Spell) : Primitive;
+
+    // Uses the ability named `Ability`, such as Sprint, Quick Cast or a realm ability, as a click on its icon does.
+    // The Harness refuses an ability or realm ability the server's last `skills` didn't list. Whether it worked, and why not, the server says in `message` Percepts, and an ability with an Effect shows in `effects`.
+    public sealed record UseAbilityPrimitive([property: JsonRequired] string Ability) : Primitive;
 
     // Cancels the Concentration buff `Spell` that the Character keeps up, as a click on it in the concentration window does. `Target` names who wears it: without it, the first of that spell in the window.
     // Names are matched as the `concentration` Percept cuts them, so a whole name and a cut one both do. The Harness refuses a buff the server's last `concentration` didn't list.

@@ -118,6 +118,8 @@ export function describePrimitive(agent: Agent, character: string, primitive: Pr
       return `answerDialog ${primitive.code} ${primitive.accept ? "accept" : "decline"}`;
     case "castSpell":
       return `castSpell ${primitive.spell}`;
+    case "useAbility":
+      return `useAbility ${primitive.ability}`;
     case "cancelConcentration":
       return primitive.target === undefined ? `cancelConcentration ${primitive.spell}` : `cancelConcentration ${primitive.spell} on ${primitive.target}`;
     default:
