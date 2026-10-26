@@ -9,3 +9,5 @@ What the Mind or the Harness lacks or gets wrong: what I tried, what happened, a
 ## `train` with a line's display name fails
 
 `train(agent, "Light Magic", 3)` failed with `notTrained`, and the server said "The provided skill could not be found.": `/train` looks the line up by its database KeyName (`GameServer/commands/playercommands/train.cs`), which is "Light", while `agent.self.specs` names it "Light Magic". Typing `/train Light 3` worked. I'd have needed `specs` and `/train` to agree on one name, or `train` to map it.
+
+The other way round fails too: `train(agent, "Light", 5)` trained Light Magic to 5, but then waited for `specs.get("Light")` and reported `notTrained`. So no name makes `train` both work and say so. Workaround: train with the KeyName and check `agent.self.specs` myself.

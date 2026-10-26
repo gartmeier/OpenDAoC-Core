@@ -15,11 +15,32 @@ const headingTo = (agent: Agent, p: Point) => {
   return (Math.round((Math.atan2(-(p.x - at.x), p.y - at.y) * 4096) / (2 * Math.PI)) + 4096) % 4096;
 };
 
-/** The best damage Spell you have, if any. */
+const damageOf = (description = "") => Number(/Inflicts (\d+)/.exec(description)?.[1] ?? 0);
+
+/** The damage Spell you have that inflicts the most, if any. */
 const damageSpell = (agent: Agent) =>
   agent.self.skills
     .filter((skill) => skill.page === "Spells" && skill.details?.description.startsWith("Inflicts"))
-    .sort((a, b) => b.level - a.level)[0];
+    .sort((a, b) => damageOf(b.details?.description) - damageOf(a.details?.description))[0];
+
+/** Turns Quick Cast on and casts `spell` at the Mob. Returns what the server said. */
+export async function quickCast(agent: Agent, objectId: number, spell: string): Promise<string> {
+  await agent.send({ name: "attack", on: false });
+  await agent.send({ name: "target", objectId });
+  const prepare = () => agent.sendAndWait({ name: "useAbility", ability: "Quickcast" }, (percept) =>
+    percept?.kind === "message" && /activated quickcast|must wait|melee combat|while casting/.test(percept.text) ? percept.text : undefined, 3_000);
+  let ready = await prepare();
+  if (ready?.includes("while casting")) {
+    // A hit doesn't always interrupt at once: let the cast in progress land or break first.
+    await agent.waitFor((percept) => percept?.kind === "message" && /You cast a|interrupt|cancelled/.test(percept.text), 3_000);
+    ready = await prepare();
+  }
+  if (!ready?.includes("activated")) return `no Quick Cast: ${ready ?? "no answer"}`;
+
+  const reply = await agent.sendAndWait({ name: "castSpell", spell }, (percept) =>
+    percept?.kind === "message" && /You hit|resists|interrupt|too far away|not visible|can't see|enough power|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
+  return reply ?? "no answer";
+}
 
 /**
  * Stands at about the Spell's range from the Mob and casts at it until it first hits you or the Power runs out,
@@ -67,6 +88,11 @@ export async function pull(agent: Agent, objectId: number): Promise<Outcome> {
 
     const after = mob();
     if (!after || after.healthPercent <= 0) return succeeded;
+
+    // It's on me, and every hit would interrupt a normal cast: Quick Cast one more, which nothing interrupts.
+    if (agent.self.power >= 2 * (spell.details?.powerCost ?? 0)) console.log(`Quick Cast: ${await quickCast(agent, objectId, spell.name)}`);
+    const last = mob();
+    if (!last || last.healthPercent <= 0) return succeeded;
   }
 
   return await kill(agent, objectId);

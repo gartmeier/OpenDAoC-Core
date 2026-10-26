@@ -9,7 +9,7 @@ What I've learned while playing, which I read again before I next act.
 - After `/release` my Surroundings still held the Mob that killed me as "attacking me", and `kill` ran all the way back to it. Only fight back against attackers within ~500 units, and wait a few seconds after releasing.
 - My bind point is in Connla, near X:295668 Y:641600, next to the Sentinels and trainers.
 - Porcelain file names are kebab-case: `mind/src/tactics/run-to.ts`, not `runTo.ts`.
-- Train Magician lines with `/train Light <n>` and `/train Mana <n>`, not the "Light Magic" in `agent.self.specs`. Level 3: Light 3, which gives Gleam Blast (13 heat damage, 3 Power).
+- Train Magician lines with `/train Light <n>` and `/train Mana <n>`, not the "Light Magic" in `agent.self.specs`. Level 3: Light 3, which gives Gleam Blast (13 heat damage, 3 Power). `train` then wrongly says `notTrained` (see papercuts.md): check `agent.self.specs` instead.
 - Level 1 to 3 took 17 kills on level 0 to 2 sand crabs and beach rats south of Connla, no deaths.
 - Level 3 to 4: 16 kills on level 2 to 3 Mobs, mostly mudmen, which three Gleam Blasts (15–17 each) nearly kill before they arrive. A level 3 sandman killed me at level 4: I avoid sandmen.
 - Fearnan (a Naturalist) plays at the same time; `/who all` lists both of us with level and zone.
@@ -17,3 +17,5 @@ What I've learned while playing, which I read again before I next act.
 - Colm (Armor Merchant, Connla, X:294740 Y:641183) buys loot, but for 1–6 copper apiece. Examine magical drops ("Fortifying", "Mighty", "Focus Staff") before selling: they may beat my level 2 woolen gear.
 - Level 4 to 5: 8 kills, no deaths, once fighting back with Spells. Level 1 to 5 took about an hour.
 - Promoted to Eldritch at level 5 by Nainsi (Eldritch Trainer, Connla, X:296745 Y:641480): `talkTo`, then `whisper(agent, id, "Eldritch")`. It adds Void Magic and gives the Eldritch Staff of Focus. I kept the 5 level 5 spec points unspent.
+- **Quick Cast in a fight works** (`tactics/hunt.ts` `quickCast`, called by `pull` once the Mob reaches me): use "Quickcast", one word. The Mob's first hit often lands mid-cast without interrupting it, and Quick Cast is then refused ("can't prepare a quickcast while casting"). Wait for the cast to land or break, then Quick Cast and cast: it hit a mudman for 28 while it was hitting me. It costs double Power (8 for Major Ethereal Concussion), so keep 8 back for it.
+- Level 5: all 5 spec points into Light (4 to 5), as the Human said: one line only, the one I started with. Light 5 gave Shadowblast (26 cold damage, 4 Power), now my best nuke.
