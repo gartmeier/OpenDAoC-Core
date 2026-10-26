@@ -37,8 +37,16 @@ A special melee attack a Character learns as one of its weapon specs rises. Many
 _Avoid_: skill, special attack
 
 **Spell**:
-Magic a Character casts from one of its spell lines, such as a bolt, a heal or a buff.
+Magic a Character casts from one of its Spell lines, such as a bolt, a heal or a buff.
 _Avoid_: skill
+
+**Specialization**:
+Something a Character trains with points as it levels; raising it brings new Spells or Styles.
+_Avoid_: spec, skill line
+
+**Spell line**:
+The Spells under one Specialization. A baseline Spell line gives its Spells as the Character levels, and any other gives them as the Specialization rises.
+_Avoid_: spell list
 
 **Kiting**:
 Fighting a Mob from range: sprinting away from it, turning round and casting at it before it closes in, and again.
