@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using DOL.GS.Agents;
+using DOL.GS.Styles;
 using NUnit.Framework;
 
 namespace DOL.GS.Tests
 {
     /// <summary>
-    /// The Wiki: a realm's zones with their Mobs and NPCs, and its merchants with their wares, as a Human would read them on a fan site (ADR 0006).
+    /// The Wiki: a realm's zones with their Mobs and NPCs, its merchants with their wares, and its classes with their Spells and Styles, as a Human would read them on a fan site (ADR 0006).
     /// </summary>
     [TestFixture]
     public class UT_Wiki
@@ -152,6 +153,126 @@ namespace DOL.GS.Tests
 
             Assert.That(pages.Keys, Is.EquivalentTo(new[] { "index.md", "zones/arbor-glen-10.md", "zones/arbor-glen-11.md", "merchants/twm-arbor-glen-10.md", "merchants/twm-2-arbor-glen-10.md" }));
             Assert.That(pages["merchants/twm-2-arbor-glen-10.md"], Does.Contain("Arrows, a merchant"));
+        }
+
+        private static readonly WikiClass MAGICIAN = new("Magician", "Magician",
+        [
+            new WikiSpecialization("Void", 1, [new WikiSpellLine("Way of the Eclipse", true, [])], []),
+        ]);
+
+        private static readonly WikiClass ELDRITCH = new("Eldritch", "Magician",
+        [
+            new WikiSpecialization("Void", 1,
+            [
+                new WikiSpellLine("Way of the Eclipse", true,
+                [
+                    new WikiSpell("Major Ethereal Concussion", 5, new SpellDetails(5, null, 6, "Enemy", 1500, 2.5f, "Cold", null, "Does 22 cold damage.")),
+                ]),
+                new WikiSpellLine("Void Mastery", false,
+                [
+                    new WikiSpell("Frost Wave", 2, new SpellDetails(2, 9f, -10, "Enemy", 1500, 3f, "Cold", 350, "Slows | chills.")),
+                    new WikiSpell("Chilling Shield", 3, new SpellDetails(3, null, null, "Self", null, 0f, null, null, "Adds 5 armor.", 4)),
+                    new WikiSpell("Odd Spell", 4, null),
+                ]),
+            ], []),
+        ]);
+
+        private static readonly WikiClass BLADEMASTER = new("Blademaster", "Guardian",
+        [
+            new WikiSpecialization("Blades", 1, [],
+            [
+                new WikiStyle("Return Blade", 2, new StyleDetails(Style.eOpening.Defensive, Style.eAttackResultRequirement.Parry, null, null, ["Slicing Blade"], 5, 10, 0, 0.5f, false, null), []),
+                new WikiStyle("Slicing Blade", 8, new StyleDetails(Style.eOpening.Offensive, Style.eAttackResultRequirement.Style, null, "Return Blade", [], 10, 15, 5, 1.2f, false, null), ["Bleed: Does 5 damage every 5 seconds. (50% chance)"]),
+            ]),
+            new WikiSpecialization("Celtic Dual", 5, [],
+            [
+                new WikiStyle("Shadow's Edge", 4, new StyleDetails(Style.eOpening.Positional, Style.eAttackResultRequirement.Any, Style.eOpeningPosition.Back, null, [], 10, 0, 0, 1f, true, "Left hand"), []),
+            ]),
+        ]);
+
+        private static IReadOnlyDictionary<string, string> ClassPages() => Wiki.Pages("Hibernia", [LOUGH_DERG], [ELDRITCH, MAGICIAN, BLADEMASTER]);
+
+        [Test]
+        public void ClassPage_ShouldListEachSpellLineOfASpecialization_BaselineFirst_WithWhatTheTooltipShows()
+        {
+            Assert.That(ClassPages()["classes/eldritch.md"], Is.EqualTo(
+                """
+                # Eldritch
+
+                A class of Hibernia that starts as a [Magician](magician.md). Each Specialization lists the Spells and Styles it brings. A baseline Spell line gives its Spells as the Character levels, at the Character levels shown; any other gives them as the Specialization rises, at the Specialization levels shown.
+
+                ## Void
+
+                ### Way of the Eclipse (baseline)
+
+                | Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Magic type | What it does |
+                |---|---|---|---|---|---|---|---|---|---|
+                | 5 | Major Ethereal Concussion | Enemy | 6 power | 2.5 s | 1500 |  |  | Cold | Does 22 cold damage. |
+
+                ### Void Mastery
+
+                | Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Magic type | What it does |
+                |---|---|---|---|---|---|---|---|---|---|
+                | 2 | Frost Wave | Enemy | 10% of max power | 3 s | 1500 | 350 | 9 s | Cold | Slows \| chills. |
+                | 3 | Chilling Shield | Self | 4 concentration | instant |  |  |  |  | Adds 5 armor. |
+                | 4 | Odd Spell |  |  |  |  |  |  |  |  |
+
+                """.ReplaceLineEndings("\n")));
+        }
+
+        [Test]
+        public void ClassPage_ShouldListStylesBySpecializationLevel_WithTheirOpeningsAndWhatTheyAdd()
+        {
+            Assert.That(ClassPages()["classes/blademaster.md"], Is.EqualTo(
+                """
+                # Blademaster
+
+                A class of Hibernia that starts as a Guardian. Each Specialization lists the Spells and Styles it brings. A baseline Spell line gives its Spells as the Character levels, at the Character levels shown; any other gives them as the Specialization rises, at the Specialization levels shown.
+
+                ## Blades
+
+                ### Styles
+
+                | Level | Style | Opening | Weapon | Endurance | To hit | Defence | Growth | Opens | Adds |
+                |---|---|---|---|---|---|---|---|---|---|
+                | 2 | Return Blade | after you parry |  | 5 | 10 | 0 | 0.5 | Slicing Blade |  |
+                | 8 | Slicing Blade | after Return Blade |  | 10 | 15 | 5 | 1.2 |  | Bleed: Does 5 damage every 5 seconds. (50% chance) |
+
+                ## Celtic Dual
+
+                From level 5.
+
+                ### Styles
+
+                | Level | Style | Opening | Weapon | Endurance | To hit | Defence | Growth | Opens | Adds |
+                |---|---|---|---|---|---|---|---|---|---|
+                | 4 | Shadow's Edge | from the target's back, while hidden | Left hand | 10 | 0 | 0 | 1 |  |  |
+
+                """.ReplaceLineEndings("\n")));
+        }
+
+        [Test]
+        public void ClassPage_ShouldSaySo_ForAClassCharactersStartAs()
+        {
+            Assert.That(ClassPages()["classes/magician.md"], Does.StartWith("# Magician\n\nA class of Hibernia that Characters start as. "));
+        }
+
+        [Test]
+        public void Index_ShouldListClassesAfterZones()
+        {
+            Assert.That(ClassPages()["index.md"], Does.EndWith(
+                """
+                ## Classes
+
+                Each class's page lists the Spells and Styles its Specializations bring.
+
+                | Class | Starts as |
+                |---|---|
+                | [Blademaster](classes/blademaster.md) | Guardian |
+                | [Eldritch](classes/eldritch.md) | [Magician](classes/magician.md) |
+                | [Magician](classes/magician.md) |  |
+
+                """.ReplaceLineEndings("\n")));
         }
     }
 }

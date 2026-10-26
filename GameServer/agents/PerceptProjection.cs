@@ -644,13 +644,13 @@ namespace DOL.GS.Agents
         }
 
         // As `caster` would cast it, which is how `DetailDisplayHandler.DelveSpell` describes it. None when the server has no handler for it.
-        private static SpellDetails Details(GameLiving caster, Spell spell)
+        internal static SpellDetails Details(GameLiving caster, Spell spell)
         {
             return ScriptMgr.CreateSpellHandler(caster, spell, null) is ISpellHandler handler ? Details(handler) : null;
         }
 
         // Mirrors `SpellDelve.GetStyleString`, without the icon and the proc, which is a spell's delve of its own.
-        private static StyleDetails Details(Style style, IReadOnlyCollection<Style> allStyles)
+        internal static StyleDetails Details(Style style, IReadOnlyCollection<Style> allStyles)
         {
             bool afterStyle = style.OpeningRequirementType is Style.eOpening.Offensive && style.AttackResultRequirement is Style.eAttackResultRequirement.Style;
             string openingStyle = afterStyle ? allStyles.FirstOrDefault(other => other.ID == style.OpeningRequirementValue)?.Name : null;

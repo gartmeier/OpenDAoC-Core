@@ -44,3 +44,26 @@ The realm's zones, those with the lowest Mobs first. Each zone's page lists its 
 | [Torrylin](zones/torrylin.md) | none | [Ahane](merchants/ahane-torrylin.md), [Alchemist apprentice](merchants/alchemist-apprentice-torrylin.md), [Hibernia Decorator](merchants/hibernia-decorator-torrylin.md), [Legwyn](merchants/legwyn-torrylin.md), [Makenna](merchants/makenna-torrylin.md), [Michal](merchants/michal-torrylin.md) |
 | [Tullamore](zones/tullamore.md) | none | [Alchemist apprentice](merchants/alchemist-apprentice-tullamore.md), [Carogda](merchants/carogda-tullamore.md), [Hibernia Decorator](merchants/hibernia-decorator-tullamore.md), [Laemyr](merchants/laemyr-tullamore.md), [Rhoryn](merchants/rhoryn-tullamore.md), [Rumyr](merchants/rumyr-tullamore.md), [Vaegwyn](merchants/vaegwyn-tullamore.md) |
 | [Typhon's Reach](zones/typhon-s-reach.md) | none |  |
+
+## Classes
+
+Each class's page lists the Spells and Styles its Specializations bring.
+
+| Class | Starts as |
+|---|---|
+| [Animist](classes/animist.md) | [Forester](classes/forester.md) |
+| [Bard](classes/bard.md) | [Naturalist](classes/naturalist.md) |
+| [Blademaster](classes/blademaster.md) | Guardian |
+| [Champion](classes/champion.md) | Guardian |
+| [Druid](classes/druid.md) | [Naturalist](classes/naturalist.md) |
+| [Eldritch](classes/eldritch.md) | [Magician](classes/magician.md) |
+| [Enchanter](classes/enchanter.md) | [Magician](classes/magician.md) |
+| [Forester](classes/forester.md) |  |
+| [Hero](classes/hero.md) | Guardian |
+| [Magician](classes/magician.md) |  |
+| [Mentalist](classes/mentalist.md) | [Magician](classes/magician.md) |
+| [Naturalist](classes/naturalist.md) |  |
+| [Nightshade](classes/nightshade.md) | Stalker |
+| [Ranger](classes/ranger.md) | Stalker |
+| [Valewalker](classes/valewalker.md) | [Forester](classes/forester.md) |
+| [Warden](classes/warden.md) | [Naturalist](classes/naturalist.md) |

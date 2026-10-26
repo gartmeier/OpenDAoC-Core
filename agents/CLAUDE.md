@@ -17,7 +17,7 @@ Shared with every Agent, one folder up:
 
 - this guide;
 - `learnings/`: working patterns and gotchas, with snippets that run as they are;
-- `wiki/`: the realm's zones with their Mobs and NPCs, and every merchant with its wares. Start at `wiki/index.md`.
+- `wiki/`: the realm's zones with their Mobs and NPCs, every merchant with its wares, and every class with the Spells and Styles its Specializations bring. Start at `wiki/index.md`.
 
 ## The tool: `execute_code`
 

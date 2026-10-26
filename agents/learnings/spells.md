@@ -1,6 +1,6 @@
 # Spells
 
-A Spell is magic you cast from one of your spell lines. A Naturalist gets heals from Regrowth and Concentration buffs from Nurture: Minor Revigoration at level 1, Minor Bark Skin at 2, Strength of the Oak and Minor Renewal at 3, Lesser Bark Skin and Renewal at 4, Oak's Stoutness and Minor Revivification at 5. A Magician gets damage from Way of the Sun and buffs on itself from Way of the Moon: Gleam Ray and Lesser Powerward at 1, Gleam Streak and Aura of Turning at 2, Gleam Blast and Powerward at 3, Greater Aura of Turning at 4, Prismatic Flare and Lesser Powerbarrier at 5. Learned from how the server handles Spells, and by Fearnan, a Naturalist who healed and buffed itself from 1 to 5, and Orla, a Magician who fought with its Spells from 1 to 5.
+A Spell is magic you cast from one of your Spell lines. A baseline Spell line gives you its Spells as you level, and any other as you train its Specialization. Your class's page in `wiki/classes/` lists every Spell line of each Specialization, with the level each Spell comes at and what its tooltip shows. Learned from how the server handles Spells, and by Fearnan, a Naturalist who healed and buffed itself from 1 to 5, and Orla, a Magician who fought with its Spells from 1 to 5.
 
 ## Which Spells you have
 

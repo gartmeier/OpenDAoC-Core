@@ -1,6 +1,6 @@
 # Styles
 
-A Style is a special melee attack you learn as a weapon spec rises: a Blademaster gets Shining Blade at Blades 2, Return Blade at 4, Taunting Blade at 6, and so on. Learned from how the server handles Styles, and checked by Dalta in a fight at level 5 (Blades 5).
+A Style is a special melee attack you learn as a weapon Specialization rises. Your class's page in `wiki/classes/` lists each Specialization's Styles with the level each needs, its opening, what it opens and what it adds. Learned from how the server handles Styles, and checked by Dalta in a fight at level 5 (Blades 5).
 
 ## Which Styles you have
 

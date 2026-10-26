@@ -13,7 +13,7 @@ namespace DOL.GS.Commands
         "Remove an Agent from the world, or record a real client's packets",
         "/agent logout <char> - Quit the Agent's Character through the normal quit path, which ends its Mind's connection",
         "/agent capture <account> - Record every packet a real client logged into <account> sends, until /agent capture off",
-        "/agent wiki <realm> <folder> - Write the realm's Wiki for Agents into <folder>: its zones with their Mobs and NPCs, and its merchants with their wares")]
+        "/agent wiki <realm> <folder> - Write the realm's Wiki for Agents into <folder>: its zones with their Mobs and NPCs, its merchants with their wares, and its classes with their Spells and Styles")]
     public class AgentCommand : AbstractCommandHandler, ICommandHandler
     {
         public void OnCommand(GameClient client, string[] args)
@@ -118,9 +118,10 @@ namespace DOL.GS.Commands
 
             string folder = Path.GetFullPath(args[3]);
             List<WikiZone> zones = Wiki.FromWorld(realm);
-            IReadOnlyDictionary<string, string> pages = Wiki.Pages(realm.ToString(), zones);
+            List<WikiClass> classes = Wiki.ClassesFromServer(realm);
+            IReadOnlyDictionary<string, string> pages = Wiki.Pages(realm.ToString(), zones, classes);
             Wiki.Write(folder, pages);
-            DisplayMessage(client, $"Wrote {pages.Count} pages of {realm}'s Wiki, for {zones.Count} zones, to {folder}.");
+            DisplayMessage(client, $"Wrote {pages.Count} pages of {realm}'s Wiki, for {zones.Count} zones and {classes.Count} classes, to {folder}.");
         }
     }
 }
