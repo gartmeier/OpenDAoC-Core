@@ -110,48 +110,115 @@ A class of Hibernia that starts as a Guardian. Each Specialization lists the Spe
 
 ### Valor
 
-| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Magic type | What it does |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | Blast of Courage | ENEMY | 2 power | instant | 1500 |  |  | Body | Inflicts 4 body damage to the target. |
-| 2 | Debility | ENEMY | 2 power | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 16 for 1 minute. |
-| 3 | Submission | ENEMY | 3 power | instant | 1000 |  | 60 s | Body | Decreases the target's dexterity and quickness by 18 for 1 minute. |
-| 4 | Minor Demoralization | ENEMY | 3 power | instant | 1000 |  | 60 s | Body | Decreases the target's attack speed by 6% for 1 minute. |
-| 5 | Blast of Bravery | ENEMY | 4 power | instant | 1500 |  |  | Body | Inflicts 15 body damage to the target. |
-| 5 | Vigor of the Champion | SELF | 5 power | 3 s |  |  | 1200 s |  | Increases your strength and constitution by 17 for 20 minutes. |
-| 6 | Greater Debility | ENEMY | 4 power | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 21 for 1 minute. |
-| 7 | Greater Submission | ENEMY | 5 power | instant | 1000 |  | 60 s | Body | Decreases the target's dexterity and quickness by 22 for 1 minute. |
-| 8 | Lesser Demoralization | ENEMY | 5 power | instant | 1000 |  | 60 s | Body | Decreases the target's attack speed by 7% for 1 minute. |
-| 9 | Blast of Boldness | ENEMY | 6 power | instant | 1500 |  |  | Body | Inflicts 27 body damage to the target. |
-| 10 | Atony | ENEMY | 6 power | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 27 for 1 minute. |
-| 10 | Strength of the Champion | SELF | 8 power | 3 s |  |  | 1200 s |  | Increases your strength and constitution by 22 for 20 minutes. |
-| 11 | Surrender | ENEMY | 7 power | instant | 1000 |  | 60 s | Body | Decreases the target's dexterity and quickness by 27 for 1 minute. |
-| 12 | Slowness | ENEMY | 8 power | instant | 1500 |  | 51 s | Spirit | The target is slowed by 40% for 51 seconds. |
-| 13 | Demoralization | ENEMY | 8 power | instant | 1000 |  | 60 s | Body | Decreases the target's attack speed by 8% for 1 minute. |
-| 14 | Blast of Galliance | ENEMY | 9 power | instant | 1500 |  |  | Body | Inflicts 38 body damage to the target. |
-| 15 | Greater Surrender | ENEMY | 9 power | instant | 1000 |  | 60 s | Body | Decreases the target's dexterity and quickness by 33 for 1 minute. |
-| 16 | Greater Atony | ENEMY | 10 power | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 33 for 1 minute. |
-| 16 | Fortification of the Champion | SELF | 13 power | 3 s |  |  | 1200 s |  | Increases your strength and constitution by 31 for 20 minutes. |
-| 17 | Languor | ENEMY | 10 power | instant | 1500 |  | 59 s | Spirit | The target is slowed by 40% for 59 seconds. |
-| 19 | Major Demoralization | ENEMY | 12 power | instant | 1000 |  | 60 s | Body | Decreases the target's attack speed by 10% for 1 minute. |
-| 20 | Capitulation | ENEMY | 12 power | instant | 1000 |  | 60 s | Body | Decreases the target's dexterity and quickness by 39 for 1 minute. |
-| 22 | Lumber | ENEMY | 13 power | instant | 1500 |  | 68 s | Spirit | The target is slowed by 40% for 1 minute 8 seconds. |
-| 23 | Blast of Defiance | ENEMY | 14 power | instant | 1500 |  |  | Body | Inflicts 61 body damage to the target. |
-| 23 | Focus of the Champion | SELF | 19 power | 3 s |  |  | 1200 s |  | Increases your strength and constitution by 39 for 20 minutes. |
-| 24 | Enervation | ENEMY | 15 power | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 43 for 1 minute. |
-| 27 | Greater Demoralization | ENEMY | 17 power | instant | 1000 |  | 60 s | Body | Decreases the target's attack speed by 13% for 1 minute. |
-| 28 | Greater Capitulation | ENEMY | 17 power | instant | 1000 |  | 60 s | Body | Decreases the target's dexterity and quickness by 48 for 1 minute. |
-| 30 | Blast of Valiance | ENEMY | 19 power | instant | 1500 |  |  | Body | Inflicts 77 body damage to the target. |
-| 31 | Greater Enervation | ENEMY | 19 power | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 51 for 1 minute. |
-| 32 | Sluggishness | ENEMY | 20 power | instant | 1500 |  | 86 s | Spirit | The target is slowed by 40% for 1 minute 26 seconds. |
-| 32 | Power of the Champion | SELF | 26 power | 3 s |  |  | 1200 s |  | Increases your strength and constitution by 51 for 20 minutes. |
-| 36 | Superior Demoralization | ENEMY | 23 power | instant | 1000 |  | 60 s | Body | Decreases the target's attack speed by 15% for 1 minute. |
-| 37 | Resignation | ENEMY | 23 power | instant | 1000 |  | 60 s | Body | Decreases the target's dexterity and quickness by 58 for 1 minute. |
-| 39 | Infirmity | ENEMY | 25 power | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 61 for 1 minute. |
-| 40 | Blast of Heroism | ENEMY | 25 power | instant | 1500 |  |  | Body | Inflicts 103 body damage to the target. |
-| 40 | Force of the Champion | SELF | 34 power | 3 s |  |  | 1200 s |  | Increases your strength and constitution by 63 for 20 minutes. |
-| 42 | Crawl | ENEMY | 27 power | instant | 1500 |  | 103 s | Spirit | The target is slowed by 40% for 1 minute 43 seconds. |
-| 47 | Greater Resignation | ENEMY | 30 power | instant | 1000 |  | 60 s | Body | Decreases the target's dexterity and quickness by 70 for 1 minute. |
-| 48 | Ultimate Demoralization | ENEMY | 31 power | instant | 1000 |  | 60 s | Body | Decreases the target's attack speed by 19% for 1 minute. |
-| 49 | Greater Infirmity | ENEMY | 32 power | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 73 for 1 minute. |
-| 50 | Blast of the Champion | ENEMY | 33 power | instant | 1500 |  |  | Body | Inflicts 128 body damage to the target. |
-| 50 | Might of the Champion | SELF | 43 power | 3 s |  |  | 1200 s |  | Increases your strength and constitution by 75 for 20 minutes. |
+| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Recast | Magic type | What it does |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Blast of Courage | ENEMY | 2 power | instant | 1500 |  |  | 15 s | Body | Inflicts 4 body damage to the target. |
+| 2 | Debility | ENEMY | 2 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's strength and constitution by 16 for 1 minute. |
+| 3 | Submission | ENEMY | 3 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's dexterity and quickness by 18 for 1 minute. |
+| 4 | Minor Demoralization | ENEMY | 3 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's attack speed by 6% for 1 minute. |
+| 5 | Blast of Bravery | ENEMY | 4 power | instant | 1500 |  |  | 15 s | Body | Inflicts 15 body damage to the target. |
+| 5 | Vigor of the Champion | SELF | 5 power | 3 s |  |  | 1200 s |  |  | Increases your strength and constitution by 17 for 20 minutes. |
+| 6 | Greater Debility | ENEMY | 4 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's strength and constitution by 21 for 1 minute. |
+| 7 | Greater Submission | ENEMY | 5 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's dexterity and quickness by 22 for 1 minute. |
+| 8 | Lesser Demoralization | ENEMY | 5 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's attack speed by 7% for 1 minute. |
+| 9 | Blast of Boldness | ENEMY | 6 power | instant | 1500 |  |  | 15 s | Body | Inflicts 27 body damage to the target. |
+| 10 | Atony | ENEMY | 6 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's strength and constitution by 27 for 1 minute. |
+| 10 | Strength of the Champion | SELF | 8 power | 3 s |  |  | 1200 s |  |  | Increases your strength and constitution by 22 for 20 minutes. |
+| 11 | Surrender | ENEMY | 7 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's dexterity and quickness by 27 for 1 minute. |
+| 12 | Slowness | ENEMY | 8 power | instant | 1500 |  | 51 s | 20 s | Spirit | The target is slowed by 40% for 51 seconds. |
+| 13 | Demoralization | ENEMY | 8 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's attack speed by 8% for 1 minute. |
+| 14 | Blast of Galliance | ENEMY | 9 power | instant | 1500 |  |  | 15 s | Body | Inflicts 38 body damage to the target. |
+| 15 | Greater Surrender | ENEMY | 9 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's dexterity and quickness by 33 for 1 minute. |
+| 16 | Greater Atony | ENEMY | 10 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's strength and constitution by 33 for 1 minute. |
+| 16 | Fortification of the Champion | SELF | 13 power | 3 s |  |  | 1200 s |  |  | Increases your strength and constitution by 31 for 20 minutes. |
+| 17 | Languor | ENEMY | 10 power | instant | 1500 |  | 59 s | 20 s | Spirit | The target is slowed by 40% for 59 seconds. |
+| 19 | Major Demoralization | ENEMY | 12 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's attack speed by 10% for 1 minute. |
+| 20 | Capitulation | ENEMY | 12 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's dexterity and quickness by 39 for 1 minute. |
+| 22 | Lumber | ENEMY | 13 power | instant | 1500 |  | 68 s | 20 s | Spirit | The target is slowed by 40% for 1 minute 8 seconds. |
+| 23 | Blast of Defiance | ENEMY | 14 power | instant | 1500 |  |  | 15 s | Body | Inflicts 61 body damage to the target. |
+| 23 | Focus of the Champion | SELF | 19 power | 3 s |  |  | 1200 s |  |  | Increases your strength and constitution by 39 for 20 minutes. |
+| 24 | Enervation | ENEMY | 15 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's strength and constitution by 43 for 1 minute. |
+| 27 | Greater Demoralization | ENEMY | 17 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's attack speed by 13% for 1 minute. |
+| 28 | Greater Capitulation | ENEMY | 17 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's dexterity and quickness by 48 for 1 minute. |
+| 30 | Blast of Valiance | ENEMY | 19 power | instant | 1500 |  |  | 15 s | Body | Inflicts 77 body damage to the target. |
+| 31 | Greater Enervation | ENEMY | 19 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's strength and constitution by 51 for 1 minute. |
+| 32 | Sluggishness | ENEMY | 20 power | instant | 1500 |  | 86 s | 20 s | Spirit | The target is slowed by 40% for 1 minute 26 seconds. |
+| 32 | Power of the Champion | SELF | 26 power | 3 s |  |  | 1200 s |  |  | Increases your strength and constitution by 51 for 20 minutes. |
+| 36 | Superior Demoralization | ENEMY | 23 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's attack speed by 15% for 1 minute. |
+| 37 | Resignation | ENEMY | 23 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's dexterity and quickness by 58 for 1 minute. |
+| 39 | Infirmity | ENEMY | 25 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's strength and constitution by 61 for 1 minute. |
+| 40 | Blast of Heroism | ENEMY | 25 power | instant | 1500 |  |  | 15 s | Body | Inflicts 103 body damage to the target. |
+| 40 | Force of the Champion | SELF | 34 power | 3 s |  |  | 1200 s |  |  | Increases your strength and constitution by 63 for 20 minutes. |
+| 42 | Crawl | ENEMY | 27 power | instant | 1500 |  | 103 s | 20 s | Spirit | The target is slowed by 40% for 1 minute 43 seconds. |
+| 47 | Greater Resignation | ENEMY | 30 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's dexterity and quickness by 70 for 1 minute. |
+| 48 | Ultimate Demoralization | ENEMY | 31 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's attack speed by 19% for 1 minute. |
+| 49 | Greater Infirmity | ENEMY | 32 power | instant | 1000 |  | 60 s | 20 s | Body | Decreases the target's strength and constitution by 73 for 1 minute. |
+| 50 | Blast of the Champion | ENEMY | 33 power | instant | 1500 |  |  | 15 s | Body | Inflicts 128 body damage to the target. |
+| 50 | Might of the Champion | SELF | 43 power | 3 s |  |  | 1200 s |  |  | Increases your strength and constitution by 75 for 20 minutes. |
+
+## Specialization points
+
+Raising a Specialization from level n to n + 1 costs n + 1 points. These are the points a Character of this class gets as it levels, and from level 40 also halfway through each level.
+
+| Level | Points | Total |
+|---|---|---|
+| 1 | 0 | 0 |
+| 2 | 2 | 2 |
+| 3 | 3 | 5 |
+| 4 | 4 | 9 |
+| 5 | 5 | 14 |
+| 6 | 12 | 26 |
+| 7 | 14 | 40 |
+| 8 | 16 | 56 |
+| 9 | 18 | 74 |
+| 10 | 20 | 94 |
+| 11 | 22 | 116 |
+| 12 | 24 | 140 |
+| 13 | 26 | 166 |
+| 14 | 28 | 194 |
+| 15 | 30 | 224 |
+| 16 | 32 | 256 |
+| 17 | 34 | 290 |
+| 18 | 36 | 326 |
+| 19 | 38 | 364 |
+| 20 | 40 | 404 |
+| 21 | 42 | 446 |
+| 22 | 44 | 490 |
+| 23 | 46 | 536 |
+| 24 | 48 | 584 |
+| 25 | 50 | 634 |
+| 26 | 52 | 686 |
+| 27 | 54 | 740 |
+| 28 | 56 | 796 |
+| 29 | 58 | 854 |
+| 30 | 60 | 914 |
+| 31 | 62 | 976 |
+| 32 | 64 | 1040 |
+| 33 | 66 | 1106 |
+| 34 | 68 | 1174 |
+| 35 | 70 | 1244 |
+| 36 | 72 | 1316 |
+| 37 | 74 | 1390 |
+| 38 | 76 | 1466 |
+| 39 | 78 | 1544 |
+| 40 | 80 | 1624 |
+| 40.5 | 40 | 1664 |
+| 41 | 82 | 1746 |
+| 41.5 | 41 | 1787 |
+| 42 | 84 | 1871 |
+| 42.5 | 42 | 1913 |
+| 43 | 86 | 1999 |
+| 43.5 | 43 | 2042 |
+| 44 | 88 | 2130 |
+| 44.5 | 44 | 2174 |
+| 45 | 90 | 2264 |
+| 45.5 | 45 | 2309 |
+| 46 | 92 | 2401 |
+| 46.5 | 46 | 2447 |
+| 47 | 94 | 2541 |
+| 47.5 | 47 | 2588 |
+| 48 | 96 | 2684 |
+| 48.5 | 48 | 2732 |
+| 49 | 98 | 2830 |
+| 49.5 | 49 | 2879 |
+| 50 | 100 | 2979 |

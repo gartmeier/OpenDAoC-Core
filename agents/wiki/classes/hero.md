@@ -127,3 +127,70 @@ A class of Hibernia that starts as a Guardian. Each Specialization lists the Spe
 | 35 | Mangle | from the target's side | Shield | 15 | 0 | 0 | 146 |  | Stunned: The target is stunned and cannot take any actions for 8 seconds. |
 | 42 | Slam |  | Shield | 20 | 0 | 0 | 151.8 |  | Stunned: The target is stunned and cannot take any actions for 9 seconds. |
 | 50 | Brutalize | after you block | Shield | 10 | 0 | 0 | 170 |  | Stunned: The target is stunned and cannot take any actions for 10 seconds. |
+
+## Specialization points
+
+Raising a Specialization from level n to n + 1 costs n + 1 points. These are the points a Character of this class gets as it levels, and from level 40 also halfway through each level.
+
+| Level | Points | Total |
+|---|---|---|
+| 1 | 0 | 0 |
+| 2 | 2 | 2 |
+| 3 | 3 | 5 |
+| 4 | 4 | 9 |
+| 5 | 5 | 14 |
+| 6 | 12 | 26 |
+| 7 | 14 | 40 |
+| 8 | 16 | 56 |
+| 9 | 18 | 74 |
+| 10 | 20 | 94 |
+| 11 | 22 | 116 |
+| 12 | 24 | 140 |
+| 13 | 26 | 166 |
+| 14 | 28 | 194 |
+| 15 | 30 | 224 |
+| 16 | 32 | 256 |
+| 17 | 34 | 290 |
+| 18 | 36 | 326 |
+| 19 | 38 | 364 |
+| 20 | 40 | 404 |
+| 21 | 42 | 446 |
+| 22 | 44 | 490 |
+| 23 | 46 | 536 |
+| 24 | 48 | 584 |
+| 25 | 50 | 634 |
+| 26 | 52 | 686 |
+| 27 | 54 | 740 |
+| 28 | 56 | 796 |
+| 29 | 58 | 854 |
+| 30 | 60 | 914 |
+| 31 | 62 | 976 |
+| 32 | 64 | 1040 |
+| 33 | 66 | 1106 |
+| 34 | 68 | 1174 |
+| 35 | 70 | 1244 |
+| 36 | 72 | 1316 |
+| 37 | 74 | 1390 |
+| 38 | 76 | 1466 |
+| 39 | 78 | 1544 |
+| 40 | 80 | 1624 |
+| 40.5 | 40 | 1664 |
+| 41 | 82 | 1746 |
+| 41.5 | 41 | 1787 |
+| 42 | 84 | 1871 |
+| 42.5 | 42 | 1913 |
+| 43 | 86 | 1999 |
+| 43.5 | 43 | 2042 |
+| 44 | 88 | 2130 |
+| 44.5 | 44 | 2174 |
+| 45 | 90 | 2264 |
+| 45.5 | 45 | 2309 |
+| 46 | 92 | 2401 |
+| 46.5 | 46 | 2447 |
+| 47 | 94 | 2541 |
+| 47.5 | 47 | 2588 |
+| 48 | 96 | 2684 |
+| 48.5 | 48 | 2732 |
+| 49 | 98 | 2830 |
+| 49.5 | 49 | 2879 |
+| 50 | 100 | 2979 |

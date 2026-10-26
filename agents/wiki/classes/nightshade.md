@@ -72,82 +72,82 @@ A class of Hibernia that starts as a Stalker. Each Specialization lists the Spel
 
 ### Mundane Poisons
 
-| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Magic type | What it does |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | Minor Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 9 body damage every 4 seconds for 20 seconds. |
-| 2 | Minor Weakening Poison | ENEMY |  | instant | 1500 |  | 60 s | Body | Decreases the target's strength by 18 for 1 minute. |
-| 3 | Minor Imbalancing Poison | ENEMY |  | instant | 1500 |  | 35 s | Body | The target is slowed by 40% for 35 seconds. |
-| 4 | Minor Infectious Serum | ENEMY |  | instant | 1500 |  | 60 s | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 1 minute. |
-| 5 | Lesser Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 12 body damage every 4 seconds for 20 seconds. |
-| 6 | Lesser Weakening Poison | ENEMY |  | instant | 1500 |  | 60 s | Body | Decreases the target's strength by 24 for 1 minute. |
-| 8 | Lesser Imbalancing Poison | ENEMY |  | instant | 1500 |  | 44 s | Body | The target is slowed by 40% for 44 seconds. |
-| 9 | Minor Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25637 not found. |
-| 10 | Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 16 body damage every 4 seconds for 20 seconds. |
-| 11 | Major Weakening Poison | ENEMY |  | instant | 1500 |  | 60 s | Body | Decreases the target's strength by 33 for 1 minute. |
-| 13 | Major Imbalancing Poison | ENEMY |  | instant | 1500 |  | 52 s | Body | The target is slowed by 40% for 52 seconds. |
-| 14 | Lesser Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25638 not found. |
-| 15 | Major Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 21 body damage every 4 seconds for 20 seconds. |
-| 16 | Lesser Infectious Serum | ENEMY |  | instant | 1500 |  | 90 s | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 1 minute 30 seconds. |
-| 17 | Greater Weakening Poison | ENEMY |  | instant | 1500 |  | 60 s | Body | Decreases the target's strength by 44 for 1 minute. |
-| 18 | Greater Imbalancing Poison | ENEMY |  | instant | 1500 |  | 61 s | Body | The target is slowed by 40% for 1 minute 1 second. |
-| 19 | Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25639 not found. |
-| 20 | Greater Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 26 body damage every 4 seconds for 20 seconds. |
-| 22 | Minor Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 55 for 1 minute. |
-| 23 | Minor Crippling Poison | ENEMY |  | instant | 1500 |  | 70 s | Body | The target is slowed by 40% for 1 minute 10 seconds. |
-| 24 | Major Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25640 not found. |
-| 25 | Minor Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 31 body damage every 4 seconds for 20 seconds. |
-| 26 | Infectious Serum | ENEMY |  | instant | 1500 |  | 120 s | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 2 minutes. |
-| 27 | Lesser Crippling Poison | ENEMY |  | instant | 1500 |  | 77 s | Body | The target is slowed by 40% for 1 minute 17 seconds. |
-| 29 | Greater Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25641 not found. |
-| 29 | Lesser Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 71 for 1 minute. |
-| 30 | Lesser Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 37 body damage every 4 seconds for 20 seconds. |
-| 31 | Major Crippling Poison | ENEMY |  | instant | 1500 |  | 84 s | Body | The target is slowed by 40% for 1 minute 24 seconds. |
-| 34 | Minor Toxic Venom Proc | SELF |  | instant |  |  | 30 s |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25642 not found. |
-| 35 | Major Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 43 body damage every 4 seconds for 20 seconds. |
-| 37 | Major Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 91 for 1 minute. |
-| 37 | Major Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 91 for 1 minute. |
-| 38 | Major Infectious Serum | ENEMY |  | instant | 1500 |  | 150 s | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 2 minutes 30 seconds. |
-| 39 | Lesser Toxic Venom Proc | SELF |  | instant |  |  | 30 s |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25643 not found. |
-| 40 | Constrict Spirit | ENEMY |  | instant | 1500 |  | 20 s | Spirit | The target is rooted in place every 8 seconds for 20 seconds. |
-| 40 | Weak Essence of Weariness | ENEMY |  | instant | 1500 |  | 60 s | Body | Increases the target's endurance consumption in combat by -15% for 1 minute. |
-| 40 | Weak Essence of Lethargy | ENEMY |  | instant | 1500 |  | 30 s | Body | Decreases the target's attack speed by 10% for 30 seconds. |
-| 40 | Corruptor Dot Proc | SELF |  | instant | 1500 |  | 65535 s | Energy | Triggers the following spell with a 20% chance on own melee attacks:  Inflicts 60 energy damage every 4 seconds for 24 seconds. |
-| 40 | Greater Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 50 body damage every 4 seconds for 20 seconds. |
-| 42 | Greater Crippling Poison | ENEMY |  | instant | 1500 |  | 103 s | Body | The target is slowed by 40% for 1 minute 43 seconds. |
-| 44 | Major Toxic Venom Proc | SELF |  | instant |  |  | 30 s |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25644 not found. |
-| 45 | Insidious Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 57 body damage every 4 seconds for 20 seconds. |
-| 47 | Greater Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s | Body | Decreases the target's strength and constitution by 118 for 1 minute. |
-| 48 | Greater Infectious Serum | ENEMY |  | instant | 1500 |  | 180 s | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 3 minutes. |
-| 49 | Greater Toxic Venom Proc | SELF |  | instant |  |  | 30 s |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25645 not found. |
-| 50 | Essence of Weariness | ENEMY |  | instant | 1500 |  | 60 s | Body | Increases the target's endurance consumption in combat by -30% for 1 minute. |
-| 50 | Essence of Lethargy | ENEMY |  | instant | 1500 |  | 30 s | Body | Decreases the target's attack speed by 20% for 30 seconds. |
-| 50 | Lifebane | ENEMY |  | instant | 1500 |  | 20 s | Body | Inflicts 64 body damage every 4 seconds for 20 seconds. |
-| 50 | Essence Flare | ENEMY |  | instant | 1500 | 300 | 15 s | Matter | The target is mesmerized and cannot take any actions for 15 seconds. |
+| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Recast | Magic type | What it does |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Minor Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 9 body damage every 4 seconds for 20 seconds. |
+| 2 | Minor Weakening Poison | ENEMY |  | instant | 1500 |  | 60 s |  | Body | Decreases the target's strength by 18 for 1 minute. |
+| 3 | Minor Imbalancing Poison | ENEMY |  | instant | 1500 |  | 35 s |  | Body | The target is slowed by 40% for 35 seconds. |
+| 4 | Minor Infectious Serum | ENEMY |  | instant | 1500 |  | 60 s |  | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 1 minute. |
+| 5 | Lesser Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 12 body damage every 4 seconds for 20 seconds. |
+| 6 | Lesser Weakening Poison | ENEMY |  | instant | 1500 |  | 60 s |  | Body | Decreases the target's strength by 24 for 1 minute. |
+| 8 | Lesser Imbalancing Poison | ENEMY |  | instant | 1500 |  | 44 s |  | Body | The target is slowed by 40% for 44 seconds. |
+| 9 | Minor Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25637 not found. |
+| 10 | Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 16 body damage every 4 seconds for 20 seconds. |
+| 11 | Major Weakening Poison | ENEMY |  | instant | 1500 |  | 60 s |  | Body | Decreases the target's strength by 33 for 1 minute. |
+| 13 | Major Imbalancing Poison | ENEMY |  | instant | 1500 |  | 52 s |  | Body | The target is slowed by 40% for 52 seconds. |
+| 14 | Lesser Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25638 not found. |
+| 15 | Major Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 21 body damage every 4 seconds for 20 seconds. |
+| 16 | Lesser Infectious Serum | ENEMY |  | instant | 1500 |  | 90 s |  | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 1 minute 30 seconds. |
+| 17 | Greater Weakening Poison | ENEMY |  | instant | 1500 |  | 60 s |  | Body | Decreases the target's strength by 44 for 1 minute. |
+| 18 | Greater Imbalancing Poison | ENEMY |  | instant | 1500 |  | 61 s |  | Body | The target is slowed by 40% for 1 minute 1 second. |
+| 19 | Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25639 not found. |
+| 20 | Greater Lethal Poison | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 26 body damage every 4 seconds for 20 seconds. |
+| 22 | Minor Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s |  | Body | Decreases the target's strength and constitution by 55 for 1 minute. |
+| 23 | Minor Crippling Poison | ENEMY |  | instant | 1500 |  | 70 s |  | Body | The target is slowed by 40% for 1 minute 10 seconds. |
+| 24 | Major Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25640 not found. |
+| 25 | Minor Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 31 body damage every 4 seconds for 20 seconds. |
+| 26 | Infectious Serum | ENEMY |  | instant | 1500 |  | 120 s |  | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 2 minutes. |
+| 27 | Lesser Crippling Poison | ENEMY |  | instant | 1500 |  | 77 s |  | Body | The target is slowed by 40% for 1 minute 17 seconds. |
+| 29 | Greater Toxic Poison Proc | SELF |  | instant |  |  | 30 s |  |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25641 not found. |
+| 29 | Lesser Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s |  | Body | Decreases the target's strength and constitution by 71 for 1 minute. |
+| 30 | Lesser Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 37 body damage every 4 seconds for 20 seconds. |
+| 31 | Major Crippling Poison | ENEMY |  | instant | 1500 |  | 84 s |  | Body | The target is slowed by 40% for 1 minute 24 seconds. |
+| 34 | Minor Toxic Venom Proc | SELF |  | instant |  |  | 30 s |  |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25642 not found. |
+| 35 | Major Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 43 body damage every 4 seconds for 20 seconds. |
+| 37 | Major Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s |  | Body | Decreases the target's strength and constitution by 91 for 1 minute. |
+| 37 | Major Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s |  | Body | Decreases the target's strength and constitution by 91 for 1 minute. |
+| 38 | Major Infectious Serum | ENEMY |  | instant | 1500 |  | 150 s |  | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 2 minutes 30 seconds. |
+| 39 | Lesser Toxic Venom Proc | SELF |  | instant |  |  | 30 s |  |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25643 not found. |
+| 40 | Constrict Spirit | ENEMY |  | instant | 1500 |  | 20 s |  | Spirit | The target is rooted in place every 8 seconds for 20 seconds. |
+| 40 | Weak Essence of Weariness | ENEMY |  | instant | 1500 |  | 60 s |  | Body | Increases the target's endurance consumption in combat by -15% for 1 minute. |
+| 40 | Weak Essence of Lethargy | ENEMY |  | instant | 1500 |  | 30 s |  | Body | Decreases the target's attack speed by 10% for 30 seconds. |
+| 40 | Corruptor Dot Proc | SELF |  | instant | 1500 |  | 65535 s |  | Energy | Triggers the following spell with a 20% chance on own melee attacks:  Inflicts 60 energy damage every 4 seconds for 24 seconds. |
+| 40 | Greater Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 50 body damage every 4 seconds for 20 seconds. |
+| 42 | Greater Crippling Poison | ENEMY |  | instant | 1500 |  | 103 s |  | Body | The target is slowed by 40% for 1 minute 43 seconds. |
+| 44 | Major Toxic Venom Proc | SELF |  | instant |  |  | 30 s |  |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25644 not found. |
+| 45 | Insidious Lethal Venom | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 57 body damage every 4 seconds for 20 seconds. |
+| 47 | Greater Enervating Poison | ENEMY |  | instant | 1000 |  | 60 s |  | Body | Decreases the target's strength and constitution by 118 for 1 minute. |
+| 48 | Greater Infectious Serum | ENEMY |  | instant | 1500 |  | 180 s |  | Body | Inflicts a wasting disease on the target that slows target by 15%, reduces its strength by 7.5% and inhibits healing by 50% for 3 minutes. |
+| 49 | Greater Toxic Venom Proc | SELF |  | instant |  |  | 30 s |  |  | Triggers the following spell with a 45% chance on own melee attacks for 30 seconds:  Spell with ID 25645 not found. |
+| 50 | Essence of Weariness | ENEMY |  | instant | 1500 |  | 60 s |  | Body | Increases the target's endurance consumption in combat by -30% for 1 minute. |
+| 50 | Essence of Lethargy | ENEMY |  | instant | 1500 |  | 30 s |  | Body | Decreases the target's attack speed by 20% for 30 seconds. |
+| 50 | Lifebane | ENEMY |  | instant | 1500 |  | 20 s |  | Body | Inflicts 64 body damage every 4 seconds for 20 seconds. |
+| 50 | Essence Flare | ENEMY |  | instant | 1500 | 300 | 15 s |  | Matter | The target is mesmerized and cannot take any actions for 15 seconds. |
 
 ## Nightshade Magic
 
 ### Nightshade Magic (baseline)
 
-| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Magic type | What it does |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | Lesser Dusk Strike | ENEMY | 2 power | 3 s | 1500 |  |  | Cold | Inflicts 7 cold damage to the target. |
-| 3 | Dusk Strike | ENEMY | 3 power | 3 s | 1500 |  |  | Cold | Inflicts 10 cold damage to the target. |
-| 5 | Lesser Twilight Strike | ENEMY | 4 power | 3 s | 1500 |  |  | Cold | Inflicts 13 cold damage to the target. |
-| 6 | Dart of Night | ENEMY | 4 power | instant | 700 |  |  | Cold | Inflicts 12 cold damage to the target. |
-| 8 | Twilight Strike | ENEMY | 5 power | 3 s | 1500 |  |  | Cold | Inflicts 27.018 cold damage to the target. |
-| 9 | Dagger of Night | ENEMY | 6 power | instant | 700 |  |  | Cold | Inflicts 27.015 cold damage to the target. |
-| 12 | Lesser Gloaming Strike | ENEMY | 8 power | 3 s | 1500 |  |  | Cold | Inflicts 24 cold damage to the target. |
-| 13 | Knife of Night | ENEMY | 8 power | instant | 700 |  |  | Cold | Inflicts 38.02 cold damage to the target. |
-| 16 | Gloaming Strike | ENEMY | 10 power | 3 s | 1500 |  |  | Cold | Inflicts 30 cold damage to the target. |
-| 18 | Stiletto of Night | ENEMY | 11 power | instant | 700 |  |  | Cold | Inflicts 26 cold damage to the target. |
-| 22 | Lesser Nocturnal Strike | ENEMY | 13 power | 3 s | 1500 |  |  | Cold | Inflicts 39 cold damage to the target. |
-| 24 | Arrow of Night | ENEMY | 15 power | instant | 700 |  |  | Cold | Inflicts 33 cold damage to the target. |
-| 28 | Nocturnal Strike | ENEMY | 17 power | 3 s | 1500 |  |  | Cold | Inflicts 48 cold damage to the target. |
-| 31 | Rapier of Night | ENEMY | 19 power | instant | 700 |  |  | Cold | Inflicts 42 cold damage to the target. |
-| 35 | Lesser Midnight Strike | ENEMY | 22 power | 3 s | 1500 |  |  | Cold | Inflicts 58 cold damage to the target. |
-| 39 | Spear of Night | ENEMY | 25 power | instant | 700 |  |  | Cold | Inflicts 51 cold damage to the target. |
-| 45 | Midnight Strike | ENEMY | 29 power | 3 s | 1500 |  |  | Cold | Inflicts 73 cold damage to the target. |
-| 48 | Lance of Night | ENEMY | 31 power | instant | 700 |  |  | Cold | Inflicts 62 cold damage to the target. |
+| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Recast | Magic type | What it does |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Lesser Dusk Strike | ENEMY | 2 power | 3 s | 1500 |  |  |  | Cold | Inflicts 7 cold damage to the target. |
+| 3 | Dusk Strike | ENEMY | 3 power | 3 s | 1500 |  |  |  | Cold | Inflicts 10 cold damage to the target. |
+| 5 | Lesser Twilight Strike | ENEMY | 4 power | 3 s | 1500 |  |  |  | Cold | Inflicts 13 cold damage to the target. |
+| 6 | Dart of Night | ENEMY | 4 power | instant | 700 |  |  | 20 s | Cold | Inflicts 12 cold damage to the target. |
+| 8 | Twilight Strike | ENEMY | 5 power | 3 s | 1500 |  |  |  | Cold | Inflicts 27.018 cold damage to the target. |
+| 9 | Dagger of Night | ENEMY | 6 power | instant | 700 |  |  | 20 s | Cold | Inflicts 27.015 cold damage to the target. |
+| 12 | Lesser Gloaming Strike | ENEMY | 8 power | 3 s | 1500 |  |  |  | Cold | Inflicts 24 cold damage to the target. |
+| 13 | Knife of Night | ENEMY | 8 power | instant | 700 |  |  | 20 s | Cold | Inflicts 38.02 cold damage to the target. |
+| 16 | Gloaming Strike | ENEMY | 10 power | 3 s | 1500 |  |  |  | Cold | Inflicts 30 cold damage to the target. |
+| 18 | Stiletto of Night | ENEMY | 11 power | instant | 700 |  |  | 20 s | Cold | Inflicts 26 cold damage to the target. |
+| 22 | Lesser Nocturnal Strike | ENEMY | 13 power | 3 s | 1500 |  |  |  | Cold | Inflicts 39 cold damage to the target. |
+| 24 | Arrow of Night | ENEMY | 15 power | instant | 700 |  |  | 20 s | Cold | Inflicts 33 cold damage to the target. |
+| 28 | Nocturnal Strike | ENEMY | 17 power | 3 s | 1500 |  |  |  | Cold | Inflicts 48 cold damage to the target. |
+| 31 | Rapier of Night | ENEMY | 19 power | instant | 700 |  |  | 20 s | Cold | Inflicts 42 cold damage to the target. |
+| 35 | Lesser Midnight Strike | ENEMY | 22 power | 3 s | 1500 |  |  |  | Cold | Inflicts 58 cold damage to the target. |
+| 39 | Spear of Night | ENEMY | 25 power | instant | 700 |  |  | 20 s | Cold | Inflicts 51 cold damage to the target. |
+| 45 | Midnight Strike | ENEMY | 29 power | 3 s | 1500 |  |  |  | Cold | Inflicts 73 cold damage to the target. |
+| 48 | Lance of Night | ENEMY | 31 power | instant | 700 |  |  | 20 s | Cold | Inflicts 62 cold damage to the target. |
 
 ## Celtic Dual
 
@@ -172,3 +172,70 @@ From level 5.
 | 39 | Solar Flare | after Hurricane | Celtic Dual | 10 | 5 | 5 | 162.4 |  |  |
 | 44 | Twin Star | after Meteor Shower | Celtic Dual | 10 | 10 | 0 | 175 |  | Bleeding: The target bleeds for 25 body damage every 4 seconds for 40 seconds. |
 | 50 | Supernova | after Tempest | Celtic Dual | 10 | 15 | 5 | 170 |  | Slowed: Decreases the target's attack speed by 34% for 20 seconds. |
+
+## Specialization points
+
+Raising a Specialization from level n to n + 1 costs n + 1 points. These are the points a Character of this class gets as it levels, and from level 40 also halfway through each level.
+
+| Level | Points | Total |
+|---|---|---|
+| 1 | 0 | 0 |
+| 2 | 2 | 2 |
+| 3 | 3 | 5 |
+| 4 | 4 | 9 |
+| 5 | 5 | 14 |
+| 6 | 13 | 27 |
+| 7 | 15 | 42 |
+| 8 | 17 | 59 |
+| 9 | 19 | 78 |
+| 10 | 22 | 100 |
+| 11 | 24 | 124 |
+| 12 | 26 | 150 |
+| 13 | 28 | 178 |
+| 14 | 30 | 208 |
+| 15 | 33 | 241 |
+| 16 | 35 | 276 |
+| 17 | 37 | 313 |
+| 18 | 39 | 352 |
+| 19 | 41 | 393 |
+| 20 | 44 | 437 |
+| 21 | 46 | 483 |
+| 22 | 48 | 531 |
+| 23 | 50 | 581 |
+| 24 | 52 | 633 |
+| 25 | 55 | 688 |
+| 26 | 57 | 745 |
+| 27 | 59 | 804 |
+| 28 | 61 | 865 |
+| 29 | 63 | 928 |
+| 30 | 66 | 994 |
+| 31 | 68 | 1062 |
+| 32 | 70 | 1132 |
+| 33 | 72 | 1204 |
+| 34 | 74 | 1278 |
+| 35 | 77 | 1355 |
+| 36 | 79 | 1434 |
+| 37 | 81 | 1515 |
+| 38 | 83 | 1598 |
+| 39 | 85 | 1683 |
+| 40 | 88 | 1771 |
+| 40.5 | 44 | 1815 |
+| 41 | 90 | 1905 |
+| 41.5 | 45 | 1950 |
+| 42 | 92 | 2042 |
+| 42.5 | 46 | 2088 |
+| 43 | 94 | 2182 |
+| 43.5 | 47 | 2229 |
+| 44 | 96 | 2325 |
+| 44.5 | 48 | 2373 |
+| 45 | 99 | 2472 |
+| 45.5 | 49 | 2521 |
+| 46 | 101 | 2622 |
+| 46.5 | 50 | 2672 |
+| 47 | 103 | 2775 |
+| 47.5 | 51 | 2826 |
+| 48 | 105 | 2931 |
+| 48.5 | 52 | 2983 |
+| 49 | 107 | 3090 |
+| 49.5 | 53 | 3143 |
+| 50 | 110 | 3253 |

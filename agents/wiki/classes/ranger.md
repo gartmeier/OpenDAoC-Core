@@ -50,42 +50,42 @@ A class of Hibernia that starts as a Stalker. Each Specialization lists the Spel
 
 ### Pathfinding
 
-| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Magic type | What it does |
-|---|---|---|---|---|---|---|---|---|---|
-| 2 | Determination | SELF | 6 power | 3 s |  |  | 1200 s |  | Increases your armor factor by 12 for 20 minutes. |
-| 3 | Vigorous Will | SELF | 3 power | 3 s |  |  | 1200 s |  | Increases your strength by 12 for 20 minutes. |
-| 4 | Perserverance | SELF | 8 power | 3 s |  |  | 1200 s |  | Increases your armor factor by 14 for 20 minutes. |
-| 5 | Piercing Strike | SELF | 5 power | 3 s |  |  | 1200 s | Energy | Your melee attacks inflict an additional 1.4 damage per second for 20 minutes. |
-| 6 | Sharpened Senses | SELF | 10 power | 3 s |  |  | 1200 s |  | Increases your dexterity and quickness by 21 for 20 minutes. |
-| 7 | Strength of Will | SELF | 6 power | 3 s |  |  | 1200 s |  | Increases your strength by 15 for 20 minutes. |
-| 8 | Self Control | SELF | 14 power | 3 s |  |  | 1200 s |  | Increases your armor factor by 18 for 20 minutes. |
-| 9 | Forest Shadow | SELF | 16 power | instant |  |  | 20 s |  | The target's speed is increased to 135% of normal for 20 seconds. |
-| 10 | Incisive Strike | SELF | 8 power | 3 s |  |  | 1200 s | Energy | Your melee attacks inflict an additional 1.8 damage per second for 20 minutes. |
-| 11 | Iron Will | SELF | 18 power | 3 s |  |  | 1200 s |  | Increases your armor factor by 21 for 20 minutes. |
-| 12 | Keen Sight | SELF | 20 power | 3 s |  |  | 1200 s |  | Increases your dexterity and quickness by 28 for 20 minutes. |
-| 13 | Fortification of Will | SELF | 11 power | 3 s |  |  | 1200 s |  | Increases your strength by 20 for 20 minutes. |
-| 14 | Resolution | SELF | 22 power | 3 s |  |  | 1200 s |  | Increases your armor factor by 24 for 20 minutes. |
-| 15 | Cutting Strike | SELF | 12 power | 3 s |  |  | 1200 s | Energy | Your melee attacks inflict an additional 2.9 damage per second for 20 minutes. |
-| 16 | Greater Forest Shadow | SELF | 26 power | instant |  |  | 25 s |  | The target's speed is increased to 150% of normal for 25 seconds. |
-| 18 | Devotion | SELF | 30 power | 3 s |  |  | 1200 s |  | Increases your armor factor by 28 for 20 minutes. |
-| 19 | Enhanced Senses | SELF | 30 power | 3 s |  |  | 1200 s |  | Increases your dexterity and quickness by 37 for 20 minutes. |
-| 20 | Focus of Will | SELF | 16 power | 3 s |  |  | 1200 s |  | Increases your strength by 26 for 20 minutes. |
-| 21 | Sharpened Strike | SELF | 17 power | 3 s |  |  | 1200 s | Energy | Your melee attacks inflict an additional 4.2 damage per second for 20 minutes. |
-| 23 | Steel Mind | SELF | 38 power | 3 s |  |  | 1200 s |  | Increases your armor factor by 33 for 20 minutes. |
-| 25 | Forest Spirit | SELF | 40 power | instant |  |  | 35 s |  | The target's speed is increased to 165% of normal for 35 seconds. |
-| 27 | Precision Strike | SELF | 22 power | 3 s |  |  | 1200 s | Energy | Your melee attacks inflict an additional 5.4 damage per second for 20 minutes. |
-| 29 | Honed Reflexes | SELF | 48 power | 3 s |  |  | 1200 s |  | Increases your dexterity and quickness by 49 for 20 minutes. |
-| 30 | Power of Will | SELF | 25 power | 3 s |  |  | 1200 s |  | Increases your strength by 34 for 20 minutes. |
-| 31 | Inner Strength | SELF | 50 power | 3 s |  |  | 1200 s |  | Increases your armor factor by 41 for 20 minutes. |
-| 34 | Greater Forest Spirit | SELF | 56 power | instant |  |  | 45 s |  | The target's speed is increased to 180% of normal for 45 seconds. |
-| 36 | Unerring Strike | SELF | 30 power | 3 s |  |  | 1200 s | Energy | Your melee attacks inflict an additional 7.3 damage per second for 20 minutes. |
-| 39 | Force of Will | SELF | 33 power | 3 s |  |  | 1200 s |  | Increases your strength by 41 for 20 minutes. |
-| 40 | Superior Coordination | SELF | 68 power | 3 s |  |  | 1200 s |  | Increases your dexterity and quickness by 63 for 20 minutes. |
-| 42 | Invincibility | SELF | 70 power | 3 s |  |  | 1200 s |  | Increases your armor factor by 52 for 20 minutes. |
-| 43 | Forest Phantom | SELF | 72 power | instant |  |  | 50 s |  | The target's speed is increased to 195% of normal for 50 seconds. |
-| 46 | Perfect Strike | SELF | 39 power | 3 s |  |  | 1200 s | Energy | Your melee attacks inflict an additional 9.4 damage per second for 20 minutes. |
-| 48 | Perfect Acuity | SELF | 82 power | 3 s |  |  | 1200 s |  | Increases your dexterity and quickness by 72 for 20 minutes. |
-| 50 | Sovereign Will | SELF | 43 power | 3 s |  |  | 1200 s |  | Increases your strength by 50 for 20 minutes. |
+| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Recast | Magic type | What it does |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 2 | Determination | SELF | 6 power | 3 s |  |  | 1200 s |  |  | Increases your armor factor by 12 for 20 minutes. |
+| 3 | Vigorous Will | SELF | 3 power | 3 s |  |  | 1200 s |  |  | Increases your strength by 12 for 20 minutes. |
+| 4 | Perserverance | SELF | 8 power | 3 s |  |  | 1200 s |  |  | Increases your armor factor by 14 for 20 minutes. |
+| 5 | Piercing Strike | SELF | 5 power | 3 s |  |  | 1200 s |  | Energy | Your melee attacks inflict an additional 1.4 damage per second for 20 minutes. |
+| 6 | Sharpened Senses | SELF | 10 power | 3 s |  |  | 1200 s |  |  | Increases your dexterity and quickness by 21 for 20 minutes. |
+| 7 | Strength of Will | SELF | 6 power | 3 s |  |  | 1200 s |  |  | Increases your strength by 15 for 20 minutes. |
+| 8 | Self Control | SELF | 14 power | 3 s |  |  | 1200 s |  |  | Increases your armor factor by 18 for 20 minutes. |
+| 9 | Forest Shadow | SELF | 16 power | instant |  |  | 20 s | 600 s |  | The target's speed is increased to 135% of normal for 20 seconds. |
+| 10 | Incisive Strike | SELF | 8 power | 3 s |  |  | 1200 s |  | Energy | Your melee attacks inflict an additional 1.8 damage per second for 20 minutes. |
+| 11 | Iron Will | SELF | 18 power | 3 s |  |  | 1200 s |  |  | Increases your armor factor by 21 for 20 minutes. |
+| 12 | Keen Sight | SELF | 20 power | 3 s |  |  | 1200 s |  |  | Increases your dexterity and quickness by 28 for 20 minutes. |
+| 13 | Fortification of Will | SELF | 11 power | 3 s |  |  | 1200 s |  |  | Increases your strength by 20 for 20 minutes. |
+| 14 | Resolution | SELF | 22 power | 3 s |  |  | 1200 s |  |  | Increases your armor factor by 24 for 20 minutes. |
+| 15 | Cutting Strike | SELF | 12 power | 3 s |  |  | 1200 s |  | Energy | Your melee attacks inflict an additional 2.9 damage per second for 20 minutes. |
+| 16 | Greater Forest Shadow | SELF | 26 power | instant |  |  | 25 s | 600 s |  | The target's speed is increased to 150% of normal for 25 seconds. |
+| 18 | Devotion | SELF | 30 power | 3 s |  |  | 1200 s |  |  | Increases your armor factor by 28 for 20 minutes. |
+| 19 | Enhanced Senses | SELF | 30 power | 3 s |  |  | 1200 s |  |  | Increases your dexterity and quickness by 37 for 20 minutes. |
+| 20 | Focus of Will | SELF | 16 power | 3 s |  |  | 1200 s |  |  | Increases your strength by 26 for 20 minutes. |
+| 21 | Sharpened Strike | SELF | 17 power | 3 s |  |  | 1200 s |  | Energy | Your melee attacks inflict an additional 4.2 damage per second for 20 minutes. |
+| 23 | Steel Mind | SELF | 38 power | 3 s |  |  | 1200 s |  |  | Increases your armor factor by 33 for 20 minutes. |
+| 25 | Forest Spirit | SELF | 40 power | instant |  |  | 35 s | 600 s |  | The target's speed is increased to 165% of normal for 35 seconds. |
+| 27 | Precision Strike | SELF | 22 power | 3 s |  |  | 1200 s |  | Energy | Your melee attacks inflict an additional 5.4 damage per second for 20 minutes. |
+| 29 | Honed Reflexes | SELF | 48 power | 3 s |  |  | 1200 s |  |  | Increases your dexterity and quickness by 49 for 20 minutes. |
+| 30 | Power of Will | SELF | 25 power | 3 s |  |  | 1200 s |  |  | Increases your strength by 34 for 20 minutes. |
+| 31 | Inner Strength | SELF | 50 power | 3 s |  |  | 1200 s |  |  | Increases your armor factor by 41 for 20 minutes. |
+| 34 | Greater Forest Spirit | SELF | 56 power | instant |  |  | 45 s | 600 s |  | The target's speed is increased to 180% of normal for 45 seconds. |
+| 36 | Unerring Strike | SELF | 30 power | 3 s |  |  | 1200 s |  | Energy | Your melee attacks inflict an additional 7.3 damage per second for 20 minutes. |
+| 39 | Force of Will | SELF | 33 power | 3 s |  |  | 1200 s |  |  | Increases your strength by 41 for 20 minutes. |
+| 40 | Superior Coordination | SELF | 68 power | 3 s |  |  | 1200 s |  |  | Increases your dexterity and quickness by 63 for 20 minutes. |
+| 42 | Invincibility | SELF | 70 power | 3 s |  |  | 1200 s |  |  | Increases your armor factor by 52 for 20 minutes. |
+| 43 | Forest Phantom | SELF | 72 power | instant |  |  | 50 s | 600 s |  | The target's speed is increased to 195% of normal for 50 seconds. |
+| 46 | Perfect Strike | SELF | 39 power | 3 s |  |  | 1200 s |  | Energy | Your melee attacks inflict an additional 9.4 damage per second for 20 minutes. |
+| 48 | Perfect Acuity | SELF | 82 power | 3 s |  |  | 1200 s |  |  | Increases your dexterity and quickness by 72 for 20 minutes. |
+| 50 | Sovereign Will | SELF | 43 power | 3 s |  |  | 1200 s |  |  | Increases your strength by 50 for 20 minutes. |
 
 ## Celtic Dual
 
@@ -110,3 +110,70 @@ From level 10.
 | 39 | Solar Flare | after Hurricane | Celtic Dual | 10 | 5 | 5 | 162.4 |  |  |
 | 44 | Twin Star | after Meteor Shower | Celtic Dual | 10 | 10 | 0 | 175 |  | Bleeding: The target bleeds for 25 body damage every 4 seconds for 40 seconds. |
 | 50 | Supernova | after Tempest | Celtic Dual | 10 | 15 | 5 | 170 |  | Slowed: Decreases the target's attack speed by 34% for 20 seconds. |
+
+## Specialization points
+
+Raising a Specialization from level n to n + 1 costs n + 1 points. These are the points a Character of this class gets as it levels, and from level 40 also halfway through each level.
+
+| Level | Points | Total |
+|---|---|---|
+| 1 | 0 | 0 |
+| 2 | 2 | 2 |
+| 3 | 3 | 5 |
+| 4 | 4 | 9 |
+| 5 | 5 | 14 |
+| 6 | 12 | 26 |
+| 7 | 14 | 40 |
+| 8 | 16 | 56 |
+| 9 | 18 | 74 |
+| 10 | 20 | 94 |
+| 11 | 22 | 116 |
+| 12 | 24 | 140 |
+| 13 | 26 | 166 |
+| 14 | 28 | 194 |
+| 15 | 30 | 224 |
+| 16 | 32 | 256 |
+| 17 | 34 | 290 |
+| 18 | 36 | 326 |
+| 19 | 38 | 364 |
+| 20 | 40 | 404 |
+| 21 | 42 | 446 |
+| 22 | 44 | 490 |
+| 23 | 46 | 536 |
+| 24 | 48 | 584 |
+| 25 | 50 | 634 |
+| 26 | 52 | 686 |
+| 27 | 54 | 740 |
+| 28 | 56 | 796 |
+| 29 | 58 | 854 |
+| 30 | 60 | 914 |
+| 31 | 62 | 976 |
+| 32 | 64 | 1040 |
+| 33 | 66 | 1106 |
+| 34 | 68 | 1174 |
+| 35 | 70 | 1244 |
+| 36 | 72 | 1316 |
+| 37 | 74 | 1390 |
+| 38 | 76 | 1466 |
+| 39 | 78 | 1544 |
+| 40 | 80 | 1624 |
+| 40.5 | 40 | 1664 |
+| 41 | 82 | 1746 |
+| 41.5 | 41 | 1787 |
+| 42 | 84 | 1871 |
+| 42.5 | 42 | 1913 |
+| 43 | 86 | 1999 |
+| 43.5 | 43 | 2042 |
+| 44 | 88 | 2130 |
+| 44.5 | 44 | 2174 |
+| 45 | 90 | 2264 |
+| 45.5 | 45 | 2309 |
+| 46 | 92 | 2401 |
+| 46.5 | 46 | 2447 |
+| 47 | 94 | 2541 |
+| 47.5 | 47 | 2588 |
+| 48 | 96 | 2684 |
+| 48.5 | 48 | 2732 |
+| 49 | 98 | 2830 |
+| 49.5 | 49 | 2879 |
+| 50 | 100 | 2979 |
