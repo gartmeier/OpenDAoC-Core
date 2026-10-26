@@ -1,6 +1,6 @@
 # Spells
 
-A Spell is magic you cast from one of your spell lines. A Naturalist gets heals from Regrowth and Concentration buffs from Nurture: Minor Revigoration at level 1, Minor Bark Skin at 2, Strength of the Oak and Minor Renewal at 3, Lesser Bark Skin and Renewal at 4, Oak's Stoutness and Minor Revivification at 5. A Magician gets damage from Way of the Sun and buffs on itself from Way of the Moon: Gleam Ray and Lesser Powerward at 1, Gleam Streak and Aura of Turning at 2, Gleam Blast and Powerward at 3, Greater Aura of Turning at 4, Prismatic Flare and Lesser Powerbarrier at 5. Learned from how the server handles Spells; no Agent has cast one in a fight yet.
+A Spell is magic you cast from one of your spell lines. A Naturalist gets heals from Regrowth and Concentration buffs from Nurture: Minor Revigoration at level 1, Minor Bark Skin at 2, Strength of the Oak and Minor Renewal at 3, Lesser Bark Skin and Renewal at 4, Oak's Stoutness and Minor Revivification at 5. A Magician gets damage from Way of the Sun and buffs on itself from Way of the Moon: Gleam Ray and Lesser Powerward at 1, Gleam Streak and Aura of Turning at 2, Gleam Blast and Powerward at 3, Greater Aura of Turning at 4, Prismatic Flare and Lesser Powerbarrier at 5. Learned from how the server handles Spells, and by Fearnan, a Naturalist who healed and buffed itself from 1 to 5, and Orla, a Magician who fought with its Spells from 1 to 5.
 
 ## Which Spells you have
 
@@ -24,12 +24,18 @@ Stand still and stand up: moving interrupts the cast, and you can't cast sitting
 - "You must wait 3 seconds to cast a spell!" just after you swung or were hit;
 - "You don't have enough power to cast that!", "You can't cast while sitting!" or "You must select a target for this spell!" when it can't start.
 
-How a hit interrupts, from the server's code:
+How an attack interrupts, from the server's code:
 
-- A hit doesn't stop your cast on the spot. It starts an interrupt timer as long as the attacker's swing, a few seconds, unless it misses its roll: the chance drops by 5% for each level the attacker is below you.
-- While that timer runs, a cast you've started is interrupted when it reaches its halfway point, and you can't start a new one: "You must wait 2 seconds to cast a spell!".
-- A hit after your cast's halfway point doesn't interrupt it. So a cast often lands with the Mob already on you.
-- Your own swing holds your next cast off the same way, for as long as your swing.
+- Every swing at you starts an interrupt timer as long as the swing, a few seconds: a miss, a block, a parry or an evade as much as a hit. Only a roll spares you, and only against a Mob below you: 5% for each level it's below you.
+- An attack doesn't stop your cast on the spot. While the timer runs, a cast you've started is interrupted when it reaches its halfway point, and you can't start a new one: "You must wait 2 seconds to cast a spell!".
+- An attack after your cast's halfway point doesn't interrupt it. So a cast often lands with the Mob already on you.
+- Your own swing holds your next cast off the same way, for as long as your swing. A fight ends with your killing blow, so the first cast after every kill gets "You must wait".
+
+What to do with an answer that isn't "You cast":
+
+- "You must wait N seconds to cast a spell!" clears up by itself: wait N seconds and cast again. If it keeps coming, something is still swinging at you.
+- "... attacks you and your spell is interrupted!" clears up once nothing is swinging at you: kill the Mob or get away from it first.
+- No Power, sitting, no target, too far, not in view: nothing changes until you do something about it.
 
 ```ts
 const me = agent.self.objectId;
@@ -55,10 +61,18 @@ const heal = agent.self.skills.filter((skill) => skill.page === "Spells").find((
 if (!heal) return "no heal";
 
 await agent.send({ name: "target", objectId: me });
+let waits = 0;
 
 while (agent.self.healthPercent < 90 && agent.self.power >= (heal.details?.powerCost ?? 0)) {
   const reply = await agent.sendAndWait({ name: "castSpell", spell: heal.name }, (percept) =>
     percept?.kind === "message" && /You cast a|interrupt|must wait|enough power|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
+
+  // Right after a fight: wait out the delay, but not forever, since one that keeps coming means something still swings at you.
+  const wait = reply?.match(/must wait (\d+) seconds?/);
+  if (wait && ++waits <= 3) {
+    await agent.waitFor(() => undefined, Number(wait[1]) * 1000 + 300);
+    continue;
+  }
 
   if (!reply?.startsWith("You cast")) return reply ?? "no answer";
 }
@@ -99,9 +113,19 @@ const cast: string[] = [];
 for (const buff of best.values()) {
   if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name))) continue;
 
-  const reply = await agent.sendAndWait({ name: "castSpell", spell: buff.name }, (percept) =>
-    percept?.kind === "message" && /You cast a|interrupt|must wait|requires|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
-  cast.push(`${buff.name}: ${reply ?? "no answer"}`);
+  // Up to 3 tries, waiting out the delay after a fight each time.
+  for (let tries = 1; ; tries++) {
+    const reply = await agent.sendAndWait({ name: "castSpell", spell: buff.name }, (percept) =>
+      percept?.kind === "message" && /You cast a|interrupt|must wait|requires|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
+    const wait = reply?.match(/must wait (\d+) seconds?/);
+
+    if (!wait || tries === 3) {
+      cast.push(`${buff.name}: ${reply ?? "no answer"}`);
+      break;
+    }
+
+    await agent.waitFor(() => undefined, Number(wait[1]) * 1000 + 300);
+  }
 }
 
 return cast.length ? cast : "all up";
