@@ -1,7 +1,7 @@
 {
   "enabledMcpjsonServers": ["mind"],
   "permissions": {
-    "allow": ["mcp__mind__execute_code", "Edit(./**)"],
+    "allow": ["mcp__mind__execute_code", "Edit(./**)", "Bash(git add:*)", "Bash(git commit:*)"],
     "additionalDirectories": ["../", "../../mind/"]
   }
 }

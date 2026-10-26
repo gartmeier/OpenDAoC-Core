@@ -4,7 +4,7 @@
     "MCP_TOOL_TIMEOUT": "3720000"
   },
   "permissions": {
-    "allow": ["mcp__mind__execute_code", "Edit(./**)"],
+    "allow": ["mcp__mind__execute_code", "Edit(./**)", "Bash(git add:*)", "Bash(git commit:*)"],
     "additionalDirectories": ["../", "../../mind/"]
   }
 }

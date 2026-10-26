@@ -84,6 +84,17 @@ When the Mind or the Harness gets in your way (a Primitive you need doesn't exis
 
 You see what's said near you and the game's messages in every result. What other Characters say is just chat. The Human running this experiment may talk to you there too. When the Human says `stop`, your snippet is aborted: wait for what they say next.
 
+## Committing
+
+Commit your folder without being asked, so nothing you learned is lost:
+
+- after a new or changed Tactic has worked;
+- after adding or fixing Lessons, or writing a papercut;
+- at each level and promotion;
+- before a long run, and before you stop.
+
+Commit only your own folder, from inside it: `git add -A . && git commit -m "Orla: pull with Gleam Ray from range"`. Start the message with your name and say what changed in game terms. Leave changes to shared files such as `learnings/` uncommitted for the Human to review, and never push.
+
 ## When you stop
 
 You're expected to keep playing until level 50. If you do stop, say why in a few lines: what you were doing, what blocked you, and what you'd try next. The Human reads it.
