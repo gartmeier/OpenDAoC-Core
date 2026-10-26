@@ -146,7 +146,7 @@ return `recalled to X:${agent.self.position?.x} Y:${agent.self.position?.y}`;
 
 ## Training
 
-Each level gives you specialization points (`agent.self.specPoints`). Raising a line to level n costs n points. `train(agent, line, level)` types `/train` as a Human would, and fails with `notTrained` without enough points. `agent.self.specs` has your lines and their levels.
+Each level gives you specialization points (`agent.self.specPoints`). Raising a line to level n costs n points. `train(agent, line, level)` types `/train` as a Human would, and fails with `notTrained` without enough points. `agent.self.specs` has your lines and their levels, named as `/train` takes them, which isn't always what the client shows: "Light" for Light Magic, "Shields" for Shield.
 
 ```ts
 const blades = agent.self.specs.get("Blades") ?? 1;

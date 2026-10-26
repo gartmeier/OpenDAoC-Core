@@ -483,6 +483,7 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(RealmAbilityEntry), "RealmAbilities")]
     public abstract record SkillEntry(string Name, int Level);
 
+    // `Name` is the specialization's database name, as `/train` takes it, such as "Light" for Light Magic.
     public sealed record SpecializationEntry(string Name, int Level) : SkillEntry(Name, Level);
 
     public sealed record AbilityEntry(string Name, int Level) : SkillEntry(Name, Level);

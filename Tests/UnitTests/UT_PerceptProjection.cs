@@ -1024,6 +1024,17 @@ namespace DOL.GS.Tests
             Assert.That((StyleEntry) entries[2] with { Details = null }, Is.EqualTo(new StyleEntry("Shining Blade", 2, "Blades", null)));
         }
 
+        // `/train` takes a line by its database name, and a style's line is that name too, while the packet carries the name the client shows.
+        [Test]
+        public void SkillEntries_ShouldNameASpecializationByItsDatabaseName()
+        {
+            Specialization light = new("Light", "Light Magic", 0) { Level = 5 };
+
+            SkillEntry[] entries = PerceptProjection.SkillEntries(null, [(light, light)], []);
+
+            Assert.That(entries, Is.EqualTo(new SkillEntry[] { new SpecializationEntry("Light", 5) }));
+        }
+
         private static StyleDetails StyleDetailsOf(SkillEntry entry)
         {
             return ((StyleEntry) entry).Details;

@@ -623,7 +623,7 @@ namespace DOL.GS.Agents
             return skills.Select(entry => SkillEntry(caster, entry.Skill, allStyles)).ToArray();
         }
 
-        // On the page the packet lists it on.
+        // On the page the packet lists it on. A specialization is named by its database name, as `/train` and a style's line name it (ADR 0006), not by the name the packet carries.
         private static SkillEntry SkillEntry(GameLiving caster, Skill skill, IReadOnlyCollection<Style> allStyles)
         {
             string name = Encoded(skill.Name);
@@ -633,9 +633,9 @@ namespace DOL.GS.Agents
                 Style style => new StyleEntry(name, style.SpecLevelRequirement, GlobalConstants.GetSpecToInternalIndex(style.Spec) != 0 ? Encoded(style.Spec) : null, Details(style, allStyles)),
                 Spell { SkillType: eSkillPage.Songs } song => new SongEntry(name, song.Level, Details(caster, song)),
                 Spell spell => new SpellEntry(name, spell.Level, Details(caster, spell)),
+                Specialization spec => new SpecializationEntry(Encoded(spec.KeyName), spec.Level),
                 _ => skill.SkillType switch
                 {
-                    eSkillPage.Specialization => new SpecializationEntry(name, skill.Level),
                     eSkillPage.AbilitiesSpell => new AbilitySpellEntry(name, skill.Level),
                     eSkillPage.RealmAbilities => new RealmAbilityEntry(name, skill.Level),
                     _ => new AbilityEntry(name, skill.Level)
