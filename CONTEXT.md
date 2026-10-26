@@ -60,6 +60,10 @@ _Avoid_: mana
 A buff Spell that lasts until its caster cancels it and uses part of the caster's concentration while it's up. It turns off while the Character wearing it is too far from the caster and comes back on when they're close again; it doesn't end.
 _Avoid_: conc, const, permanent buff
 
+**Cooldown**:
+The time after a Character uses a Spell or Ability before it can use it again; a client shows its icon greyed out until then.
+_Avoid_: recast, timer
+
 **Effect**:
 A buff or debuff on a Character, shown in its buff bar with its time left.
 _Avoid_: buff (when meaning both)
@@ -117,7 +121,7 @@ One thing the Harness tells the Mind; only what a real game client would know, w
 _Avoid_: event, observation
 
 **Self**:
-What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere, which Effects are on it, how much Power it has, which Concentration buffs it keeps up and on whom, how much Constitution it has lost, which Pet it has and which Dialog is open, built from Percepts. Only that a Dialog was answered comes from the Primitives it sent, as a client closes the window on the click.
+What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere, which Effects are on it, how much Power it has, which Concentration buffs it keeps up and on whom, how much Constitution it has lost, which Pet it has, which Dialog is open, which Spell it's casting and which of its Spells and Abilities are on Cooldown, built from Percepts. Only that a Dialog was answered and which Spell it's casting come from the Primitives it sent, as a client knows what it clicked.
 _Avoid_: player, status, me
 
 **Surroundings**:

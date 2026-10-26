@@ -220,7 +220,7 @@ namespace DOL.GS.Agents
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? Second = null) : Primitive;
 
     // Casts the spell named `Spell` at what the client targets, as a click on its icon does. A heal or a buff needs a friendly target, the Character itself included: `target` it first.
-    // The Harness refuses a spell the server's last `skills` didn't list. Whether the cast begins, lands or is interrupted, and why not, the server says in `message` Percepts.
+    // The Harness refuses a spell the server's last `skills` didn't list. Whether the cast starts, lands or is interrupted the server says in `castStarted`, `spellLanded` and `interrupted` Percepts, and why it refuses one only in `message` Percepts.
     // What a spell does and costs is in its `skills` entry, from the tooltip the server sent with the skill list.
     public sealed record CastSpellPrimitive([property: JsonRequired] string Spell) : Primitive;
 
@@ -276,6 +276,10 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(EffectsPercept), "effects")]
     [JsonDerivedType(typeof(ConcentrationPercept), "concentration")]
     [JsonDerivedType(typeof(PetWindowPercept), "petWindow")]
+    [JsonDerivedType(typeof(CastStartedPercept), "castStarted")]
+    [JsonDerivedType(typeof(SpellLandedPercept), "spellLanded")]
+    [JsonDerivedType(typeof(InterruptedPercept), "interrupted")]
+    [JsonDerivedType(typeof(CooldownsPercept), "cooldowns")]
     [JsonDerivedType(typeof(DiedPercept), "died")]
     [JsonDerivedType(typeof(RevivedPercept), "revived")]
     [JsonDerivedType(typeof(InventoryPercept), "inventory")]
@@ -583,6 +587,23 @@ namespace DOL.GS.Agents
     // The Agent's Character's pet window: `Open` when it gets a pet, `Update` when the Pet's aggression or walk changes, `Close` when it loses the Pet, which then has `ObjectId` 0.
     // `ObjectId` is the Pet's, as its `npcCreate` has it. The packet's effect icons aren't carried.
     public sealed record PetWindowPercept(int ObjectId, ePetWindowAction Action, eAggressionState Aggression, eWalkState Walk) : Percept;
+
+    // A caster in view started a cast, the Agent's Character and Mobs included: its object ID and how long the cast takes, 0 for an instant spell.
+    // The server sends it once every check before the cast has passed, and not at all for an instant spell that isn't harmful. Which spell isn't carried: a client shows only its animation.
+    public sealed record CastStartedPercept(int CasterId, int CastingMs) : Percept;
+
+    // A spell landed on `TargetId` (0 for none), cast by `CasterId`. `Success` is false when it didn't take: resisted, a heal with nothing to heal, or a buff a better one kept off.
+    // A bolt lands at launch, with `Success` true whether it then hits or misses. A pulsing spell lands on every pulse, and an area spell once per target.
+    public sealed record SpellLandedPercept(int CasterId, int TargetId, bool Success) : Percept;
+
+    // A caster in view had its cast interrupted, by an attack or by moving. A cast that fails its checks as it ends isn't interrupted this way: the caster gets only a message.
+    public sealed record InterruptedPercept(int ObjectId) : Percept;
+
+    // Spells and Abilities of the Agent's Character that went on Cooldown, each for whole seconds from now. 0 is ready, which the server sends only for skills it lists at world entry; it says nothing when a Cooldown ends.
+    public sealed record CooldownsPercept(Cooldown[] Skills) : Percept;
+
+    // A Spell or Ability, named as the skills Percept names it, and its Cooldown in whole seconds.
+    public sealed record Cooldown(string Name, int Seconds);
 
     // A player died, the Agent's Character included: its object ID, and the object ID of what killed it, or 0.
     public sealed record DiedPercept(int ObjectId, int KillerId) : Percept;

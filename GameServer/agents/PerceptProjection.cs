@@ -59,6 +59,10 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendUpdateIcons) => Effects(client),
                 nameof(IPacketLib.SendConcentrationList) => Concentration(client),
                 nameof(IPacketLib.SendPetWindow) => PetWindow((GameLiving) args[0], (ePetWindowAction) args[1], (eAggressionState) args[2], (eWalkState) args[3]),
+                nameof(IPacketLib.SendSpellCastAnimation) => new CastStartedPercept(((GameLiving) args[0]).ObjectID, (ushort) args[2] * 100),
+                nameof(IPacketLib.SendSpellEffectAnimation) => SpellLanded(client, (GameObject) args[0], (GameObject) args[1], (byte) args[5]),
+                nameof(IPacketLib.SendInterruptAnimation) => new InterruptedPercept(((GameLiving) args[0]).ObjectID),
+                nameof(IPacketLib.SendDisableSkill) => Cooldowns(client, (List<(Skill, int)>) args[0]),
                 nameof(IPacketLib.SendStatusUpdate) => Status(client, args.Length > 0 ? (byte) args[0] : null),
                 nameof(IPacketLib.SendUpdatePoints) => Points(client),
                 nameof(IPacketLib.SendUpdatePlayer) => Player(client),
@@ -506,6 +510,51 @@ namespace DOL.GS.Agents
         private static PetWindowPercept PetWindow(GameLiving pet, ePetWindowAction action, eAggressionState aggression, eWalkState walk)
         {
             return new PetWindowPercept(pet?.ObjectID ?? 0, action, aggression, walk);
+        }
+
+        // Mirrors `PacketLib174.SendSpellEffectAnimation`, which drops the effects the client's effect filter hides. The packet writes 0 for no target,
+        // and 0 for the caster when it's out of the target's view or a player target can't detect it.
+        private static SpellLandedPercept SpellLanded(GameClient client, GameObject caster, GameObject target, byte success)
+        {
+            GamePlayer player = client.Player;
+            bool own = player != null && (player == caster || player == target);
+
+            bool shown = client.EffectFilter switch
+            {
+                eEffectFilter.Self => own,
+                eEffectFilter.None => false,
+                eEffectFilter.Group when player?.Group is Group group => group.IsInTheGroup(caster as GameLiving) || group.IsInTheGroup(target as GameLiving),
+                eEffectFilter.Group => own,
+                eEffectFilter.Others => !own,
+                _ => true
+            };
+
+            if (!shown)
+                return null;
+
+            bool casterHidden = target != null && (!target.IsWithinRadius(caster, WorldMgr.VISIBILITY_DISTANCE) || target is GamePlayer playerTarget && !playerTarget.CanDetect(caster));
+            return new SpellLandedPercept(casterHidden ? 0 : caster.ObjectID, target?.ObjectID ?? 0, success != 0);
+        }
+
+        // Mirrors `PacketLib168.SendDisableSkill`, which no later library overrides. The packet numbers each skill by its place in the client's spell lines or its other skills, and leaves out one it has in neither.
+        // The Percept names it as the skills Percept does instead, once, with its Cooldown in whole seconds.
+        private static CooldownsPercept Cooldowns(GameClient client, List<(Skill Skill, int Ms)> skills)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            List<(SpellLine Line, List<Skill> Spells)> lines = player.GetAllUsableListSpells();
+            List<(Skill Skill, Skill Related)> usable = player.GetAllUsableSkills();
+            bool Matches(Skill skill, Skill disabled) => skill.SkillType == disabled.SkillType && skill.ID == disabled.ID;
+
+            Cooldown[] cooldowns = [.. skills
+                .Where(disabled => lines.Any(line => line.Spells.Any(spell => Matches(spell, disabled.Skill))) || usable.Any(entry => entry.Skill is not Specialization && Matches(entry.Skill, disabled.Skill)))
+                .Select(static disabled => new Cooldown(Encoded(disabled.Skill.Name), disabled.Ms > 0 ? disabled.Ms / 1000 : 0))];
+
+            // With none the client has, no packet is sent.
+            return cooldowns.Length > 0 ? new CooldownsPercept(cooldowns) : null;
         }
 
         // Mirrors `WriteTruncatedName` in `PacketLib191.SendConcentrationList`: a name longer than 14 characters becomes its first 12 and "..".

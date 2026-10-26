@@ -55,6 +55,10 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendPlayerJump = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerJump));
         private static readonly MethodInfo SendConcentrationList = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendConcentrationList));
         private static readonly MethodInfo SendPetWindow = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPetWindow));
+        private static readonly MethodInfo SendSpellCastAnimation = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendSpellCastAnimation));
+        private static readonly MethodInfo SendSpellEffectAnimation = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendSpellEffectAnimation));
+        private static readonly MethodInfo SendInterruptAnimation = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendInterruptAnimation));
+        private static readonly MethodInfo SendDisableSkill = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendDisableSkill));
         private static readonly MethodInfo SendStatusUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), []);
         private static readonly MethodInfo SendStatusUpdateWithFlag = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendStatusUpdate), [typeof(byte)]);
         private static readonly MethodInfo SendUpdatePlayer = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendUpdatePlayer));
@@ -907,6 +911,101 @@ namespace DOL.GS.Tests
             Percept percept = PerceptProjection.Project(Playing(), SendPetWindow, [null, ePetWindowAction.Close, eAggressionState.Aggressive, eWalkState.Follow]);
 
             Assert.That(percept, Is.EqualTo(new PetWindowPercept(0, ePetWindowAction.Close, eAggressionState.Aggressive, eWalkState.Follow)));
+        }
+
+        // Mirrors `PacketLib168.SendSpellCastAnimation`: the caster and the casting time in tenths of a second, which `SpellHandler.SendCastAnimation` sends for any caster in view. The client effect isn't carried.
+        [Test]
+        public void Project_ShouldGiveTheCasterAndCastingTime_ForTheCastAnimationCall()
+        {
+            TestNpc caster = WorldDoubles.Npc("fairy mage");
+            caster.ObjectID = 0x0456;
+
+            Percept percept = PerceptProjection.Project(Playing(), SendSpellCastAnimation, [caster, (ushort) 4101, (ushort) 26]);
+
+            Assert.That(percept, Is.EqualTo(new CastStartedPercept(0x0456, 2600)));
+        }
+
+        // Mirrors `PacketLib168.SendSpellEffectAnimation`: the caster, the target, and whether it took. The client effect, the bolt's flight time and the sound aren't carried.
+        [Test]
+        public void Project_ShouldGiveTheCasterTargetAndSuccess_ForTheEffectAnimationCall()
+        {
+            Zone zone = WorldDoubles.Zone(201, 0, 0, 65536, 65536);
+            GameClient client = AgentInWorld(zone);
+            client.Player.ObjectID = 0x0123;
+            TestNpc target = NpcIn(zone, "wolf pup");
+            target.ObjectID = 0x0456;
+
+            Percept landed = PerceptProjection.Project(client, SendSpellEffectAnimation, [client.Player, target, (ushort) 4101, (ushort) 3, false, (byte) 1]);
+            Percept resisted = PerceptProjection.Project(client, SendSpellEffectAnimation, [client.Player, target, (ushort) 4101, (ushort) 0, false, (byte) 0]);
+
+            Assert.That(landed, Is.EqualTo(new SpellLandedPercept(0x0123, 0x0456, true)));
+            Assert.That(resisted, Is.EqualTo(new SpellLandedPercept(0x0123, 0x0456, false)));
+        }
+
+        // `PacketLib174.SendSpellEffectAnimation` writes 0 for a caster out of the target's view.
+        [Test]
+        public void Project_ShouldGiveCaster0_ForTheEffectAnimationCallWithTheCasterOutOfTheTargetsView()
+        {
+            Zone zone = WorldDoubles.Zone(201, 0, 0, 65536, 65536);
+            GameClient client = AgentInWorld(zone);
+            client.Player.ObjectID = 0x0123;
+            TestPlayer caster = PlayerIn(zone, "Vue");
+            caster.ObjectID = 0x0456;
+            (caster.X, caster.Y) = (zone.XOffset + 1000 + WorldMgr.VISIBILITY_DISTANCE + 1, zone.YOffset + 1000);
+
+            Percept percept = PerceptProjection.Project(client, SendSpellEffectAnimation, [caster, client.Player, (ushort) 4101, (ushort) 0, false, (byte) 1]);
+
+            Assert.That(percept, Is.EqualTo(new SpellLandedPercept(0, 0x0123, true)));
+        }
+
+        // `SendSpellEffectAnimation` writes 0 for no target.
+        [Test]
+        public void Project_ShouldGiveTarget0_ForTheEffectAnimationCallWithNoTarget()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            client.Player.ObjectID = 0x0123;
+
+            Percept percept = PerceptProjection.Project(client, SendSpellEffectAnimation, [client.Player, null, (ushort) 4101, (ushort) 0, true, (byte) 1]);
+
+            Assert.That(percept, Is.EqualTo(new SpellLandedPercept(0x0123, 0, true)));
+        }
+
+        // Mirrors the effect filter in `PacketLib174.SendSpellEffectAnimation`: with only its own effects shown, the client isn't sent one between two others.
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheEffectAnimationCallTheClientsFilterDrops()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            client.EffectFilter = eEffectFilter.Self;
+            TestNpc caster = WorldDoubles.Npc("fairy mage");
+            TestNpc target = WorldDoubles.Npc("wolf pup");
+
+            Assert.That(PerceptProjection.Project(client, SendSpellEffectAnimation, [caster, target, (ushort) 4101, (ushort) 0, false, (byte) 1]), Is.Null);
+            Assert.That(PerceptProjection.Project(client, SendSpellEffectAnimation, [caster, client.Player, (ushort) 4101, (ushort) 0, false, (byte) 1]), Is.Not.Null);
+        }
+
+        // Mirrors `PacketLib168.SendInterruptAnimation`: whose cast was interrupted.
+        [Test]
+        public void Project_ShouldGiveWhoseCastWasInterrupted_ForTheInterruptAnimationCall()
+        {
+            TestNpc caster = WorldDoubles.Npc("fairy mage");
+            caster.ObjectID = 0x0456;
+
+            Assert.That(PerceptProjection.Project(Playing(), SendInterruptAnimation, [caster]), Is.EqualTo(new InterruptedPercept(0x0456)));
+        }
+
+        // Mirrors `PacketLib168.SendDisableSkill`: each skill the client has, in whole seconds. The packet numbers it by its place in the client's lists, and the Percept names it as the skills Percept does.
+        [Test]
+        public void Project_ShouldNameEachSkillTheClientHasWithItsSeconds_ForTheDisableSkillCall()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            TestPlayer orla = (TestPlayer) client.Player;
+            Ability quickcast = new("Quickcast", "Quickcast", "", 1, 0, 1, 0);
+            orla.ListSpells = [(WayOfTheSun, [GleamRay])];
+            orla.UsableSkills = [(quickcast, quickcast)];
+
+            CooldownsPercept percept = (CooldownsPercept) PerceptProjection.Project(client, SendDisableSkill, [new List<(Skill, int)> { (GleamRay, 10_500), (quickcast, 30_000), (LesserPowerward, 5_000) }]);
+
+            Assert.That(percept.Skills, Is.EqualTo(new Cooldown[] { new("Gleam Ray", 10), new("Quickcast", 30) }));
         }
 
         [Test]

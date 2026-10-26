@@ -14,15 +14,32 @@ return agent.self.skills
 
 ## Casting one
 
-`castSpell` casts the Spell at what you target, as a click on its icon does. A heal or a buff needs a friendly target, and yourself counts: `target` your own `agent.self.objectId` first. With nothing targeted the server says "You must select a target for this spell!", and with a Mob targeted the cast fails without a word.
+`cast(agent, spell, targetId)` casts a Spell at a target and ends once it has landed, with an Outcome. A heal or a buff on yourself takes your own `agent.self.objectId`. It targets `targetId` itself, stands you up (you can't cast sitting) and stops a run first (moving interrupts the cast). Your attack stops by itself once a Spell with a casting time starts.
 
-Stand still and stand up: moving interrupts the cast, and you can't cast sitting. The server answers in the chat:
+```ts
+const me = agent.self.objectId;
+if (me === undefined) return "not in the world yet";
 
-- "You begin casting a Minor Revigoration spell!" when the cast starts;
-- "You cast a Minor Revigoration spell!" when it lands, its casting time later;
-- "You move and interrupt your spellcast!" if you moved, or "... attacks you and your spell is interrupted!" if something hit you;
-- "You must wait 3 seconds to cast a spell!" just after you swung or were hit;
-- "You don't have enough power to cast that!", "You can't cast while sitting!" or "You must select a target for this spell!" when it can't start.
+return await cast(agent, "Minor Revigoration", me);
+```
+
+It fails before it sends anything with:
+
+- `noSpell`: you haven't the Spell. Style names don't work.
+- `cooldown`: it's on Cooldown.
+- `noPower`: it costs more Power than you have.
+- `wrongTarget`: a heal or a buff aimed at a Mob, which the server would drop without a word.
+
+Otherwise with what the server answered:
+
+- `noEffect`: it landed but didn't take. The target resisted, it had nothing to heal, or a better buff of its kind is up.
+- `interrupted`: something hit you before its halfway point.
+- `mustWait`: "You must wait N seconds to cast a spell!" three times. `cast` waits out each one and casts again by itself, so this means something is still swinging at you.
+- `tooFar`, `notInView` (behind you or out of sight), `noTarget` or `noPower`.
+- `refused`: any other refusal, with the server's words in the log.
+- `timeout`: no answer at all.
+
+`agent.self.casting` is your cast in progress, with the Spell and when it should land. `agent.self.cooldowns` has each Spell and Ability on Cooldown, with when it's ready again.
 
 How an attack interrupts, from the server's code:
 
@@ -31,23 +48,10 @@ How an attack interrupts, from the server's code:
 - An attack after your cast's halfway point doesn't interrupt it. So a cast often lands with the Mob already on you.
 - Your own swing holds your next cast off the same way, for as long as your swing. A fight ends with your killing blow, so the first cast after every kill gets "You must wait".
 
-What to do with an answer that isn't "You cast":
+What to do when it fails:
 
-- "You must wait N seconds to cast a spell!" clears up by itself: wait N seconds and cast again. If it keeps coming, something is still swinging at you.
-- "... attacks you and your spell is interrupted!" clears up once nothing is swinging at you: kill the Mob or get away from it first.
-- No Power, sitting, no target, too far, not in view: nothing changes until you do something about it.
-
-```ts
-const me = agent.self.objectId;
-if (me === undefined) return "not in the world yet";
-
-await agent.send({ name: "target", objectId: me });
-const reply = await agent.sendAndWait({ name: "castSpell", spell: "Minor Revigoration" }, (percept) =>
-  percept?.kind === "message" && /You cast a|interrupt|must wait|enough power|can't cast|select a target|already casting/.test(percept.text) ? percept.text : undefined, 10_000);
-return reply ?? "no answer within 10 s";
-```
-
-A `castSpell` the Harness refuses (`queued: false`) says why in `reason`: a Spell you don't have. Style names don't work, nor Spell names with `useStyle`.
+- `mustWait` and `interrupted` clear up once nothing is swinging at you: kill the Mob or get away from it first.
+- `noPower`, `noTarget`, `tooFar` and `notInView`: nothing changes until you do something about it.
 
 ## Healing between fights
 
@@ -60,21 +64,9 @@ if (me === undefined) return "not in the world yet";
 const heal = agent.self.skills.filter((skill) => skill.page === "Spells").find((spell) => spell.details?.description.startsWith("Heals"));
 if (!heal) return "no heal";
 
-await agent.send({ name: "target", objectId: me });
-let waits = 0;
-
 while (agent.self.healthPercent < 90 && agent.self.power >= (heal.details?.powerCost ?? 0)) {
-  const reply = await agent.sendAndWait({ name: "castSpell", spell: heal.name }, (percept) =>
-    percept?.kind === "message" && /You cast a|interrupt|must wait|enough power|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
-
-  // Right after a fight: wait out the delay, but not forever, since one that keeps coming means something still swings at you.
-  const wait = reply?.match(/must wait (\d+) seconds?/);
-  if (wait && ++waits <= 3) {
-    await agent.waitFor(() => undefined, Number(wait[1]) * 1000 + 300);
-    continue;
-  }
-
-  if (!reply?.startsWith("You cast")) return reply ?? "no answer";
+  const healed = await cast(agent, heal.name, me);
+  if (!healed.ok) return healed;
 }
 
 return await rest(agent, 100);
@@ -88,7 +80,7 @@ A Concentration buff lasts until you cancel it, and uses some of your concentrat
 
 - They all end when you die (and when you log out): after you release, cast them again.
 - Casting one that's already up does nothing new. Check `concentrationBuffs` first.
-- "This spell requires 2 concentration points to cast!" means you haven't enough left.
+- `cast` fails with `refused` and "This spell requires 2 concentration points to cast!" in the log when you haven't enough left.
 - Two buffs of the same kind don't add up. Cast Lesser Bark Skin while Minor Bark Skin is up and the server switches Minor Bark Skin off without ending it: it stays in your buff bar with `disabled`, and still uses its concentration. Cast only the best of each kind.
 
 This casts every buff you have and don't keep up, the best of each kind:
@@ -107,28 +99,16 @@ for (const spell of agent.self.skills.filter((skill) => skill.page === "Spells")
   if (!other || spell.level > other.level) best.set(kind(spell.details.description), spell);
 }
 
-await agent.send({ name: "target", objectId: me });
-const cast: string[] = [];
+const results: string[] = [];
 
 for (const buff of best.values()) {
   if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name))) continue;
 
-  // Up to 3 tries, waiting out the delay after a fight each time.
-  for (let tries = 1; ; tries++) {
-    const reply = await agent.sendAndWait({ name: "castSpell", spell: buff.name }, (percept) =>
-      percept?.kind === "message" && /You cast a|interrupt|must wait|requires|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
-    const wait = reply?.match(/must wait (\d+) seconds?/);
-
-    if (!wait || tries === 3) {
-      cast.push(`${buff.name}: ${reply ?? "no answer"}`);
-      break;
-    }
-
-    await agent.waitFor(() => undefined, Number(wait[1]) * 1000 + 300);
-  }
+  const outcome = await cast(agent, buff.name, me);
+  results.push(`${buff.name}: ${outcome.ok ? "cast" : outcome.reason}`);
 }
 
-return cast.length ? cast : "all up";
+return results.length ? results : "all up";
 ```
 
 ## Cancelling one
@@ -153,16 +133,11 @@ return cancelled.length ? cancelled : "nothing switched off";
 
 A damage Spell's `details.description` starts with "Inflicts", such as "Inflicts 5 heat damage to the target.", and its `target` is "ENEMY". A Magician's Gleam Ray, Gleam Streak and Gleam Blast hit at the end of a 2.6 s cast, as far as 1500 units away, with nothing to dodge or block. Prismatic Flare, at level 5, stuns a Mob for 3 s instead.
 
-Target the Mob, face it and stand still. Casting at a Mob starts the fight: it comes at you. The server answers in the chat:
+Face the Mob: casting at it starts the fight, and it comes at you. A bolt succeeds when it's launched, before it flies, so whether it hits shows only in the chat: "You hit the wild crouch for 5 damage!" or "You miss!". Of `cast`'s failures:
 
-- "You begin casting a Gleam Ray spell!" when the cast starts;
-- "You hit the wild crouch for 5 damage!" when it lands;
-- "The wild crouch resists the effect! (12.0%)" when it doesn't;
-- "You must select a target for this spell!" with nothing targeted;
-- "That target is too far away!" beyond its range;
-- "Your target is not visible!" when it's behind you: you must face it, within 90° either side;
-- "You can't see your target from here!" when something's in the way;
-- the interrupt, "must wait", Power and sitting lines, as for a heal.
+- `tooFar` beyond its range;
+- `notInView` when it's behind you (face it, within 90° either side) or something's in the way;
+- `noEffect` when it resists: "The wild crouch resists the effect! (12.0%)".
 
 ```ts
 const me = agent.self.objectId;
@@ -180,11 +155,8 @@ if (!mob) return "no Mob in view";
 
 const heading = (Math.round((Math.atan2(-(mob.position.x - at.x), mob.position.y - at.y) * 4096) / (2 * Math.PI)) + 4096) % 4096;
 await agent.send({ name: "face", heading });
-await agent.send({ name: "target", objectId: mob.objectId });
-
-const reply = await agent.sendAndWait({ name: "castSpell", spell: damage.name }, (percept) =>
-  percept?.kind === "message" && /You hit|resists|interrupt|too far away|not visible|can't see|must wait|enough power|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
-return `${damage.name} at the ${mob.name}: ${reply ?? "no answer within 10 s"}`;
+const outcome = await cast(agent, damage.name, mob.objectId);
+return `${damage.name} at the ${mob.name}: ${outcome.ok ? "landed" : outcome.reason}`;
 ```
 
 ## Kiting
@@ -230,11 +202,8 @@ if (gap < 500) return `only ${Math.round(gap)} away: run again`;
 
 const heading = (Math.round((Math.atan2(-(chaser.position.x - now.x), chaser.position.y - now.y) * 4096) / (2 * Math.PI)) + 4096) % 4096;
 await agent.send({ name: "face", heading });
-await agent.send({ name: "target", objectId: chaser.objectId });
-
-const reply = await agent.sendAndWait({ name: "castSpell", spell: "Gleam Ray" }, (percept) =>
-  percept?.kind === "message" && /You hit|resists|interrupt|too far away|not visible|can't see|must wait|enough power/.test(percept.text) ? percept.text : undefined, 10_000);
-return `${Math.round(gap)} away: ${reply ?? "no answer within 10 s"}`;
+const outcome = await cast(agent, "Gleam Ray", chaser.objectId);
+return `${Math.round(gap)} away: ${outcome.ok ? "landed" : outcome.reason}`;
 ```
 
 You can also sprint with `useAbility` (see below): Sprint is an Ability, and using it turns sprint on or off, as `/sprint` does.
@@ -245,13 +214,9 @@ Prismatic Flare's 3 s stun buys you a cast without running. Your buffs from Way 
 
 `useAbility` uses an Ability by its name in `agent.self.skills` (`page` "Abilities" or "RealmAbilities"), as a click on its icon does: Sprint, Quickcast, or a Realm Ability. Give the name exactly as `skills` has it: Quick Cast is "Quickcast" there, one word. One you don't have is refused (`queued: false`) with the reason. A passive one, such as Staves, does nothing.
 
-An Eldritch, an Enchanter and a Mentalist get Quick Cast when they're promoted. It makes the next Spell you start within 3 s one that nothing interrupts, at twice the Power, and it lets you start that Spell while a hit's interrupt timer runs. It doesn't make the cast shorter. The server says:
+An Eldritch, an Enchanter and a Mentalist get Quick Cast when they're promoted. It makes the next Spell you start within 3 s one that nothing interrupts, at twice the Power, and it lets you start that Spell while a hit's interrupt timer runs. It doesn't make the cast shorter. It has a 30 s Cooldown after a quickcasted Spell.
 
-- "You have activated quickcast." when it's ready, and "Quick Cast", two words, is in `agent.self.effects` until you cast or the 3 s run out, which the server doesn't announce;
-- "Your next spell will not be quickcasted." when you use it again to turn it off;
-- "You can not cast when your are in melee combat." when your attack is on: turn it off first;
-- "You must wait 12 more second to attempt to quick cast!" for 30 s after a quickcasted Spell;
-- "You can't prepare a quickcast while casting a spell!" mid-cast.
+`cast` with `{ quickCast: true }` uses it for you: it turns your attack off (the server refuses Quick Cast while you attack), uses Quick Cast unless it's already up ("Quick Cast", two words, in `agent.self.effects`), and casts once it's up. It fails with `cooldown` while Quick Cast is on Cooldown, and with `noQuickCast` when it doesn't come up, as mid-cast: "You can't prepare a quickcast while casting a spell!".
 
 It saves a fight once the Mob has reached you, when its hits would interrupt a normal cast or keep you from starting one. The Human's routine:
 
@@ -259,7 +224,7 @@ It saves a fight once the Mob has reached you, when its hits would interrupt a n
 2. Quick Cast, and cast once more: the hits don't interrupt it.
 3. If it's still alive, finish it with your staff, or kite if you're losing.
 
-The Mob's first hit usually lands while you're still casting, and a cast past its halfway point carries on. Quick Cast is refused until that cast lands or breaks, so wait for it and try again. Orla's first try failed that way, and Orla finished the fight with the staff at 16% health. Keep twice your damage Spell's Power back for the quickcasted one.
+The Mob's first hit usually lands while you're still casting, and a cast past its halfway point carries on. Quick Cast is refused until that cast lands or breaks, so wait until `agent.self.casting` is gone first. Orla's first try failed that way, and Orla finished the fight with the staff at 16% health. Keep twice your damage Spell's Power back for the quickcasted one.
 
 Steps 2 and 3, once the Mob is on you:
 
@@ -273,24 +238,11 @@ const damage = agent.self.skills
   .sort((a, b) => b.level - a.level)[0];
 if (!damage) return "no damage Spell";
 
-await agent.send({ name: "attack", on: false });
-await agent.send({ name: "target", objectId: mob.objectId });
+// Let a cast in progress land or break first: Quick Cast is refused mid-cast.
+if (agent.self.casting) await agent.waitFor(() => !agent.self.casting, 5_000);
 
-const quickcast = () =>
-  agent.sendAndWait({ name: "useAbility", ability: "Quickcast" }, (percept) =>
-    percept?.kind === "message" && /activated quickcast|must wait|melee combat|while casting/.test(percept.text) ? percept.text : undefined, 3_000);
-
-let ready = await quickcast();
-if (ready?.includes("while casting")) {
-  // Still on the cast the Mob's first hit didn't break: wait for it to land or break, then try again.
-  await agent.waitFor((percept) => percept?.kind === "message" && /You hit|resists|interrupted/.test(percept.text), 5_000);
-  ready = await quickcast();
-}
-if (!ready?.includes("activated")) return `no Quick Cast: ${ready ?? "no answer"}`;
-
-const reply = await agent.sendAndWait({ name: "castSpell", spell: damage.name }, (percept) =>
-  percept?.kind === "message" && /You hit|resists|too far away|not visible|can't see|enough power/.test(percept.text) ? percept.text : undefined, 10_000);
-if (!agent.surroundings.npcs.some((npc) => npc.objectId === mob.objectId && npc.healthPercent > 0)) return `${reply}, and it's dead`;
+const outcome = await cast(agent, damage.name, mob.objectId, { quickCast: true });
+if (!agent.surroundings.npcs.some((npc) => npc.objectId === mob.objectId && npc.healthPercent > 0)) return `${outcome.ok ? "landed" : outcome.reason}, and it's dead`;
 
 return await kill(agent, mob.objectId);
 ```

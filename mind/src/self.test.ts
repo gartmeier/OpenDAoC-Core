@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import type { JumpPercept, MovedPercept, OwnPositionPercept, Percept, PerceptMessage } from "./protocol.ts";
 import { ownPositionIn, Self } from "./self.ts";
 import { FakeClock } from "./test-agent.ts";
-import { concentration, dialog, died, effects, petWindow, player, points, revived, skills, spec, stats, status } from "./test-percepts.ts";
+import { castStarted, concentration, cooldowns, dialog, died, effects, interrupted, petWindow, player, points, revived, skills, spec, spellLanded, stats, status } from "./test-percepts.ts";
 
 function message(percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs: 1000, percept };
@@ -375,4 +375,69 @@ test("takes its max health from a stats Percept too, as a Healer restoring Const
 
   expect(agentSelf.maxHealth).toBe(496);
   expect(agentSelf.health).toBe(488);
+});
+
+test("is casting the Spell it last sent from its own cast start until it lands", () => {
+  const clock = new FakeClock();
+  const agentSelf = new Self(clock);
+  agentSelf.perceive(message(ownPosition(296600, 642629, 4848, 0)));
+  expect(agentSelf.casting).toBeUndefined();
+
+  agentSelf.sent({ name: "castSpell", spell: "Gleam Ray" });
+  expect(agentSelf.casting).toBeUndefined();
+
+  agentSelf.perceive(message(castStarted(17, 2600)));
+  expect(agentSelf.casting).toEqual({ spell: "Gleam Ray", landsAt: 2600 });
+
+  agentSelf.perceive(message(spellLanded(17, 0x0456)));
+  expect(agentSelf.casting).toBeUndefined();
+});
+
+test("is no longer casting once its own cast is interrupted, and another caster's start, landing or interrupt changes nothing", () => {
+  const agentSelf = new Self(new FakeClock());
+  agentSelf.perceive(message(ownPosition(296600, 642629, 4848, 0)));
+  agentSelf.sent({ name: "castSpell", spell: "Gleam Ray" });
+
+  agentSelf.perceive(message(castStarted(0x0456, 3000)));
+  expect(agentSelf.casting).toBeUndefined();
+
+  agentSelf.perceive(message(castStarted(17, 2600)));
+  agentSelf.perceive(message(spellLanded(0x0456, 17)));
+  agentSelf.perceive(message(interrupted(0x0456)));
+  expect(agentSelf.casting?.spell).toBe("Gleam Ray");
+
+  agentSelf.perceive(message(interrupted(17)));
+  expect(agentSelf.casting).toBeUndefined();
+});
+
+test("is no longer casting once its cast is well past when it should have landed, as when it failed as it ended", async () => {
+  const clock = new FakeClock();
+  const agentSelf = new Self(clock);
+  agentSelf.perceive(message(ownPosition(296600, 642629, 4848, 0)));
+  agentSelf.sent({ name: "castSpell", spell: "Gleam Ray" });
+  agentSelf.perceive(message(castStarted(17, 2600)));
+
+  await clock.advance(3000);
+  expect(agentSelf.casting?.spell).toBe("Gleam Ray");
+
+  await clock.advance(2000);
+  expect(agentSelf.casting).toBeUndefined();
+});
+
+test("knows each skill on Cooldown until it's ready again, from every cooldowns Percept", async () => {
+  const clock = new FakeClock();
+  const agentSelf = new Self(clock);
+  expect(agentSelf.cooldowns.size).toBe(0);
+
+  agentSelf.perceive(message(cooldowns({ Quickcast: 30 })));
+  await clock.advance(5000);
+  agentSelf.perceive(message(cooldowns({ "Major Ethereal Detonation": 10, Sprint: 0 })));
+
+  expect(agentSelf.cooldowns).toEqual(new Map([["Quickcast", 30_000], ["Major Ethereal Detonation", 15_000]]));
+
+  await clock.advance(10_000);
+  expect([...agentSelf.cooldowns.keys()]).toEqual(["Quickcast"]);
+
+  await clock.advance(15_000);
+  expect(agentSelf.cooldowns.size).toBe(0);
 });

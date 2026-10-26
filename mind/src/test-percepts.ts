@@ -1,14 +1,18 @@
 // Percepts as the Harness sends them, for tests. Every field a test doesn't pass is a plain default.
 import type {
   ArrivedPercept,
+  CastStartedPercept,
   ConcentrationBuff,
   ConcentrationPercept,
+  CooldownsPercept,
   DialogPercept,
   DiedPercept,
+  eChatType,
   EffectEntry,
   EffectsPercept,
   EncumbrancePercept,
   ExaminedPercept,
+  InterruptedPercept,
   InventoryItem,
   InventoryPercept,
   InventorySlot,
@@ -31,6 +35,8 @@ import type {
   RevivedPercept,
   SkillEntry,
   SkillsPercept,
+  SpellDetails,
+  SpellLandedPercept,
   StatsPercept,
   StatusPercept,
   StopReason,
@@ -48,6 +54,11 @@ export function ownPosition(x: number, y: number, z: number, objectId = 17): Own
 
 export function sayLine(text: string): Percept {
   return { kind: "message", text, chatType: "CT_Say", chatLocation: "CL_ChatWindow" };
+}
+
+/** A game message, of the type the server gives every cast refusal unless said otherwise. */
+export function gameMessage(text: string, chatType: eChatType = "CT_SpellResisted"): Percept {
+  return { kind: "message", text, chatType, chatLocation: "CL_ChatWindow" };
 }
 
 /** What an NPC says in a popup, as a trainer asks which class a Character chooses. */
@@ -211,6 +222,11 @@ export function skills(...entries: SkillEntry[]): SkillsPercept {
   return { kind: "skills", skills: entries };
 }
 
+/** A Spell as its tooltip shows it: a 2.5 s bolt at an enemy for 2 Power unless said otherwise. */
+export function spell(name: string, details: Partial<SpellDetails> = {}): SkillEntry {
+  return { page: "Spells", name, level: 1, details: { level: 1, powerCost: 2, target: "Enemy", range: 1500, castingSeconds: 2.5, description: "Inflicts 5 heat damage to the target.", ...details } };
+}
+
 /** A specialization at its trained level. */
 export function spec(name: string, level: number): SkillEntry {
   return { name, level, page: "Specialization" };
@@ -227,6 +243,26 @@ export function concentration(...buffs: ConcentrationBuff[]): ConcentrationPerce
 /** The pet window, for the pet with object ID `objectId` (0 when it closes), defensive and following unless said otherwise. */
 export function petWindow(action: PetWindowPercept["action"], objectId: number, aggression: PetWindowPercept["aggression"] = "Defensive", walk: PetWindowPercept["walk"] = "Follow"): PetWindowPercept {
   return { kind: "petWindow", objectId, action, aggression, walk };
+}
+
+/** A cast started by `casterId`, taking `castingMs`: 0 for an instant harmful Spell. */
+export function castStarted(casterId: number, castingMs: number): CastStartedPercept {
+  return { kind: "castStarted", casterId, castingMs };
+}
+
+/** A Spell `casterId` cast landing on `targetId`, taking unless `success` is false. */
+export function spellLanded(casterId: number, targetId: number, success = true): SpellLandedPercept {
+  return { kind: "spellLanded", casterId, targetId, success };
+}
+
+/** `objectId`'s cast interrupted. */
+export function interrupted(objectId: number): InterruptedPercept {
+  return { kind: "interrupted", objectId };
+}
+
+/** Each Spell or Ability by name, on Cooldown for its seconds. */
+export function cooldowns(skills: Record<string, number>): CooldownsPercept {
+  return { kind: "cooldowns", skills: Object.entries(skills).map(([name, seconds]) => ({ name, seconds })) };
 }
 
 /** A custom Dialog to the Character with session ID 0x0101, asking yes or no unless `yesNo` is false. */

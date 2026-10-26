@@ -1,4 +1,5 @@
 import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/tactic.ts";
+import { cast } from "../../../mind/src/tactics/cast.ts";
 import { kill } from "../../../mind/src/tactics/kill.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
@@ -22,25 +23,6 @@ const damageSpell = (agent: Agent) =>
   agent.self.skills
     .filter((skill) => skill.page === "Spells" && skill.details?.description.startsWith("Inflicts"))
     .sort((a, b) => damageOf(b.details?.description) - damageOf(a.details?.description))[0];
-
-/** Turns Quick Cast on and casts `spell` at the Mob. Returns what the server said. */
-export async function quickCast(agent: Agent, objectId: number, spell: string): Promise<string> {
-  await agent.send({ name: "attack", on: false });
-  await agent.send({ name: "target", objectId });
-  const prepare = () => agent.sendAndWait({ name: "useAbility", ability: "Quickcast" }, (percept) =>
-    percept?.kind === "message" && /activated quickcast|must wait|melee combat|while casting/.test(percept.text) ? percept.text : undefined, 3_000);
-  let ready = await prepare();
-  if (ready?.includes("while casting")) {
-    // A hit doesn't always interrupt at once: let the cast in progress land or break first.
-    await agent.waitFor((percept) => percept?.kind === "message" && /You cast a|interrupt|cancelled/.test(percept.text), 3_000);
-    ready = await prepare();
-  }
-  if (!ready?.includes("activated")) return `no Quick Cast: ${ready ?? "no answer"}`;
-
-  const reply = await agent.sendAndWait({ name: "castSpell", spell }, (percept) =>
-    percept?.kind === "message" && /You hit|resists|interrupt|too far away|not visible|can't see|enough power|can't cast/.test(percept.text) ? percept.text : undefined, 10_000);
-  return reply ?? "no answer";
-}
 
 /**
  * Stands at about the Spell's range from the Mob and casts at it until it first hits you or the Power runs out,
@@ -66,31 +48,30 @@ export async function pull(agent: Agent, objectId: number): Promise<Outcome> {
       await runTo(agent, { x: Math.round(at.x + ((at.x - first.position.x) / length) * back), y: Math.round(at.y + ((at.y - first.position.y) / length) * back), z: at.z });
     }
 
-    let hit = false;
-    const onHit = (text: string) => / hits your | attacks you /.test(text);
-
-    while (!hit && agent.self.power >= (spell.details?.powerCost ?? 0) && !agent.self.dead) {
+    while (agent.self.power >= (spell.details?.powerCost ?? 0) && !agent.self.dead) {
       const target = mob();
       if (!target || target.healthPercent <= 0) return target ? succeeded : failed("outOfView");
       if (distance(agent, target.position) < 250) break;
 
       await agent.send({ name: "face", heading: headingTo(agent, target.position) });
-      await agent.send({ name: "target", objectId });
-      const reply = await agent.sendAndWait({ name: "castSpell", spell: spell.name }, (percept) =>
-        percept?.kind === "message" && (onHit(percept.text) || /You hit|resists|interrupt|too far away|not visible|can't see|must wait|enough power|can't cast/.test(percept.text)) ? percept.text : undefined, 10_000);
+      const outcome = await cast(agent, spell.name, objectId);
+      const me = agent.self.objectId;
+      const onMe = me !== undefined && agent.surroundings.attacking(me).some((npc) => npc.objectId === objectId);
 
-      if (!reply) break;
-      if (onHit(reply) || /interrupt/.test(reply)) hit = true;
-      else if (/too far away/.test(reply)) await runTo(agent, target.position, range - 300);
-      else if (/must wait/.test(reply)) await agent.waitFor(() => undefined, 1_000);
-      else if (/enough power|can't see|not visible|can't cast/.test(reply)) break;
+      if (onMe || (!outcome.ok && outcome.reason === "interrupted")) break;
+      if (outcome.ok || outcome.reason === "noEffect") continue;
+      if (outcome.reason === "tooFar") await runTo(agent, target.position, range - 300);
+      else break;
     }
 
     const after = mob();
     if (!after || after.healthPercent <= 0) return succeeded;
 
     // It's on me, and every hit would interrupt a normal cast: Quick Cast one more, which nothing interrupts.
-    if (agent.self.power >= 2 * (spell.details?.powerCost ?? 0)) console.log(`Quick Cast: ${await quickCast(agent, objectId, spell.name)}`);
+    if (agent.self.power >= 2 * (spell.details?.powerCost ?? 0)) {
+      const quick = await cast(agent, spell.name, objectId, { quickCast: true });
+      console.log(`Quick Cast: ${quick.ok ? "landed" : quick.reason}`);
+    }
     const last = mob();
     if (!last || last.healthPercent <= 0) return succeeded;
   }
@@ -106,9 +87,8 @@ export async function buffUp(agent: Agent): Promise<void> {
     .sort((a, b) => b.level - a.level)[0];
   if (me === undefined || !ward || agent.self.effects.some((effect) => effect.name === ward.name)) return;
 
-  await agent.send({ name: "target", objectId: me });
-  await agent.sendAndWait({ name: "castSpell", spell: ward.name }, (percept) =>
-    percept?.kind === "message" && /You cast a|interrupt|must wait|enough power|can't cast|select a target/.test(percept.text) ? percept.text : undefined, 10_000);
+  const outcome = await cast(agent, ward.name, me);
+  if (!outcome.ok) console.log(`${ward.name}: ${outcome.reason}`);
   await rest(agent, 100);
 }
 

@@ -316,6 +316,12 @@ namespace DOL.GS.Tests
             return _builtListSpells;
         }
 
+        // The skills other than list spells the server last built, which `GamePlayer.GetAllUsableSkills` keeps to read the client's skill numbers against.
+        public List<(Skill, Skill)> UsableSkills
+        {
+            set => typeof(GamePlayer).GetField("_usableSkills", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, value);
+        }
+
         public override byte GetDisplayLevel(GamePlayer player)
         {
             return DisplayLevel;

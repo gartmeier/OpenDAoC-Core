@@ -66,6 +66,14 @@ function describe(agent: Agent, character: string, percept: Percept): string {
       return `concentration\t${percept.buffs.map((buff) => `${buff.spell} on ${buff.target} (${buff.cost})`).join(", ") || "none"}`;
     case "petWindow":
       return percept.action === "Close" ? "petWindow Close" : `petWindow ${percept.action}\t#${percept.objectId} ${nameOf(percept.objectId)} ${percept.aggression} ${percept.walk}`;
+    case "castStarted":
+      return `castStarted #${percept.casterId} ${nameOf(percept.casterId)}\t${(percept.castingMs / 1000).toFixed(1)} s${percept.casterId === self.objectId && self.casting ? ` ${self.casting.spell}` : ""}`;
+    case "spellLanded":
+      return `spellLanded #${percept.casterId} ${nameOf(percept.casterId)} on #${percept.targetId} ${nameOf(percept.targetId)}${percept.success ? "" : " (didn't take)"}`;
+    case "interrupted":
+      return `interrupted #${percept.objectId} ${nameOf(percept.objectId)}`;
+    case "cooldowns":
+      return `cooldowns\t${percept.skills.map((skill) => `${skill.name} ${skill.seconds} s`).join(", ")}`;
     case "died":
       return `died #${percept.objectId} ${nameOf(percept.objectId)}, killed by #${percept.killerId} ${nameOf(percept.killerId)}`;
     case "revived":

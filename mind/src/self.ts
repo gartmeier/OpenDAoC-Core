@@ -35,12 +35,21 @@ export type Dialog = Omit<DialogPercept, "kind">;
 /** The Character's Pet (see `CONTEXT.md`), as its pet window shows it: the Pet's object ID, which its Surroundings know it by, and its aggression and walk settings. */
 export type Pet = Omit<PetWindowPercept, "kind" | "action">;
 
+/** A cast of the Character's own in progress: the Spell it clicked, and when it should land, on the Agent's clock. */
+export interface Casting {
+  readonly spell: string;
+  readonly landsAt: number;
+}
+
+/** How long past `landsAt` a cast that neither landed nor was interrupted still counts as in progress: one that failed as it ended gets only a message. */
+export const LANDING_MARGIN_MS = 2_000;
+
 /**
  * What the Agent currently believes about its own Character, built from Percepts (see `CONTEXT.md`).
  * The server says where the Character is at world entry and whenever it moves it itself (a jump), and how fast it may run. The Harness says where it is while it runs, and how each run ended, as the Agent's client works that out itself.
  * The server also says how healthy it is, how much Power and concentration it has, whether it sits, its level, experience and spec points, its skills, which Effects are on it, which Concentration buffs it keeps up,
- * how much Constitution it has lost, when it dies and comes back to life, which Pet it has and which Dialog it opened.
- * Of the Primitives the Mind sent it tracks only answering the Dialog, which closes it as a click does in the client, so there's one answer to "where am I and am I there yet".
+ * how much Constitution it has lost, when it dies and comes back to life, which Pet it has, which Dialog it opened, when its casts start, land or are interrupted, and which of its skills go on Cooldown.
+ * Of the Primitives the Mind sent it tracks only answering the Dialog, which closes it as a click does in the client, and the Spell it cast, as the client knows which icon it clicked.
  */
 export class Self {
   readonly #clock: Clock;
@@ -71,6 +80,9 @@ export class Self {
   #constitutionLost: number | undefined;
   #pet: Pet | undefined;
   #dialog: Dialog | undefined;
+  #castSpell: string | undefined;
+  #casting: Casting | undefined;
+  #cooldowns = new Map<string, number>();
 
   /** `clock` is the Agent's, which an Effect's time left counts down on. */
   constructor(clock: Clock) {
@@ -156,6 +168,33 @@ export class Self {
         this.#dialog = dialog;
         break;
       }
+      case "castStarted":
+        // Each Spell sent starts one cast at most.
+        if (percept.casterId === this.#objectId && this.#castSpell !== undefined) {
+          this.#casting = { spell: this.#castSpell, landsAt: this.#clock.now() + percept.castingMs };
+          this.#castSpell = undefined;
+        }
+
+        break;
+      case "spellLanded":
+        if (percept.casterId === this.#objectId)
+          this.#casting = undefined;
+
+        break;
+      case "interrupted":
+        if (percept.objectId === this.#objectId)
+          this.#casting = undefined;
+
+        break;
+      case "cooldowns":
+        for (const { name, seconds } of percept.skills) {
+          if (seconds > 0)
+            this.#cooldowns.set(name, this.#clock.now() + seconds * 1000);
+          else
+            this.#cooldowns.delete(name);
+        }
+
+        break;
       case "died":
         if (percept.objectId === this.#objectId)
           this.#dead = true;
@@ -169,10 +208,22 @@ export class Self {
     }
   }
 
-  /** Takes in a Primitive as it's sent: answering the Dialog closes it. */
+  /** Takes in a Primitive as it's sent: answering the Dialog closes it, and casting a Spell names the cast its start begins. */
   sent(primitive: Primitive): void {
     if (primitive.name === "answerDialog")
       this.#dialog = undefined;
+    else if (primitive.name === "castSpell")
+      this.#castSpell = primitive.spell;
+  }
+
+  /** Its own cast in progress, from the server starting it until it lands, is interrupted, or is well past when it should have landed. An instant friendly Spell is never in progress: the server starts only harmful ones. */
+  get casting(): Casting | undefined {
+    return this.#casting && this.#clock.now() <= this.#casting.landsAt + LANDING_MARGIN_MS ? this.#casting : undefined;
+  }
+
+  /** Each of its Spells and Abilities on Cooldown, by name as `skills` has it, with when it's ready again on the Agent's clock. */
+  get cooldowns(): ReadonlyMap<string, number> {
+    return new Map([...this.#cooldowns].filter(([, readyAt]) => readyAt > this.#clock.now()));
   }
 
   /** The Character's object ID, which other objects' Percepts name it by. Unknown until the server has said, at world entry. */

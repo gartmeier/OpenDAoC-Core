@@ -277,6 +277,15 @@ namespace DOL.GS.Tests
         }
 
         [Test]
+        public void Write_ShouldWriteTheCastingPercepts()
+        {
+            Assert.That(Write(new PerceptMessage(1, 100, new CastStartedPercept(0x1D2C, 2600))), Does.EndWith("""{"kind":"castStarted","casterId":7468,"castingMs":2600}}"""));
+            Assert.That(Write(new PerceptMessage(2, 200, new SpellLandedPercept(0x1D2C, 0x0456, false))), Does.EndWith("""{"kind":"spellLanded","casterId":7468,"targetId":1110,"success":false}}"""));
+            Assert.That(Write(new PerceptMessage(3, 300, new InterruptedPercept(0x1D2C))), Does.EndWith("""{"kind":"interrupted","objectId":7468}}"""));
+            Assert.That(Write(new PerceptMessage(4, 400, new CooldownsPercept([new("Quickcast", 30)]))), Does.EndWith("""{"kind":"cooldowns","skills":[{"name":"Quickcast","seconds":30}]}}"""));
+        }
+
+        [Test]
         public void Write_ShouldWriteAStoppedPercept_WithItsReasonAsAName()
         {
             Assert.That(Write(new PerceptMessage(5, 2000, new StoppedPercept(1.5f, 2, 3, StopReason.Replaced))),

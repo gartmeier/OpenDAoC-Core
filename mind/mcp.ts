@@ -101,7 +101,7 @@ server.registerTool(
   {
     description: [
       `Runs TypeScript against ${character}, the Agent you play, as the body of an async function with top-level await, and returns its console output, its result or error, what the Agent believes about itself, what's near it and what it carries, and the chat since the last call.`,
-      "In scope: `agent` (its Primitives, Self, Surroundings, Inventory and waits), the porcelain Tactics `kill`, `rest`, `train`, `runTo`, `equip`, `talkTo`, `whisper`, `answer`, `buy` and `sell`, and the equipment slot numbers `SLOT`. Import your own files with `await import(\"./tactics/x.ts\")`, relative to your folder.",
+      "In scope: `agent` (its Primitives, Self, Surroundings, Inventory and waits), the porcelain Tactics `kill`, `cast`, `rest`, `train`, `runTo`, `equip`, `talkTo`, `whisper`, `answer`, `buy` and `sell`, and the equipment slot numbers `SLOT`. Import your own files with `await import(\"./tactics/x.ts\")`, relative to your folder.",
       "One snippet runs at a time: a new call aborts the one running, as does its timeout or a `stop` said next to the Agent, and the Agent is left standing with attack off.",
     ].join(" "),
     inputSchema: {

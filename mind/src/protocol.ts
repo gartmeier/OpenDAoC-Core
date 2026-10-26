@@ -176,7 +176,7 @@ export interface CommandPetPrimitive {
   order: PetOrder;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | ConcentrationPercept | PetWindowPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | ConcentrationPercept | PetWindowPercept | CastStartedPercept | SpellLandedPercept | InterruptedPercept | CooldownsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -418,6 +418,29 @@ export interface PetWindowPercept {
   walk: eWalkState;
 }
 
+export interface CastStartedPercept {
+  kind: "castStarted";
+  casterId: number;
+  castingMs: number;
+}
+
+export interface SpellLandedPercept {
+  kind: "spellLanded";
+  casterId: number;
+  targetId: number;
+  success: boolean;
+}
+
+export interface InterruptedPercept {
+  kind: "interrupted";
+  objectId: number;
+}
+
+export interface CooldownsPercept {
+  kind: "cooldowns";
+  skills: Cooldown[];
+}
+
 export interface DiedPercept {
   kind: "died";
   objectId: number;
@@ -605,6 +628,11 @@ export type ePetWindowAction = "Open" | "Update" | "Close";
 export type eAggressionState = "Aggressive" | "Defensive" | "Passive";
 
 export type eWalkState = "Follow" | "Stay" | "ComeHere" | "GoTarget";
+
+export interface Cooldown {
+  name: string;
+  seconds: number;
+}
 
 export type eInventoryWindowType = "Update" | "Equipment" | "Inventory" | "PlayerVault" | "HouseVault" | "ConsignmentOwner" | "ConsignmentViewer" | "HorseBags";
 
