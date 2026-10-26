@@ -1,6 +1,6 @@
 # Abilities
 
-Status: resolved
+Status: ready-for-human
 
 ## Problem Statement
 
@@ -25,7 +25,18 @@ Orla became an Eldritch at the end of milestone 8, and an Eldritch has Quick Cas
 - **Harness dispatch:** on an Eldritch's skill list, Sprint, Quick Cast and a Realm Ability queue the skill packet with their indexes; an unknown name, a specialization's, a Spell's and a Style's are refused, and so is everything before any skill list. `castSpell` and `useStyle` refuse an Ability's name.
 - **Protocol:** the Primitive reads from JSON, and a missing `ability` is named.
 - **Learnings:** the new snippet typechecks.
-- **Not tested automatically:** using Quick Cast in a fight. Orla's next run is the test.
+- **Not tested automatically:** using Quick Cast in a fight, covered by the manual acceptance test.
+- **Manual acceptance test:**
+  1. Restart the server so it runs this Harness.
+  2. Start a new Claude Code session in `agents/orla` and tell it to keep levelling.
+  3. Leave it, nudging it only when it stops.
+  4. Orla finds `useAbility` and uses Quick Cast when a Mob reaches it.
+  5. Record on this spec:
+     - whether it found Quick Cast on its own, or from the Learning;
+     - how often it used it, and whether it saved fights;
+     - what the server answered each time, refusals included;
+     - its papercuts.
+  6. Check the server log has no speed-check entries for Orla.
 
 ## Out of Scope
 
