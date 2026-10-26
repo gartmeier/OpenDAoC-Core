@@ -1,6 +1,6 @@
 # Specialization names
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -62,3 +62,12 @@ The skills Percept names a Specialization by its database name: "Light", not "Li
 - The Specializations an Agent can train whose names differ, from the server's database: Light (Light Magic), Mana (Mana Magic), Void (Void Magic), Bows (Bow) and Shields (Shield). The other differences are careers and Master Levels, which `/train` doesn't train.
 - `/train` matches a line by the start of its database name, so `/train Bow` already reached Bows. A rule like "take the first word" would be wrong: `/train Celtic` matches more than one line.
 - The client trains by position in the trainer window and uses an ability by position in the skill list. Only `/train` names a line, and it names it by database name.
+- The TypeScript generator doesn't carry doc comments, so the comment on the Specialization entry stays in the C# and `protocol.ts` didn't change. The Learning tells the Agent which name `specs` uses.
+
+## Comments
+
+**2026-10-26 (agent):** The acceptance check, from Orla's Journal `2026-10-26T20-34-58-161Z.log`, at level 5 with 5 spec points:
+
+- `train(agent, "Light", 5)` sent `/train Light 5`. The server answered "You spend 5 points and specialize further in Light Magic", "You have 0 specialization points left this level." and "You gain power in the Shadow Control spell list!".
+- The next skills Percept listed Light 5, Mana 1 and Void 1, which is what `train` waits for, and the snippet succeeded. The Journal doesn't record its return value. Shadowblast appeared.
+- No papercut about training since.
