@@ -14,4 +14,6 @@ What I've learned while playing, which I read again before I next act.
 - Level 5 reached avoiding mudmen (11 kills, 1 death in 15 min). Promoted to Druid by Torrance: `talkTo`, then `whisper(agent, id, "Druid")`. Got Druid Initiate Gloves (in backpack, not yet equipped) and the Nature line. 5 spec points unspent.
 - My buffs (Bark Skin, strength, constitution, Briarsprout) all take on the Pet: target it and cast as on myself.
 - At level 5 the Pet is a level 3 cub. A villainous youth (L5) killed the buffed wolf cub and then took me to 4% health: don't send it at same-level Mobs.
-- `tactics/petGrind.ts` (pet-aware grind) was cut off mid-session and is untested: try it in short runs before trusting it.
+- `tactics/pet.ts` `petGrind(agent, min, stopAt, [0, 2], ["mudman"], true)` works at level 5: buffed L3 pet tanks, I melee beside it; L5 villainous youths die in ~20 s for 242 XP. 8 kills in 5 min, no deaths.
+- Concentration list cuts target names too ("minor nature.."): compare with the cut name.
+- A Mind restart or relog loses the Pet: `ensurePet` again.

@@ -3,7 +3,6 @@ import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/t
 import { kill } from "../../../mind/src/tactics/kill.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
-import { buffSelf } from "./grind.ts";
 
 type Spell = SkillEntry;
 
@@ -59,11 +58,28 @@ export async function ensurePet(agent: Agent): Promise<Outcome> {
     if (!other || spell.level > other.level) best.set(kind(spell.details.description), spell);
   }
   for (const buff of best.values()) {
-    if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name) && kept.target === pet.name)) continue;
+    if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name) && kept.target === cut(pet.name))) continue;
     if (away(agent, pet.position) > 900) await runTo(agent, pet.position, 300);
     await castOn(agent, pet.objectId, buff.name);
   }
   return succeeded;
+}
+
+/** Puts its best Concentration buffs of each kind on itself (self-only ones too). */
+export async function buffSelf(agent: Agent): Promise<void> {
+  const me = agent.self.objectId;
+  if (me === undefined) return;
+  const kind = (description: string) => description.replace(/[\d.]+/g, "#");
+  const best = new Map<string, Spell>();
+  for (const spell of spells(agent)) {
+    if (!spell.details?.concentrationCost) continue;
+    const other = best.get(kind(spell.details.description));
+    if (!other || spell.level > other.level) best.set(kind(spell.details.description), spell);
+  }
+  for (const buff of best.values()) {
+    if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name) && kept.target !== cut(petNpc(agent)?.name ?? ""))) continue;
+    await castOn(agent, me, buff.name);
+  }
 }
 
 /** Its best heal by hit points for the Power it has. */
@@ -149,7 +165,7 @@ export async function petFight(agent: Agent, mobId: number, melee: boolean): Pro
  */
 export async function petGrind(agent: Agent, minutes: number, stopAtLevel: number, below = [0, 1], avoid: string[] = [], melee = false): Promise<Outcome & { kills?: number; deaths?: number; petDeaths?: number }> {
   const end = agent.clock.now() + minutes * 60_000;
-  let kills = 0, deaths = 0, petDeaths = 0;
+  let kills = 0, deaths = 0, petDeaths = 0, idle = 0;
   const shunned = new Map<number, number>();
 
   while (agent.clock.now() < end && agent.self.level < stopAtLevel) {
@@ -186,7 +202,13 @@ export async function petGrind(agent: Agent, minutes: number, stopAtLevel: numbe
         && npc.level >= level - Math.max(...below) && npc.level <= level - Math.min(...below) && (shunned.get(npc.objectId) ?? 0) < 2)
       .map((npc) => ({ npc, away: away(agent, npc.position) }))
       .sort((a, b) => a.away - b.away)[0];
-    if (!mob) return { ...failed("noMob"), kills, deaths, petDeaths };
+    if (!mob) {
+      // Wait a while for one to come into view or respawn.
+      if (++idle > 6) return { ...failed("noMob"), kills, deaths, petDeaths };
+      await agent.waitFor(() => undefined, 10_000);
+      continue;
+    }
+    idle = 0;
 
     const outcome = await petFight(agent, mob.npc.objectId, melee);
     if (outcome.ok) kills++;
