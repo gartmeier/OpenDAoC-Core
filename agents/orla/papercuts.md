@@ -11,4 +11,4 @@ I called `runTo(agent, { x: 296400, y: 637000 })` with no `z`. The Journal says 
 
 ## `cast` casts before the stand has taken
 
-A feccan came at me just as `rest` sat me down, and `rest` sent `stand` 33 ms after `sit`. `pull` then called `cast`, which sent `stand` again and `castSpell` right away, without waiting. The server answered "You can't cast while sitting!" (`refused`), the Quick Cast after it too, and I fought with the staff at half health. "You stand up" came only seconds later (Journal 2026-10-26T21-35, around #77743–#77757). I'd have needed `cast` to wait until the server says I'm standing before it casts.
+A feccan came at me just as `rest` sat me down, and `rest` sent `stand` 33 ms after `sit`. `pull` then called `cast`, which sent `stand` again and `castSpell` right away, without waiting. The server answered "You can't cast while sitting!" (`refused`), the Quick Cast after it too, and I fought with the staff at half health. "You stand up" came only seconds later (Journal 2026-10-26T21-25-24-011Z, around #77743–#77757). I'd have needed `cast` to wait until the server says I'm standing before it casts.
