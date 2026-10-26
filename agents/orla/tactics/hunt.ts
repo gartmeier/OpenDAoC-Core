@@ -124,6 +124,11 @@ export async function hunt(agent: Agent, levels: (level: number) => number[], un
       continue;
     }
 
+    if (agent.inventory.weight >= agent.inventory.capacity - 5) {
+      log.push(`heavy: ${agent.inventory.weight} of ${agent.inventory.capacity} lb`);
+      break;
+    }
+
     if (agent.self.healthPercent < 95 || agent.self.powerPercent < 95) {
       await rest(agent, 100);
       continue;
