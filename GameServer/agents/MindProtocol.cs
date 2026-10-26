@@ -539,7 +539,7 @@ namespace DOL.GS.Agents
     // What a spell is, as the server's forced tooltip update tells a 1.110+ client, and the client's tooltip window shows: each field under its label there, and only when it shows it.
     // `Target` is in the client's words where seen ("Realm", "Realm area effect") and the server's name otherwise. `MagicType` is the server's name, which is the client's word for those seen ("Energy").
     // A negative `PowerCost` is a percentage of maximum power. `CastingSeconds` is 0 for an instant spell. `Description` is the server's sentence for what it does.
-    // `ConcentrationCost` is the concentration a Concentration buff uses while it's up.
+    // `ConcentrationCost` is the concentration a Concentration buff uses while it's up. `RecastSeconds` is how long after casting it the spell can't be cast again, for a spell that has a wait.
     public sealed record SpellDetails(
         int Level,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] float? DurationSeconds,
@@ -550,7 +550,8 @@ namespace DOL.GS.Agents
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string MagicType,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Radius,
         string Description,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ConcentrationCost = null);
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ConcentrationCost = null,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] float? RecastSeconds = null);
 
     // The Agent's Character's concentration window: every Concentration buff it keeps up, in the order it cast them, which `cancelConcentration` numbers them by.
     public sealed record ConcentrationPercept(ConcentrationBuff[] Buffs) : Percept;

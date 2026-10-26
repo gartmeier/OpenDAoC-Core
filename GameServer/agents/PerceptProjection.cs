@@ -511,7 +511,7 @@ namespace DOL.GS.Agents
         }
 
         // Mirrors `SpellDelve.GetSpellString`, the tooltip the library sends with the bar for each spell's Effect, as the client's tooltip window shows it.
-        // The client words its target and magic type ids. It shows the duration, power cost, range, radius and magic type only when the spell has one, and a power cost only for a spell that costs power.
+        // The client words its target and magic type ids. It shows the duration, power cost, range, radius, magic type and recast timer only when the spell has one, and a power cost only for a spell that costs power.
         private static SpellDetails Details(ISpellHandler spellHandler)
         {
             Spell spell = spellHandler.Spell;
@@ -526,7 +526,8 @@ namespace DOL.GS.Agents
                 MagicType: SpellDelve.GetMagicTypeId(spell) != 0 ? spell.DamageType.ToString() : null,
                 Radius: spell.Radius != 0 ? spell.Radius : null,
                 Description: Encoded(SpellDelve.GetSpellDescription(spellHandler, spell)),
-                ConcentrationCost: spell.Concentration != 0 ? spell.Concentration : null);
+                ConcentrationCost: spell.Concentration != 0 ? spell.Concentration : null,
+                RecastSeconds: spell.RecastDelay > 0 ? spell.RecastDelay / 1000f : null);
         }
 
         // The client's words for a realm spell's target, as seen in the client, and the server's name for any other.

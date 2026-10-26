@@ -25,8 +25,11 @@ namespace DOL.GS.Agents
     /// <summary>One item a merchant sells, at the index the Mind's `buy` takes: its page times 30 plus its place on the page.</summary>
     public sealed record WikiWare(int Index, string Name, int Level, int DpsAf, int Speed, string ObjectType, long Price);
 
-    /// <summary>A class of the realm, with the Specializations it trains that bring Spells or Styles. A class Characters start as is its own base class.</summary>
-    public sealed record WikiClass(string Name, string BaseName, IReadOnlyList<WikiSpecialization> Specializations);
+    /// <summary>
+    /// A class of the realm, with the Specializations it trains that bring Spells or Styles. A class Characters start as is its own base class.
+    /// `SpecPointsMultiplier` sets how many Specialization points it gets each level past 5: ten times as many as the level's number.
+    /// </summary>
+    public sealed record WikiClass(string Name, string BaseName, int SpecPointsMultiplier, IReadOnlyList<WikiSpecialization> Specializations);
 
     /// <summary>One Specialization, by its database name as `skills` and `/train` name it, from the Character level the class gets it, with its Spell lines, baseline first, and its Styles.</summary>
     public sealed record WikiSpecialization(string Name, int Level, IReadOnlyList<WikiSpellLine> SpellLines, IReadOnlyList<WikiStyle> Styles);
@@ -217,7 +220,7 @@ namespace DOL.GS.Agents
                         .Select(spell => new WikiSpell(spell.Name, spell.Level, Details(caster, spell)))]))],
                     [.. spec.Styles.Select(style => new WikiStyle(style.Name, style.SpecLevelRequirement, PerceptProjection.Details(style, allStyles), Adds(style, characterClass.ID, caster)))]))
                     .ToList();
-                classes.Add(new WikiClass(characterClass.Name, characterClass.BaseName, wikiSpecs));
+                classes.Add(new WikiClass(characterClass.Name, characterClass.BaseName, characterClass.SpecPointsMultiplier, wikiSpecs));
             }
 
             return classes;
@@ -349,7 +352,7 @@ namespace DOL.GS.Agents
                 foreach (WikiSpellLine line in spec.SpellLines.Where(static line => line.Spells.Count > 0))
                 {
                     page.Append($"\n### {line.Name}{(line.Baseline ? " (baseline)" : "")}\n\n");
-                    page.Append("| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Magic type | What it does |\n|---|---|---|---|---|---|---|---|---|---|\n");
+                    page.Append("| Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Recast | Magic type | What it does |\n|---|---|---|---|---|---|---|---|---|---|---|\n");
 
                     foreach (WikiSpell spell in line.Spells)
                     {
@@ -363,7 +366,8 @@ namespace DOL.GS.Agents
                         };
                         string casting = d == null ? "" : d.CastingSeconds == 0 ? "instant" : $"{Number(d.CastingSeconds)} s";
                         string duration = d?.DurationSeconds is float seconds ? $"{Number(seconds)} s" : "";
-                        page.Append($"| {spell.Level} | {Cell(spell.Name)} | {d?.Target} | {cost} | {casting} | {d?.Range} | {d?.Radius} | {duration} | {d?.MagicType} | {Cell(d?.Description)} |\n");
+                        string recast = d?.RecastSeconds is float wait ? $"{Number(wait)} s" : "";
+                        page.Append($"| {spell.Level} | {Cell(spell.Name)} | {d?.Target} | {cost} | {casting} | {d?.Range} | {d?.Radius} | {duration} | {recast} | {d?.MagicType} | {Cell(d?.Description)} |\n");
                     }
                 }
 
@@ -380,7 +384,36 @@ namespace DOL.GS.Agents
                 }
             }
 
+            // `GamePlayer.GainExperience` keeps a Character of a class Characters start as at level 5 until a trainer makes it another.
+            bool startClass = characterClass.BaseName == characterClass.Name;
+            page.Append("\n## Specialization points\n\n");
+            page.Append("Raising a Specialization from level n to n + 1 costs n + 1 points. ");
+            page.Append(startClass
+                ? "These are the points a Character of this class gets as it levels, up to level 5: it can't level past that until a trainer makes it one of the classes that start as it.\n\n"
+                : "These are the points a Character of this class gets as it levels, and from level 40 also halfway through each level.\n\n");
+            page.Append("| Level | Points | Total |\n|---|---|---|\n");
+            int total = 0;
+
+            foreach ((string level, int points) in SpecPoints(characterClass.SpecPointsMultiplier, startClass ? 5 : GamePlayer.MAX_LEVEL))
+            {
+                total += points;
+                page.Append($"| {level} | {points} | {total} |\n");
+            }
+
             return page.ToString();
+        }
+
+        // As `GamePlayer.VerifySpecPoints` counts them: none at level 1, the level's number up to 5, then the multiplier times the level over 10,
+        // and halfway through each level from 40, which `GamePlayer.OnLevelSecondStage` gives, half that.
+        private static IEnumerable<(string Level, int Points)> SpecPoints(int multiplier, int lastLevel)
+        {
+            for (int level = 1; level <= lastLevel; level++)
+            {
+                yield return ($"{level}", level == 1 ? 0 : level <= 5 ? level : multiplier * level / 10);
+
+                if (level >= 40 && level < GamePlayer.MAX_LEVEL)
+                    yield return ($"{level}.5", multiplier * level / 20);
+            }
         }
 
         // A class's name, linked to its page when it has one. `folder` is the way from the page that links to the class pages.

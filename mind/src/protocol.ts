@@ -646,6 +646,7 @@ export interface SpellDetails {
   radius?: number;
   description: string;
   concentrationCost?: number;
+  recastSeconds?: number;
 }
 
 export interface InventoryItem {

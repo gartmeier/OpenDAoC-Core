@@ -1126,6 +1126,21 @@ namespace DOL.GS.Tests
             Assert.That(gleamRay.Description, Is.EqualTo("Inflicts 5 heat damage to the target."));
         }
 
+        // Way of the Eclipse has two Major Ethereal Detonations in the database: one costs power, and the other costs none but can't be cast again for 10 s.
+        [Test]
+        public void Project_ShouldGiveASpellsRecastTime_WhenItHasOne_ForTheSkillsCall()
+        {
+            SpellLine wayOfTheEclipse = new("Void", "Way of the Eclipse", "Void", true);
+            Spell costly = new(new DbSpell { Name = "Major Ethereal Detonation", SpellID = 4506, Target = "Enemy", Type = "DirectDamage", Range = 1500, Damage = 64, DamageType = (int) eDamageType.Cold, Power = 10, CastTime = 2.6 }, 17);
+            Spell free = new(new DbSpell { Name = "Major Ethereal Detonation", SpellID = 9802, Target = "Enemy", Type = "DirectDamage", Range = 1500, Damage = 64, DamageType = (int) eDamageType.Cold, CastTime = 2.6, RecastDelay = 10 }, 17);
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+            ((TestPlayer) client.Player).ListSpells = [(wayOfTheEclipse, [costly, free])];
+
+            SkillsPercept percept = (SkillsPercept) PerceptProjection.Project(client, SendUpdatePlayerSkills, [false]);
+
+            Assert.That(percept.Skills.Cast<SpellEntry>().Select(static spell => (spell.Details.PowerCost, spell.Details.RecastSeconds)), Is.EqualTo(new (int?, float?)[] { (10, null), (null, 10) }));
+        }
+
         // The server keeps the spell lines it last built, so it asks for them again whenever it sends them, as the real library does: a spell gained on levelling is listed.
         [Test]
         public void Project_ShouldListASpellTheCharacterGained_ForTheSkillsCallAfterALevelUp()

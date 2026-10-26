@@ -155,18 +155,20 @@ namespace DOL.GS.Tests
             Assert.That(pages["merchants/twm-2-arbor-glen-10.md"], Does.Contain("Arrows, a merchant"));
         }
 
-        private static readonly WikiClass MAGICIAN = new("Magician", "Magician",
+        private static readonly WikiClass MAGICIAN = new("Magician", "Magician", 10,
         [
             new WikiSpecialization("Void", 1, [new WikiSpellLine("Way of the Eclipse", true, [])], []),
         ]);
 
-        private static readonly WikiClass ELDRITCH = new("Eldritch", "Magician",
+        private static readonly WikiClass ELDRITCH = new("Eldritch", "Magician", 10,
         [
             new WikiSpecialization("Void", 1,
             [
                 new WikiSpellLine("Way of the Eclipse", true,
                 [
                     new WikiSpell("Major Ethereal Concussion", 5, new SpellDetails(5, null, 6, "Enemy", 1500, 2.5f, "Cold", null, "Does 22 cold damage.")),
+                    new WikiSpell("Major Ethereal Detonation", 17, new SpellDetails(17, null, 10, "Enemy", 1500, 2.6f, "Cold", null, "Does 64 cold damage.")),
+                    new WikiSpell("Major Ethereal Detonation", 17, new SpellDetails(17, null, null, "Enemy", 1500, 2.6f, "Cold", null, "Does 64 cold damage.", RecastSeconds: 10)),
                 ]),
                 new WikiSpellLine("Void Mastery", false,
                 [
@@ -177,7 +179,7 @@ namespace DOL.GS.Tests
             ], []),
         ]);
 
-        private static readonly WikiClass BLADEMASTER = new("Blademaster", "Guardian",
+        private static readonly WikiClass BLADEMASTER = new("Blademaster", "Guardian", 20,
         [
             new WikiSpecialization("Blades", 1, [],
             [
@@ -195,7 +197,7 @@ namespace DOL.GS.Tests
         [Test]
         public void ClassPage_ShouldListEachSpellLineOfASpecialization_BaselineFirst_WithWhatTheTooltipShows()
         {
-            Assert.That(ClassPages()["classes/eldritch.md"], Is.EqualTo(
+            Assert.That(ClassPages()["classes/eldritch.md"], Does.StartWith(
                 """
                 # Eldritch
 
@@ -205,17 +207,19 @@ namespace DOL.GS.Tests
 
                 ### Way of the Eclipse (baseline)
 
-                | Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Magic type | What it does |
-                |---|---|---|---|---|---|---|---|---|---|
-                | 5 | Major Ethereal Concussion | Enemy | 6 power | 2.5 s | 1500 |  |  | Cold | Does 22 cold damage. |
+                | Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Recast | Magic type | What it does |
+                |---|---|---|---|---|---|---|---|---|---|---|
+                | 5 | Major Ethereal Concussion | Enemy | 6 power | 2.5 s | 1500 |  |  |  | Cold | Does 22 cold damage. |
+                | 17 | Major Ethereal Detonation | Enemy | 10 power | 2.6 s | 1500 |  |  |  | Cold | Does 64 cold damage. |
+                | 17 | Major Ethereal Detonation | Enemy |  | 2.6 s | 1500 |  |  | 10 s | Cold | Does 64 cold damage. |
 
                 ### Void Mastery
 
-                | Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Magic type | What it does |
-                |---|---|---|---|---|---|---|---|---|---|
-                | 2 | Frost Wave | Enemy | 10% of max power | 3 s | 1500 | 350 | 9 s | Cold | Slows \| chills. |
-                | 3 | Chilling Shield | Self | 4 concentration | instant |  |  |  |  | Adds 5 armor. |
-                | 4 | Odd Spell |  |  |  |  |  |  |  |  |
+                | Level | Spell | Target | Cost | Casting time | Range | Radius | Duration | Recast | Magic type | What it does |
+                |---|---|---|---|---|---|---|---|---|---|---|
+                | 2 | Frost Wave | Enemy | 10% of max power | 3 s | 1500 | 350 | 9 s |  | Cold | Slows \| chills. |
+                | 3 | Chilling Shield | Self | 4 concentration | instant |  |  |  |  |  | Adds 5 armor. |
+                | 4 | Odd Spell |  |  |  |  |  |  |  |  |  |
 
                 """.ReplaceLineEndings("\n")));
         }
@@ -223,7 +227,7 @@ namespace DOL.GS.Tests
         [Test]
         public void ClassPage_ShouldListStylesBySpecializationLevel_WithTheirOpeningsAndWhatTheyAdd()
         {
-            Assert.That(ClassPages()["classes/blademaster.md"], Is.EqualTo(
+            Assert.That(ClassPages()["classes/blademaster.md"], Does.StartWith(
                 """
                 # Blademaster
 
@@ -255,6 +259,37 @@ namespace DOL.GS.Tests
         public void ClassPage_ShouldSaySo_ForAClassCharactersStartAs()
         {
             Assert.That(ClassPages()["classes/magician.md"], Does.StartWith("# Magician\n\nA class of Hibernia that Characters start as. "));
+        }
+
+        [Test]
+        public void ClassPage_ShouldEndWithTheSpecializationPointsEachLevelBrings_UpToLevelFive_ForAClassCharactersStartAs()
+        {
+            Assert.That(ClassPages()["classes/magician.md"], Does.EndWith(
+                """
+                ## Specialization points
+
+                Raising a Specialization from level n to n + 1 costs n + 1 points. These are the points a Character of this class gets as it levels, up to level 5: it can't level past that until a trainer makes it one of the classes that start as it.
+
+                | Level | Points | Total |
+                |---|---|---|
+                | 1 | 0 | 0 |
+                | 2 | 2 | 2 |
+                | 3 | 3 | 5 |
+                | 4 | 4 | 9 |
+                | 5 | 5 | 14 |
+
+                """.ReplaceLineEndings("\n")));
+        }
+
+        [Test]
+        public void ClassPage_ShouldGiveTheClassesPointsFromLevelSix_AndHalfwayThroughEachLevelFromForty()
+        {
+            string page = ClassPages()["classes/blademaster.md"];
+
+            Assert.That(page, Does.Contain("These are the points a Character of this class gets as it levels, and from level 40 also halfway through each level.\n"));
+            Assert.That(page, Does.Contain("| 5 | 5 | 14 |\n| 6 | 12 | 26 |\n"));
+            Assert.That(page, Does.Contain("| 40 | 80 | 1624 |\n| 40.5 | 40 | 1664 |\n| 41 | 82 | 1746 |\n"));
+            Assert.That(page, Does.EndWith("| 49.5 | 49 | 2879 |\n| 50 | 100 | 2979 |\n"));
         }
 
         [Test]
