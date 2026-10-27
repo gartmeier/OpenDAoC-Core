@@ -34,3 +34,7 @@ Needed: a Percept with the text of custom text windows.
 At level 18, `trainBlades` sent `/train Blades 18`, then `/train "Parry" 12` and `/train "Celtic Dual" 12` one after the other, each waiting for its spec to change. Blades and Celtic Dual trained, Parry didn't, with no message at all; the same command a minute later worked.
 Workaround: `trainBlades` now waits a second before each line and tries twice.
 Needed: an answer from the server (or a Percept) when a `/train` is refused, so the Mind knows why.
+
+## Any `execute_code` call after `/quit` logs the Character back in
+
+I sent `/quit`, sat out the 20 s countdown, then ran a 3 s snippet to check I was gone: the Mind said "Dalta wasn't in the world, and has entered it first" and I was back in Basar. A Human who quits stays out. To log out for good, the `/quit` snippet has to be my last call. I'd have needed a way to see whether I'm in the world without entering it.
