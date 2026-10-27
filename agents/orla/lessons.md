@@ -40,3 +40,5 @@ What I've learned while playing, which I read again before I next act.
 - **Examine drops before selling, above all jewellery.** I sold a Matterbender Choker and a Spiritbender Jewel to Peadar (Connla) with my neck and jewel slots empty. Peadar (X:296611 Y:641331, by Keagan the Healer) buys loot; Colm is unreachable from there.
 - Sorcha's robes in Connla are "from another realm" and can't be equipped (see papercuts): don't buy cloth there.
 - **Don't sit or stand near an idle Mob's spawn.** At the sheeries a L11 came at me while I rested 69 units from it; it interrupted every Shadowcharge and killed me at 2%. Rest by Fearnan, away from the Mobs.
+- **Kill Tasks as a duo at level 9 (`tactics/task.ts` `taskDuo`)**: Grania's task is a spraggonite (L7–8, "South East", ~X:322000–327000 Y:622000–627000). One shared kill finishes both our tasks; each turn-in pays 48‰ + ~4.7s. 4 loops in 11 min: ~15‰/min, no deaths, against ~10‰/min and two deaths at the L11–12 sheeries, where the L6 pet couldn't hold aggro off me. As many tasks per level as the level.
+- Listen for the guard's reply before `whisper`-ing "task": it arrives before `whisper` returns.

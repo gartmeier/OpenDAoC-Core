@@ -1,6 +1,7 @@
 import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/tactic.ts";
 import { answer } from "../../../mind/src/tactics/dialog.ts";
 import { cast } from "../../../mind/src/tactics/cast.ts";
+import { kill } from "../../../mind/src/tactics/kill.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
 
@@ -48,6 +49,7 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
   const cost = spell.details?.powerCost ?? 0;
   const mob = () => agent.surroundings.npcs.find((n) => n.objectId === objectId);
 
+  let interrupted = 0;
   for (let tries = 0; tries < 30; tries++) {
     if (agent.self.dead) return failed("died");
     const m = mob();
@@ -60,7 +62,10 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
     await agent.send({ name: "face", heading: headingTo(agent, m.position) });
     const me = agent.self.objectId;
     const onMe = me !== undefined && m.targetId === me && dist(agent.self.position, m.position) < 300;
+    // In melee on me, a nearly dead Mob interrupts every cast: finish it with the staff instead (a L11 sheerie killed me at 2%).
+    if (onMe && interrupted >= 1 && m.healthPercent <= 25) return await kill(agent, objectId);
     const out = await cast(agent, spell.name, objectId, onMe && agent.self.power >= 2 * cost && !agent.self.cooldowns.has("Quickcast") ? { quickCast: true } : undefined);
+    if (!out.ok && out.reason === "interrupted") interrupted++;
     if (!out.ok && out.reason === "tooFar") await runTo(agent, m.position, range - 400);
     if (!out.ok && !["interrupted", "noEffect", "tooFar", "mustWait", "noTarget"].includes(out.reason)) {
       console.log(`cast: ${out.reason}`);
@@ -74,11 +79,11 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
  * Hunts with a partner: assists on whatever fights the group (or, with `lead`, pulls Mobs of `levels` near the partner, announces each pull in group chat,
  * burns them down, and rests (saying so) when low. Stops after `minutes` or at `untilLevel`.
  */
-export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false, joinBelow = 75): Promise<Outcome> {
+export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false, joinBelow = 75, until: () => boolean = () => false): Promise<Outcome> {
   const end = Date.now() + minutes * 60_000;
   let kills = 0;
   const log: string[] = [];
-  while (Date.now() < end && agent.self.level < untilLevel) {
+  while (Date.now() < end && agent.self.level < untilLevel && !until()) {
     if (agent.self.dead) return failed("died");
     // A relog drops me from the Group: take the partner's invite again.
     const d = agent.self.dialog;
@@ -120,8 +125,8 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     }
 
     // Stay with the partner.
-    if (home && dist(agent.self.position, home) > 600) {
-      await runTo(agent, home, 250);
+    if (home && dist(agent.self.position, home) > 300) {
+      await runTo(agent, home, 150);
       continue;
     }
 
