@@ -1,10 +1,10 @@
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { describePercept, describePrimitive } from "./journal.ts";
 import type { Percept, PerceptMessage, Primitive, PrimitiveResultMessage } from "./protocol.ts";
 import { Runner } from "./runner.ts";
 import { readSayLine } from "./say-line.ts";
 import { SNIPPET_GLOBALS } from "./snippet-globals.ts";
+import { type Import, snippetModules } from "./snippet-modules.ts";
 import { summarize } from "./summary.ts";
 import { Agent, type Clock, failed, type Outcome, Stopped, succeeded, type Tactic } from "./tactic.ts";
 
@@ -127,6 +127,8 @@ export class Mind {
     }
 
     try {
+      // Disposed of when the snippet ends, with whatever it left running.
+      using modules = await snippetModules(this.#options.folder);
       const snippet = compile(code, this.#options.folder);
       const execution = new Execution(this.agent);
       this.#execution = execution;
@@ -144,7 +146,7 @@ export class Mind {
 
         try {
           ending = await Promise.race([
-            snippet(execution.agent, consoleInto(lines)).then(
+            modules.run(() => snippet(execution.agent, consoleInto(lines), modules.import)).then(
               (value): SnippetEnding => ({ value }),
               (error): SnippetEnding => ({ error }),
             ),
@@ -305,25 +307,18 @@ function describeError(error: unknown): string {
 
 const transpiler = new Bun.Transpiler({ loader: "ts" });
 
-type Snippet = (agent: Agent, console: Console) => Promise<unknown>;
+type Snippet = (agent: Agent, console: Console, imports: Import) => Promise<unknown>;
 
 // A dynamic import of a relative path, such as `import("./tactics/hunt.ts")`.
 const RELATIVE_IMPORT = /\bimport\(\s*(["'])(\.\.?\/[^"']*)\1\s*\)/g;
 
-/** The snippet as a function. Its relative imports resolve against `folder`, not against the Mind's own files. */
+/** The snippet as a function. Its relative imports resolve against `folder`, not against the Mind's own files, and go through `imports`. */
 function compile(code: string, folder: string): Snippet {
-  // The coding agent edits its Tactics between snippets, so each snippet imports them afresh.
-  const root = resolve(folder);
-
-  for (const path of Object.keys(require.cache)) {
-    if (path.startsWith(root))
-      delete require.cache[path];
-  }
-
-  const imports = code.replace(RELATIVE_IMPORT, (_, quote: string, path: string) => `import(${quote}${pathToFileURL(resolve(folder, path)).href}${quote})`);
-  const js = transpiler.transformSync(`const __snippet = async (agent, console, ${Object.keys(SNIPPET_GLOBALS).join(", ")}) => {\n${imports}\n};`);
+  // A plain `import()` here would load into the Mind's own module registry, even inside the snippet's module graph.
+  const imports = code.replace(RELATIVE_IMPORT, (_, _quote: string, path: string) => `__import(${JSON.stringify(resolve(folder, path))})`);
+  const js = transpiler.transformSync(`const __snippet = async (agent, console, __import, ${Object.keys(SNIPPET_GLOBALS).join(", ")}) => {\n${imports}\n};`);
   const snippet = new Function(`${js}\nreturn __snippet;`)();
-  return (agent, console) => snippet(agent, console, ...Object.values(SNIPPET_GLOBALS));
+  return (agent, console, imports) => snippet(agent, console, imports, ...Object.values(SNIPPET_GLOBALS));
 }
 
 /** How much of a snippet's console output a result keeps: its first and last lines, each cut short. */

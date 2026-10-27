@@ -349,6 +349,42 @@ test("a snippet imports the Agent's files as they are now, not as they were when
   expect((await t.mind.executeCode({ code })).text).toContain("Result:\n2\n");
 });
 
+test("a snippet imports a file again once a module it was missing is fixed", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "agent-"));
+  await Bun.write(join(folder, "tactics", "run-to.ts"), `export const destination = "Mularn";\n`);
+  await Bun.write(join(folder, "tactics", "grind.ts"), `export { destination } from "./runTo.ts";\n`);
+  const t = new TestMind({ folder });
+  const code = `const { destination } = await import("./tactics/grind.ts");\nreturn destination;`;
+  expect((await t.mind.executeCode({ code })).text).toContain("Cannot find module './runTo.ts'");
+
+  await Bun.write(join(folder, "tactics", "grind.ts"), `export { destination } from "./run-to.ts";\n`);
+
+  expect((await t.mind.executeCode({ code })).text).toContain('Result:\n"Mularn"\n');
+});
+
+test("a snippet imports a file again once an export it was missing from the Mind's own files is fixed", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "agent-"));
+  const inventory = JSON.stringify(join(import.meta.dir, "inventory.ts"));
+  await Bun.write(join(folder, "tactics", "slots.ts"), `export { SLOTS as slots } from ${inventory};\n`);
+  const t = new TestMind({ folder });
+  const code = `const { slots } = await import("./tactics/slots.ts");\nreturn slots === SLOT;`;
+  expect((await t.mind.executeCode({ code })).text).toContain("not found");
+
+  await Bun.write(join(folder, "tactics", "slots.ts"), `export { SLOT as slots } from ${inventory};\n`);
+
+  expect((await t.mind.executeCode({ code })).text).toContain("Result:\ntrue\n");
+});
+
+test("a snippet starts from fresh modules, so none of the state an earlier snippet left in them carries over", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "agent-"));
+  await Bun.write(join(folder, "tactics", "count.ts"), `let kills = 0;\nexport const count = () => ++kills;\n`);
+  const t = new TestMind({ folder });
+  const code = `const { count } = await import("./tactics/count.ts");\nreturn count();`;
+
+  expect((await t.mind.executeCode({ code })).text).toContain("Result:\n1\n");
+  expect((await t.mind.executeCode({ code })).text).toContain("Result:\n1\n");
+});
+
 test("a result that JSON can't hold comes back readable, maps included", async () => {
   const t = new TestMind();
 
