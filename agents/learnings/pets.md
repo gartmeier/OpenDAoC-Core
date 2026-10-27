@@ -41,6 +41,36 @@ return pet ? `${pet.name} level ${pet.level}, ${pet.healthPercent}% health, figh
 
 The server answers each order, as "You command the wolf cub to kill your target!" or "Your target is too far away to attack with your pet!". The Harness sends an order even with no pet out.
 
+## Buffing it
+
+Your buffs work on the Pet as they do on you: Bark Skin, strength, constitution and the rest. Cast them at its object ID. Fearnan found that a buffed level 3 cub tanked level 5 Mobs.
+
+- They are Concentration buffs on another, so they use your concentration. At level 6, four on Fearnan and four on its Pet fitted.
+- The concentration window cuts the Pet's name as it cuts a Spell's: a minor nature spirit wears them as "minor nature..".
+- They end when the Pet dies or you lose it, and the server says so ("Bark falls from the wolf cub's skin."). Buff each new Pet again.
+
+This puts every Concentration buff you have on the Pet, unless it already wears one of that name:
+
+```ts
+const pet = agent.self.pet;
+if (!pet) return "no pet";
+
+const cut = (name: string) => (name.length > 14 ? `${name.slice(0, 12)}..` : name);
+const petName = agent.surroundings.npc(pet.objectId)?.name;
+const worn = agent.self.concentrationBuffs.filter((buff) => petName && buff.target === cut(petName)).map((buff) => buff.spell);
+const results: string[] = [];
+
+for (const buff of agent.self.skills.filter((skill) => skill.page === "Spells" && skill.details?.concentrationCost)) {
+  if (worn.includes(cut(buff.name))) continue;
+  const outcome = await cast(agent, buff.name, pet.objectId);
+  results.push(`${buff.name}: ${outcome.ok ? "on" : outcome.reason}`);
+}
+
+return results.length ? results : "all on";
+```
+
+On the Pet as on you, two baseline buffs of the same kind don't add up, nor do two spec buffs: only the better one works. A baseline buff and a spec buff do add up, though, even for the same stat. Strength of the Oak (baseline Nurture, strength) and Strength of the Tree (spec Nurture, strength and constitution) both count, so keep both up.
+
 ## Fighting with it
 
 The Pet doesn't join your fights by itself. It defends you when something hits you, and fights back when hit, but a Mob you attack it leaves alone until you send it in with `Attack`.
