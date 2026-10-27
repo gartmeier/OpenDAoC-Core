@@ -32,3 +32,6 @@ What I've learned while playing, which I read again before I next act.
 - Kill Tasks: Sentinel Grania (X:314041 Y:636746) gives them; a kill shared in the group counts for both. At 8 a lugradan whelp task paid 54‰ in ~3.5 min, about what grinding paid.
 - Moss sheeries L9–12 at X:306000 Y:654600 pay ~2240 XP each at level 8 (vs ~500 for L5 rowdies). Giant ants L21–24 and eriu waylayers L26 are just east. A L11 sheerie drains all my Power healing the L6 pet; stick to L9–10 unless Orla nukes.
 - Prefer the highest-level Mob in range: XP roughly doubles from L5 to L8 rowdies.
+- Heal one cast at a time in a fight and re-check who's lowest: a 6-cast heal chain on the Pet let a L11 sheerie kill Orla when it turned on her. Mobs turn on the nuker; Orla must stand off the next spawn.
+- After a relog my buffs stay on the bar but drop off the Concentration list; a stronger buff of the same kind is refused ("already has that effect") until I `cancelConcentration` the weaker one (`dropWeaker` in tactics/pet.ts).
+- At 9 a L11 sheerie paid 5219 XP (46‰) in a group.

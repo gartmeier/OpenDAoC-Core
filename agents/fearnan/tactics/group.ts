@@ -2,7 +2,7 @@ import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/t
 import { distance, headingTowards } from "../../../mind/src/surroundings.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
-import { buffSelf, castOn, ensurePet, healMe, healPet, kept, petNpc } from "./pet.ts";
+import { buffSelf, castOn, dropWeaker, ensurePet, healMe, healPet, kept, petNpc } from "./pet.ts";
 
 const away = (agent: Agent, p: { x: number; y: number }) => {
   const at = agent.self.position;
@@ -31,8 +31,8 @@ function bestDot(agent: Agent) {
 }
 
 /** Heals the Group member `name` while below `below`% and in view. */
-export async function healMate(agent: Agent, name: string, below = 60): Promise<void> {
-  for (let i = 0; i < 4; i++) {
+export async function healMate(agent: Agent, name: string, below = 60, casts = 4): Promise<void> {
+  for (let i = 0; i < casts; i++) {
     const m = mate(agent, name);
     const heal = bestHeal(agent);
     if (!m?.player || !heal || (m.member.healthPercent ?? 100) >= below || m.member.dead) return;
@@ -58,6 +58,7 @@ export async function buffMate(agent: Agent, name: string): Promise<void> {
     const buff = agent.self.skills.filter((s) => s.page === "Spells" && kind.test(s.details?.description ?? "") && s.details?.concentrationCost)
       .sort((a, b) => b.level - a.level)[0];
     if (!buff || kept(agent, buff, name)) continue;
+    await dropWeaker(agent, buff, name);
     if ((buff.details?.concentrationCost ?? 0) > agent.self.concentration) continue;
     await castOn(agent, m.player.objectId, buff.name);
   }
@@ -134,14 +135,15 @@ export async function groupFight(agent: Agent, mobId: number, name: string): Pro
       const onMate = m?.player && agent.surroundings.attacking(m.player.objectId).some((npc) => npc.objectId === mobId);
       const melee = onMe || onMate || !agent.self.pet;
 
-      // Heals: the mate first, then itself, then the Pet. Out of melee they don't get interrupted.
+      // Heals: the mate first, then itself, then the Pet, one cast at a time so a mate the Mob turns on comes first at once.
+      // Out of melee they don't get interrupted.
       // Only with a heal it has the Power for: else the `continue`s would spin without awaiting anything, starve the connection's
       // heartbeat and get the Character dropped linkdead.
       const canHeal = !!bestHeal(agent);
-      if (canHeal && m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, name, onMate ? 95 : 70); continue; }
-      if (canHeal && agent.self.healthPercent < 45 && !onMe) { await striker.halt(); await healMe(agent, 70); continue; }
+      if (canHeal && m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, name, onMate ? 95 : 70, 1); continue; }
+      if (canHeal && agent.self.healthPercent < 45 && !onMe) { await striker.halt(); await healMe(agent, 70, 1); continue; }
       const pet = petNpc(agent);
-      if (canHeal && pet && pet.healthPercent < 45 && !onMe) { await striker.halt(); await healPet(agent, 70); continue; }
+      if (canHeal && pet && pet.healthPercent < 45 && !onMe) { await striker.halt(); await healPet(agent, 70, 1); continue; }
 
       // Its damage over time on the Mob, renewed as it runs out, while there's Power to spare for heals.
       const dot = bestDot(agent);

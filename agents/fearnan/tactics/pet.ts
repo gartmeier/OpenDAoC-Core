@@ -21,6 +21,20 @@ export function kept(agent: Agent, buff: Spell, target: string): boolean {
   return agent.self.concentrationBuffs.some((k) => k.spell === cut(buff.name) && k.cost === buff.details?.concentrationCost && k.target === cut(target));
 }
 
+/**
+ * Cancels weaker Concentration buffs of the same kind as `buff` that it keeps on `target`: the server refuses a stronger one
+ * ("already has that effect") while the weaker is on.
+ */
+export async function dropWeaker(agent: Agent, buff: Spell, target: string): Promise<void> {
+  const kind = (description: string) => description.replace(/[\d.]+/g, "#");
+  for (const k of agent.self.concentrationBuffs.filter((k) => k.target === cut(target))) {
+    const spell = spells(agent).find((s) => cut(s.name) === k.spell && s.details?.concentrationCost === k.cost);
+    if (!spell || spell.name === buff.name || kind(spell.details!.description) !== kind(buff.details!.description)) continue;
+    await agent.sendAndWait({ name: "cancelConcentration", spell: k.spell, target: k.target },
+      () => !agent.self.concentrationBuffs.some((c) => c.spell === k.spell && c.target === k.target && c.cost === k.cost) || undefined, 3_000);
+  }
+}
+
 /** The Pet as an NPC in view, if it has one. */
 export function petNpc(agent: Agent) {
   return agent.self.pet && agent.surroundings.npc(agent.self.pet.objectId);
@@ -78,6 +92,7 @@ export async function ensurePet(agent: Agent): Promise<Outcome> {
 
   for (const buff of bestBuffs(agent, true)) {
     if (kept(agent, buff, pet.name)) continue;
+    await dropWeaker(agent, buff, pet.name);
     if (away(agent, pet.position) > 900) await runTo(agent, pet.position, 300);
     await castOn(agent, pet.objectId, buff.name);
   }
@@ -89,7 +104,9 @@ export async function buffSelf(agent: Agent): Promise<void> {
   const me = agent.self.objectId;
   if (me === undefined) return;
   for (const buff of bestBuffs(agent, false)) {
-    if (kept(agent, buff, "Fearnan")) continue;
+    // After a relog the buffs stay on the buff bar but leave the Concentration list, and recasting them fails.
+    if (kept(agent, buff, "Fearnan") || agent.self.effects.some((e) => e.name === buff.name)) continue;
+    await dropWeaker(agent, buff, "Fearnan");
     await castOn(agent, me, buff.name);
   }
 }
@@ -102,8 +119,8 @@ function bestHeal(agent: Agent) {
 }
 
 /** Heals the Pet while it's below `below`% and there's Power. */
-export async function healPet(agent: Agent, below = 80): Promise<void> {
-  for (let i = 0; i < 6; i++) {
+export async function healPet(agent: Agent, below = 80, casts = 6): Promise<void> {
+  for (let i = 0; i < casts; i++) {
     const pet = petNpc(agent);
     const heal = bestHeal(agent);
     if (!pet || !heal || pet.healthPercent >= below) return;
@@ -113,8 +130,8 @@ export async function healPet(agent: Agent, below = 80): Promise<void> {
 }
 
 /** Heals itself while below `below`% and there's Power. */
-export async function healMe(agent: Agent, below = 70): Promise<void> {
-  for (let i = 0; i < 6; i++) {
+export async function healMe(agent: Agent, below = 70, casts = 6): Promise<void> {
+  for (let i = 0; i < casts; i++) {
     const heal = bestHeal(agent);
     if (!heal || agent.self.healthPercent >= below || agent.self.objectId === undefined) return;
     const reply = await castOn(agent, agent.self.objectId, heal.name);
