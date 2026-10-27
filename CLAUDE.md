@@ -2,11 +2,11 @@
 
 ### Issue tracker
 
-Issues are local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+Specs, tickets and milestones live on Forgejo at git.gartmeier.dev, driven with the `fj` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The five default triage roles, written on each issue file's `Status:` line. See `docs/agents/triage-labels.md`.
+The five default triage roles, as plain Forgejo labels. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
