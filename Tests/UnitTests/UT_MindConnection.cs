@@ -110,8 +110,35 @@ namespace DOL.GS.Tests
             Assert.That(refused, Is.EqualTo(new RefusedMessage("Greeen is linkdead.", true)));
         }
 
+        // A snippet's typo costs it the one Primitive, not the Agent's connection, which is its Character's (ADR 0005).
+        [TestCase("""{"type":"primitive","id":7,"primitive":{"name":"moveTo","x":531234,"y":478901}}""", "'z'")]
+        [TestCase("""{"type":"primitive","id":7,"primitive":{"name":"dance"}}""", "'dance'")]
+        public async Task PrimitiveAfterTheHello_ShouldBeAnsweredAsNotQueuedWithWhatsWrong_AndTheConnectionKept_WhenItCantBeRead(string message, string why)
+        {
+            AgentProperties.MIND_TOKEN = "secret";
+            MindLink agentsLink = null;
+
+            using SocketPair pair = await SocketPair.Open();
+            Task connection = MindConnection.Run(pair.Server, CancellationToken.None, (_, link, _) =>
+            {
+                agentsLink = link;
+                return Task.FromResult<LoginOutcome>(new LoginOutcome.Entering(new HarnessClient(link)));
+            }, TimeSpan.FromSeconds(10));
+
+            await Send(pair, Hello);
+            await Send(pair, message);
+            byte[] buffer = new byte[4096];
+            WebSocketReceiveResult result = await pair.Mind.ReceiveAsync(buffer, CancellationToken.None).WaitAsync(TimeLimit);
+            PrimitiveResultMessage answer = JsonSerializer.Deserialize<PrimitiveResultMessage>(Encoding.UTF8.GetString(buffer, 0, result.Count), new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+            Assert.That((answer.Id, answer.Queued), Is.EqualTo((7, false)));
+            Assert.That(answer.Reason, Does.Contain(why));
+            Assert.That(agentsLink.IsConnected, Is.True);
+            await pair.Mind.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+            await connection.WaitAsync(TimeLimit);
+        }
+
         [TestCase("""{"type":"dance"}""", "'dance'")]
-        [TestCase("""{"type":"primitive","id":1,"primitive":{"name":"dance"}}""", "'dance'")]
         [TestCase("""{"type":"primitive","id":1}""", "primitive")]
         [TestCase("not json", "isn't JSON")]
         [TestCase("""{"type":"hello","token":"secret","character":"Greeen"}""", "second hello")]

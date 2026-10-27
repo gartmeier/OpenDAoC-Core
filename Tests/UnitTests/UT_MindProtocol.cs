@@ -269,6 +269,27 @@ namespace DOL.GS.Tests
             Assert.That(error, Does.Contain("'z'"));
         }
 
+        // A snippet builds the Primitive, which nothing checks before it's sent, and the Mind builds the message around it.
+        [TestCase("""{"type":"primitive","id":9,"primitive":{"name":"moveTo","x":531234,"y":478901}}""", 9)]
+        [TestCase("""{"primitive":{"name":"moveItem","from":40},"id":12,"type":"primitive"}""", 12)]
+        [TestCase("""{"type":"primitive","id":3,"primitive":{"name":"dance"}}""", 3)]
+        [TestCase("""{"type":"primitive","id":3,"primitive":{}}""", 3)]
+        public void UnreadablePrimitiveId_ShouldGiveTheMessagesId_WhenOnlyItsPrimitiveCantBeRead(string json, int id)
+        {
+            Assert.That(MindProtocol.UnreadablePrimitiveId(Encoding.UTF8.GetBytes(json)), Is.EqualTo(id));
+        }
+
+        [TestCase("not json")]
+        [TestCase("""{"type":"dance","id":3,"primitive":{"name":"quit"}}""")]
+        [TestCase("""{"type":"primitive","id":3}""")]
+        [TestCase("""{"type":"primitive","id":"3","primitive":{"name":"quit"}}""")]
+        [TestCase("""{"type":"primitive","primitive":{"name":"quit"}}""")]
+        [TestCase("""[1, 2]""")]
+        public void UnreadablePrimitiveId_ShouldGiveNothing_WhenTheMessageItselfCantBeRead(string json)
+        {
+            Assert.That(MindProtocol.UnreadablePrimitiveId(Encoding.UTF8.GetBytes(json)), Is.Null);
+        }
+
         [Test]
         public void Write_ShouldWriteAPetWindowPercept_WithItsActionAndSettingsAsNames()
         {

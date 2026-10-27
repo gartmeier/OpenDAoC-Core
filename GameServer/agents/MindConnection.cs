@@ -78,8 +78,8 @@ namespace DOL.GS.Agents
 
             try
             {
-                while (await Receive() is (var message, var error))
-                    await Handle(message, error);
+                while (await Receive() is (var message, var error, var unreadablePrimitiveId))
+                    await Handle(message, error, unreadablePrimitiveId);
             }
             catch (Exception e) when (e is WebSocketException or OperationCanceledException)
             {
@@ -113,8 +113,8 @@ namespace DOL.GS.Agents
             }
         }
 
-        // `message` is null if it couldn't be read, and `error` says why.
-        private async Task Handle(MindMessage message, string error)
+        // `message` is null if it couldn't be read, and `error` says why. `unreadablePrimitiveId` is then the ID of a primitive message whose Primitive alone couldn't be.
+        private async Task Handle(MindMessage message, string error, int? unreadablePrimitiveId)
         {
             if (_closing)
                 return;
@@ -144,6 +144,15 @@ namespace DOL.GS.Agents
                 case HelloMessage:
                 {
                     Refuse("The Mind sent a second hello. Only its first message is a hello.");
+                    return;
+                }
+                // A snippet builds the Primitive, which nothing checks before it's sent. A mistake in it costs only that Primitive, not the Agent's connection.
+                case null when unreadablePrimitiveId is int id:
+                {
+                    if (log.IsInfoEnabled)
+                        log.Info($"{_name}'s Mind sent a Primitive the server couldn't read: {error}");
+
+                    _link.Send(new PrimitiveResultMessage(id, false, $"The server couldn't read the Primitive. {error}"));
                     return;
                 }
                 case null:
@@ -280,8 +289,8 @@ namespace DOL.GS.Agents
             return login.Task.WaitAsync(stopping);
         }
 
-        // Returns null once the Mind has closed the connection. Otherwise the message, or null and what's wrong with it.
-        private async Task<(MindMessage Message, string Error)?> Receive()
+        // Returns null once the Mind has closed the connection. Otherwise the message, or null and what's wrong with it, with the message's ID if only its Primitive couldn't be read.
+        private async Task<(MindMessage Message, string Error, int? UnreadablePrimitiveId)?> Receive()
         {
             using MemoryStream message = new();
             string error = null;
@@ -300,8 +309,15 @@ namespace DOL.GS.Agents
                 else if (error == null)
                     message.Write(_buffer, 0, result.Count);
 
-                if (result.EndOfMessage)
-                    return error != null ? (null, error) : (MindProtocol.Read(message.GetBuffer().AsSpan(0, (int) message.Length), out error), error);
+                if (!result.EndOfMessage)
+                    continue;
+
+                if (error != null)
+                    return (null, error, null);
+
+                ReadOnlySpan<byte> json = message.GetBuffer().AsSpan(0, (int) message.Length);
+                MindMessage read = MindProtocol.Read(json, out error);
+                return (read, error, read == null ? MindProtocol.UnreadablePrimitiveId(json) : null);
             }
         }
 

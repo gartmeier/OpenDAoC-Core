@@ -59,6 +59,35 @@ namespace DOL.GS.Agents
             }
         }
 
+        // For a message `Read` couldn't read: its ID, if it's a primitive message whose Primitive alone is what couldn't be read.
+        // Null when the message itself can't be read: it isn't JSON, isn't a primitive message, or has no ID or no Primitive object.
+        public static int? UnreadablePrimitiveId(ReadOnlySpan<byte> json)
+        {
+            JsonDocument document;
+
+            try
+            {
+                document = JsonDocument.Parse(json.ToArray());
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+
+            using (document)
+            {
+                JsonElement root = document.RootElement;
+
+                if (root.ValueKind is not JsonValueKind.Object
+                    || !root.TryGetProperty("type", out JsonElement type) || type.ValueKind is not JsonValueKind.String || type.GetString() != "primitive"
+                    || !root.TryGetProperty("primitive", out JsonElement primitive) || primitive.ValueKind is not JsonValueKind.Object
+                    || !root.TryGetProperty("id", out JsonElement id) || id.ValueKind is not JsonValueKind.Number || !id.TryGetInt32(out int value))
+                    return null;
+
+                return value;
+            }
+        }
+
         public static byte[] Write(ServerMessage message)
         {
             return JsonSerializer.SerializeToUtf8Bytes(message, _options);
