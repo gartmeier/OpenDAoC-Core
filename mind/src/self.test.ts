@@ -218,6 +218,16 @@ test("knows no pet before the server opens the pet window, then its pet and sett
   expect(agentSelf.pet).toBeUndefined();
 });
 
+// As when a Pet dies: the server updates the window with no Pet just before it closes it.
+test("knows no pet from a pet window update with object ID 0", () => {
+  const agentSelf = new Self(new FakeClock());
+  agentSelf.perceive(message(petWindow("Open", 0x0456)));
+
+  agentSelf.perceive(message(petWindow("Update", 0)));
+
+  expect(agentSelf.pet).toBeUndefined();
+});
+
 test("knows no Concentration buffs before the server says, then each it keeps up from the latest concentration Percept", () => {
   const agentSelf = new Self(new FakeClock());
   expect(agentSelf.concentrationBuffs).toEqual([]);

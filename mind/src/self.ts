@@ -160,7 +160,8 @@ export class Self {
         break;
       case "petWindow": {
         const { kind, action, ...pet } = percept;
-        this.#pet = action === "Close" ? undefined : pet;
+        // Object ID 0 is no Pet, as in the update the server sends just before it closes the window.
+        this.#pet = action === "Close" || pet.objectId === 0 ? undefined : pet;
         break;
       }
       case "dialog": {
