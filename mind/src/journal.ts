@@ -1,4 +1,5 @@
 // The Journal's lines: one for every Percept the Agent gets and every Primitive it sends, naming players, NPCs, World objects and items from its beliefs.
+import { GROUP_MEMBER_FLAGS } from "./group.ts";
 import { merchantIndex } from "./inventory.ts";
 import type { EffectEntry, InventoryItem, Percept, PerceptMessage, Primitive } from "./protocol.ts";
 import type { Position } from "./surroundings.ts";
@@ -92,6 +93,20 @@ function describe(agent: Agent, character: string, percept: Percept): string {
       return `dialog ${percept.code} (${percept.yesNo ? "yes or no" : "OK"})\t${percept.text}`;
     case "stats":
       return `stats\tconstitution lost ${percept.constitutionLost} max health ${percept.maxHealth}`;
+    case "targetChanged":
+      return `targetChanged #${percept.objectId} ${nameOf(percept.objectId)}`;
+    case "groupWindow":
+      return `groupWindow\t${percept.members.map((member) => `#${member.objectId} ${member.name} (level ${member.level} ${member.className})`).join(", ") || "no one"}`;
+    case "groupStatus":
+      return `groupStatus\t${percept.members
+        .map((member) => {
+          const flags = GROUP_MEMBER_FLAGS.filter((flag) => member[flag]);
+          const doing = member.inAnotherRegion ? "in another region" : [`health ${member.healthPercent}% power ${member.powerPercent}% endurance ${member.endurancePercent}%`, ...flags].join(" ");
+          return `#${member.objectId} ${nameOf(member.objectId)} ${doing}`;
+        })
+        .join(", ")}`;
+    case "groupPositions":
+      return `groupPositions\t${percept.members.map((member) => `#${member.objectId} ${nameOf(member.objectId)} ${member.x === undefined || member.y === undefined ? "in another region" : `zone ${member.zone} X:${member.x} Y:${member.y}`}`).join(", ")}`;
   }
 }
 
@@ -139,9 +154,9 @@ export function describePrimitive(agent: Agent, character: string, primitive: Pr
   }
 }
 
-// The Agent's own Character isn't in its Surroundings.
-function nameIn({ self, surroundings }: Agent, character: string, objectId: number): string {
-  return objectId === self.objectId ? character : (surroundings.object(objectId)?.name ?? "(unknown)");
+// The Agent's own Character isn't in its Surroundings, and a Group member far away is only in its Group.
+function nameIn({ self, surroundings, group }: Agent, character: string, objectId: number): string {
+  return objectId === self.objectId ? character : (surroundings.object(objectId)?.name ?? group.member(objectId)?.name ?? "(unknown)");
 }
 
 function describeItem(item: InventoryItem): string {

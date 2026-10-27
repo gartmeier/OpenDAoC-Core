@@ -125,7 +125,7 @@ One thing the Harness tells the Mind; only what a real game client would know, w
 _Avoid_: event, observation
 
 **Self**:
-What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere, which Effects are on it, how much Power it has, which Concentration buffs it keeps up and on whom, how much Constitution it has lost, which Pet it has, which Dialog is open, which Spell it's casting and which of its Spells and Abilities are on Cooldown, built from Percepts. Only that a Dialog was answered and which Spell it's casting come from the Primitives it sent, as a client knows what it clicked.
+What an Agent currently believes about its own Character, such as where it is, which way it faces, how fast it may run, whether it's on its way somewhere, which Effects are on it, how much Power it has, which Concentration buffs it keeps up and on whom, how much Constitution it has lost, which Pet it has, what it has targeted, which Dialog is open, which Spell it's casting and which of its Spells and Abilities are on Cooldown, built from Percepts. Only that a Dialog was answered, which Spell it's casting and the targets it picked itself come from the Primitives it sent, as a client knows what it clicked.
 _Avoid_: player, status, me
 
 **Surroundings**:

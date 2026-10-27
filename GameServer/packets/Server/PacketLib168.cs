@@ -1641,7 +1641,7 @@ namespace DOL.GS.PacketHandler
 			}
 		}
 
-		public virtual void SendGroupMembersUpdate(ReadOnlySpan<GameLiving> livings)
+		public virtual void SendGroupMembersUpdate(IReadOnlyList<GameLiving> livings)
 		{
 			if (m_gameClient.Player?.Group == null)
 				return;
@@ -1650,9 +1650,10 @@ namespace DOL.GS.PacketHandler
 
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.GroupMemberUpdate)))
 			{
-				foreach (GameLiving living in livings)
+				// By index, so the list costs no enumerator.
+				for (int i = 0; i < livings.Count; i++)
 				{
-					WriteGroupMemberUpdate(pak, living);
+					WriteGroupMemberUpdate(pak, livings[i]);
 					hasData = true;
 				}
 
@@ -1667,7 +1668,7 @@ namespace DOL.GS.PacketHandler
 			}
 		}
 
-		public virtual void SendGroupMembersIconsUpdate(ReadOnlySpan<GameLiving> livings)
+		public virtual void SendGroupMembersIconsUpdate(IReadOnlyList<GameLiving> livings)
 		{
 			if (m_gameClient.Player?.Group == null)
 				return;
@@ -1676,9 +1677,9 @@ namespace DOL.GS.PacketHandler
 
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.GroupMemberUpdate)))
 			{
-				foreach (GameLiving living in livings)
+				for (int i = 0; i < livings.Count; i++)
 				{
-					WriteGroupMemberIconsUpdate(pak, living);
+					WriteGroupMemberIconsUpdate(pak, livings[i]);
 					hasData = true;
 				}
 
@@ -3952,7 +3953,7 @@ namespace DOL.GS.PacketHandler
 			}
 		}
 
-		public virtual void SendGroupMembersMapUpdate(ReadOnlySpan<GameLiving> livings) { }
+		public virtual void SendGroupMembersMapUpdate(IReadOnlyList<GameLiving> livings) { }
 
 		protected virtual void SendInventorySlotsUpdateRange(List<eInventorySlot> slots, eInventoryWindowType windowType)
 		{

@@ -1,3 +1,4 @@
+import { Group } from "./group.ts";
 import { Inventory } from "./inventory.ts";
 import type { Percept, PerceptMessage, Primitive, PrimitiveResultMessage } from "./protocol.ts";
 import { Self } from "./self.ts";
@@ -54,14 +55,15 @@ interface Waiter {
 }
 
 /**
- * What a Tactic gets: the Agent's Primitives, its beliefs (Self, Surroundings and Inventory), and a way to wait for its beliefs to change (ADR 0008).
- * Every Percept goes to Self, Surroundings and Inventory first, then to whatever is waiting.
+ * What a Tactic gets: the Agent's Primitives, its beliefs (Self, Surroundings, Inventory and Group), and a way to wait for its beliefs to change (ADR 0008).
+ * Every Percept goes to Self, Surroundings, Inventory and Group first, then to whatever is waiting.
  * Stopping it ends every Tactic running on it: whatever they wait on or send next throws `Stopped`.
  */
 export class Agent {
   readonly self: Self;
   readonly surroundings = new Surroundings();
   readonly inventory = new Inventory();
+  readonly group = new Group();
   readonly clock: Clock;
   readonly random: () => number;
   readonly log: (line: string) => void;
@@ -87,6 +89,7 @@ export class Agent {
     this.self.perceive(message);
     this.surroundings.perceive(message);
     this.inventory.perceive(message);
+    this.group.perceive(message);
 
     for (const waiter of [...this.#waiters])
       waiter.check(message.percept);

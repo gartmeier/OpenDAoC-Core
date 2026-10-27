@@ -176,7 +176,7 @@ export interface CommandPetPrimitive {
   order: PetOrder;
 }
 
-export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | ConcentrationPercept | PetWindowPercept | CastStartedPercept | SpellLandedPercept | InterruptedPercept | CooldownsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
+export type Percept = BarePercept | MessagePercept | BarePacketPercept | PlayerCreatePercept | PlayerPositionPercept | NpcCreatePercept | ObjectCreatePercept | ObjectUpdatePercept | ObjectDeletePercept | ObjectRemovePercept | OwnPositionPercept | JumpPercept | MaxSpeedPercept | StatusPercept | PointsPercept | PlayerPercept | SkillsPercept | EffectsPercept | ConcentrationPercept | PetWindowPercept | TargetChangedPercept | GroupWindowPercept | GroupStatusPercept | GroupPositionsPercept | CastStartedPercept | SpellLandedPercept | InterruptedPercept | CooldownsPercept | DiedPercept | RevivedPercept | InventoryPercept | EncumbrancePercept | MoneyPercept | ExaminedPercept | MerchantWindowPercept | DialogPercept | StatsPercept | RoutedPercept | MovedPercept | ArrivedPercept | StoppedPercept;
 
 export interface BarePercept {
   kind: "bare";
@@ -418,6 +418,26 @@ export interface PetWindowPercept {
   walk: eWalkState;
 }
 
+export interface TargetChangedPercept {
+  kind: "targetChanged";
+  objectId: number;
+}
+
+export interface GroupWindowPercept {
+  kind: "groupWindow";
+  members: GroupMember[];
+}
+
+export interface GroupStatusPercept {
+  kind: "groupStatus";
+  members: GroupMemberStatus[];
+}
+
+export interface GroupPositionsPercept {
+  kind: "groupPositions";
+  members: GroupMemberPosition[];
+}
+
 export interface CastStartedPercept {
   kind: "castStarted";
   casterId: number;
@@ -628,6 +648,34 @@ export type ePetWindowAction = "Open" | "Update" | "Close";
 export type eAggressionState = "Aggressive" | "Defensive" | "Passive";
 
 export type eWalkState = "Follow" | "Stay" | "ComeHere" | "GoTarget";
+
+export interface GroupMember {
+  name: string;
+  className: string;
+  objectId: number;
+  level: number;
+}
+
+export interface GroupMemberStatus {
+  objectId: number;
+  healthPercent: number;
+  powerPercent: number;
+  endurancePercent: number;
+  dead: boolean;
+  mezzed: boolean;
+  diseased: boolean;
+  poisoned: boolean;
+  linkdead: boolean;
+  nearsighted: boolean;
+  inAnotherRegion: boolean;
+}
+
+export interface GroupMemberPosition {
+  objectId: number;
+  zone?: number;
+  x?: number;
+  y?: number;
+}
 
 export interface Cooldown {
   name: string;

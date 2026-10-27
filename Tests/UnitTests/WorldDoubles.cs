@@ -136,6 +136,22 @@ namespace DOL.GS.Tests
             return brain;
         }
 
+        // A Group of `members` in this order, the first leading, without what joining tells them or the timer that sends their positions.
+        public static Group Group(params GameLiving[] members)
+        {
+            Group group = (Group) RuntimeHelpers.GetUninitializedObject(typeof(Group));
+            typeof(Group).GetField("_groupMembers", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(group, new List<GameLiving>(members));
+            typeof(Group).GetField("_groupMembersLock", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(group, new System.Threading.Lock());
+
+            for (int i = 0; i < members.Length; i++)
+            {
+                members[i].Group = group;
+                members[i].GroupIndex = (byte) i;
+            }
+
+            return group;
+        }
+
         private static void AddToEffectList(TestPlayer player, ECSGameEffect effect)
         {
             var effects = (Dictionary<eEffect, List<ECSGameEffect>>) typeof(EffectListComponent).GetField("_effects", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(player.effectListComponent);
@@ -211,7 +227,11 @@ namespace DOL.GS.Tests
         public override bool IsUnderwater => Underwater;
         public override bool IsStealthed => Stealthed;
         public override Region CurrentRegion { get => Region; set => Region = value; }
-        public override ICharacterClass CharacterClass => new TestCharacterClass(ClassId);
+        public override ICharacterClass CharacterClass => new TestCharacterClass(ClassId, ClassName);
+        // The class's name, "Unknown" unless a test sets it.
+        public string ClassName { get; set; }
+        // The group window shows the health percent the player has.
+        public override byte HealthPercentGroupWindow => TestHealthPercent;
         public override bool IsOnHorse { get => false; set { } }
         public override short CurrentSpeed { get => Speed; set => Speed = value; }
         public override byte ManaPercent => TestManaPercent;
@@ -297,6 +317,12 @@ namespace DOL.GS.Tests
             set => m_dbCharacter = new DbCoreCharacter { Name = m_name, RPFlag = value };
         }
 
+        // The level comes from the character record.
+        public int CharacterLevel
+        {
+            set => m_dbCharacter = new DbCoreCharacter { Name = m_name, Level = value };
+        }
+
         // The option that hides other players' Graves. A Grave asks for it, so it needs a character record.
         public bool HideGraves
         {
@@ -358,15 +384,20 @@ namespace DOL.GS.Tests
             m_abilities = [];
             // The temporary properties the initializer would have made.
             typeof(GameLiving).GetField($"<{nameof(TempProperties)}>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new PropertyCollection());
+            // No debuffs, which the group window reads.
+            typeof(GameLiving).GetField($"<{nameof(DebuffCategory)}>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(this, new PropertyCalc.PropertyIndexer());
             Alive = true;
             Visible = true;
         }
 
         private sealed class TestCharacterClass : DefaultCharacterClass
         {
-            public TestCharacterClass(int id)
+            public TestCharacterClass(int id, string name)
             {
                 m_id = id;
+
+                if (name != null)
+                    m_name = name;
             }
         }
     }

@@ -119,7 +119,7 @@ namespace DOL.GS
             if (living is GamePlayer player)
             {
                 player.Duel?.Stop();
-                ReadOnlySpan<GameLiving> membersInGroup = CollectionsMarshal.AsSpan(GetMembersInTheGroup());
+                List<GameLiving> membersInGroup = GetMembersInTheGroup();
                 player.Out.SendGroupMembersUpdate(membersInGroup);
                 player.Out.SendGroupMembersIconsUpdate(membersInGroup);
                 AbstractMission groupMission = Mission;
@@ -475,7 +475,7 @@ namespace DOL.GS
                 }
 
                 if (updatesForPlayer.Count > 0)
-                    player.Out.SendGroupMembersUpdate(CollectionsMarshal.AsSpan(updatesForPlayer));
+                    player.Out.SendGroupMembersUpdate(updatesForPlayer);
             }
         }
 
@@ -493,7 +493,7 @@ namespace DOL.GS
             }
 
             if (updatesForPlayer.Count > 0)
-                player.Out.SendGroupMembersUpdate(CollectionsMarshal.AsSpan(updatesForPlayer));
+                player.Out.SendGroupMembersUpdate(updatesForPlayer);
         }
 
         public void UpdateMemberIcons(GameLiving living, bool updateOtherRegions)
@@ -517,7 +517,7 @@ namespace DOL.GS
                 }
 
                 if (updatesForPlayer.Count > 0)
-                    player.Out.SendGroupMembersIconsUpdate(CollectionsMarshal.AsSpan(updatesForPlayer));
+                    player.Out.SendGroupMembersIconsUpdate(updatesForPlayer);
             }
         }
 
@@ -535,7 +535,7 @@ namespace DOL.GS
             }
 
             if (updatesForPlayer.Count > 0)
-                player.Out.SendGroupMembersIconsUpdate(CollectionsMarshal.AsSpan(updatesForPlayer));
+                player.Out.SendGroupMembersIconsUpdate(updatesForPlayer);
         }
 
         public void UpdateGroupWindow()
@@ -736,7 +736,7 @@ namespace DOL.GS
                 var playersInGroup = _group.GetPlayersInTheGroup();
 
                 foreach (GamePlayer player in playersInGroup)
-                    player.Out.SendGroupMembersMapUpdate(CollectionsMarshal.AsSpan(playersInGroup));
+                    player.Out.SendGroupMembersMapUpdate(playersInGroup);
 
                 return POSITION_UPDATE_INTERVAL;
             }

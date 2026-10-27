@@ -151,7 +151,7 @@ namespace DOL.GS.Agents
 
         // The new Mind knows nothing of what the old one was told, though a real client never forgets. So the server tells the client again what it tells one entering the world (`WorldInitRequestHandler`), with the status and encumbrance it sends just after.
         // The client also forgets which NPCs, items and doors the server sent it, so that the server creates them anew, and which players it knows, so that it asks for them again.
-        // The pet window it still shows is opened again, which world entry never does, as a Character enters the world without a pet. A Dialog it hasn't answered is told again last.
+        // The pet window it still shows is opened again, which world entry never does, as a Character enters the world without a pet, and so are its group window and how every Group member is doing. A Dialog it hasn't answered is told again last.
         private void TellAnew()
         {
             GamePlayer player = Player;
@@ -174,6 +174,13 @@ namespace DOL.GS.Agents
 
             if (player.ControlledBrain is IControlledBrain pet)
                 packetLib.SendPetWindow(pet.Body, ePetWindowAction.Open, pet.AggressionState, pet.WalkState);
+
+            // As `PlayerInitRequestHandler` tells a Character entering the world in a Group. Positions follow within 2.5 s on their own.
+            if (player.Group is Group group)
+            {
+                packetLib.SendGroupWindowUpdate();
+                packetLib.SendGroupMembersUpdate(group.GetMembersInTheGroup());
+            }
 
             PlayerObjectCache cache = player.PlayerObjectCache;
 
@@ -579,6 +586,13 @@ namespace DOL.GS.Agents
                     Unqueue((byte) eClientPackets.PlayerHeadingUpdate);
                     _queuedHeading = null;
                     _movement.OnJump(jump);
+                    break;
+                }
+                // The client selects what the server tells it to, as a click would, which sets the server's target too.
+                case TargetChangedPercept changed when changed.ObjectId != _targetId:
+                {
+                    _targetId = (ushort) changed.ObjectId;
+                    Enqueue(_targetId == 0 ? ClientPackets1127.ClearTarget(_attacking) : ClientPackets1127.Target(_targetId));
                     break;
                 }
                 // The client forgets what it can't see any more, and its selection with it. When it was attacking it, as when it dies, the captured client also stops attacking and clears its target itself.

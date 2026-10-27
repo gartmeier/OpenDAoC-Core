@@ -1,3 +1,4 @@
+import { GROUP_MEMBER_FLAGS, type KnownGroupMember } from "./group.ts";
 import { BACKPACK_SLOTS, SLOT, type SlotName } from "./inventory.ts";
 import { at } from "./journal.ts";
 import type { MovementStatus } from "./self.ts";
@@ -8,7 +9,7 @@ import type { Agent } from "./tactic.ts";
 export const NEAR_LISTED = 10;
 
 /** What the Agent believes about itself, what's near it and what it carries, in a few lines, as every `execute_code` result ends. */
-export function summarize({ self, surroundings, inventory }: Agent, character: string): string {
+export function summarize({ self, surroundings, inventory, group }: Agent, character: string): string {
   const position = self.position;
   const where = position ? `at ${at(position)}` : "somewhere the server hasn't said yet";
   const specPoints = self.specPoints === 1 ? "1 spec point" : `${self.specPoints} spec points`;
@@ -23,11 +24,20 @@ export function summarize({ self, surroundings, inventory }: Agent, character: s
     return item ? [`${slot} ${item.name} (level ${item.level})`] : [];
   });
 
+  const members = group.members.filter((member) => member.objectId !== self.objectId);
+  // What it has targeted may be out of its Surroundings, as the Agent itself or a Group member far away.
+  const targetName = (objectId: number) => {
+    const name = surroundings.object(objectId)?.name ?? group.member(objectId)?.name;
+    return name ? ` ${name}` : "";
+  };
+
   return [
     `${character}, level ${self.level} ${self.className}, ${self.levelPermill}‰ of the way to level ${self.level + 1}, ${specPoints}.`,
     `Health ${self.healthPercent}% (${self.health}/${self.maxHealth}), endurance ${self.endurancePercent}%, ${power}${self.dead ? "dead" : self.sitting ? "sitting" : describeMovement(self.movement)} ${where}.`,
     nearHeading,
     ...near.slice(0, NEAR_LISTED).map(({ object, away }) => `  ${describeObject(object, self.objectId)}${away === undefined ? "" : `, ${Math.round(away)} away`}`),
+    ...(self.target === undefined ? [] : [`Target: #${self.target}${targetName(self.target)}.`]),
+    ...(members.length ? ["Group:", ...members.map((member) => `  ${describeMember(member, position)}`)] : []),
     `Equipped: ${equipped.join("; ") || "nothing"}.`,
     `Backpack: ${BACKPACK_SLOTS - inventory.freeBackpackSlots} of ${BACKPACK_SLOTS} slots used. Money: ${inventory.money} copper. Weight: ${inventory.weight} of ${inventory.capacity} lb.`,
   ].join("\n");
@@ -44,6 +54,18 @@ function describeMovement(movement: MovementStatus): string {
     case "stopped":
       return `stopped short (${movement.reason}), standing`;
   }
+}
+
+function describeMember(member: KnownGroupMember, from: { x: number; y: number } | undefined): string {
+  const doing = [
+    member.healthPercent === undefined ? "" : `health ${member.healthPercent}%`,
+    member.powerPercent === undefined ? "" : `power ${member.powerPercent}%`,
+    member.endurancePercent === undefined ? "" : `endurance ${member.endurancePercent}%`,
+    ...GROUP_MEMBER_FLAGS.filter((flag) => member[flag]),
+    member.inAnotherRegion ? "in another region" : "",
+    from && member.position ? `${Math.round(Math.hypot(member.position.x - from.x, member.position.y - from.y))} away` : "",
+  ].filter(Boolean);
+  return `#${member.objectId} ${member.name}, level ${member.level} ${member.className}${doing.length ? `, ${doing.join(", ")}` : ""}`;
 }
 
 function describeObject(object: KnownObject, selfId: number | undefined): string {

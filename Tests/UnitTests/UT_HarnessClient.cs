@@ -181,6 +181,34 @@ namespace DOL.GS.Tests
             await Close(mind);
         }
 
+        // `/assist` has the server tell the client to select what the assisted Character has targeted. The client selects it, as a click would, which sets the server's target.
+        [Test]
+        public async Task ChangeTarget_ShouldSelectTheNewTarget_AsAClickDoes()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+
+            client.OnPerceived(new TargetChangedPercept(0x1F0B));
+
+            Assert.That(client.TargetId, Is.EqualTo(0x1F0B));
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.Target(0x1F0B)])));
+            await Close(mind);
+        }
+
+        [Test]
+        public async Task ChangeTarget_ShouldSendNothing_ForWhatIsSelectedAlready()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            client.Dispatch(new TargetPrimitive(0x1F0B), mind.Link);
+            int queued = Inbound(client).Length;
+
+            client.OnPerceived(new TargetChangedPercept(0x1F0B));
+
+            Assert.That(Inbound(client), Has.Length.EqualTo(queued));
+            await Close(mind);
+        }
+
         // A client forgets what it can't see any more, and its selection with it.
         [Test]
         public async Task PositionUpdate_ShouldCarryNoTarget_OnceTheTargetHasGoneOutOfView()
@@ -907,6 +935,24 @@ namespace DOL.GS.Tests
             Assert.That(calls.Names.TakeLast(2), Is.EqualTo(new[] { nameof(IPacketLib.SendEncumbrance), nameof(IPacketLib.SendPetWindow) }));
         }
 
+        // What `PlayerInitRequestHandler` sends a Character entering the world in a Group: the group window and how every member is doing.
+        [Test]
+        public async Task TakeOver_ShouldHaveTheServerSendTheGroupWindowAndEveryMembersStatus_AfterWhatWorldEntryTells_WhileTheCharacterIsInAGroup()
+        {
+            FakeMind oldMind = new();
+            FakeMind newMind = new();
+            HarnessClient client = InWorld(oldMind.Link, 1);
+            WorldDoubles.Inventory((TestPlayer) client.Player);
+            RecordingPacketLib calls = RecordingPacketLib.Install(client);
+            WorldDoubles.ObjectCache((TestPlayer) client.Player);
+            WorldDoubles.Group(client.Player, WorldDoubles.Player(WorldDoubles.Client(0x0304), "Vue"));
+
+            client.TakeOver(newMind.Link);
+            await Close(newMind);
+
+            Assert.That(calls.Names.TakeLast(3), Is.EqualTo(new[] { nameof(IPacketLib.SendEncumbrance), nameof(IPacketLib.SendGroupWindowUpdate), nameof(IPacketLib.SendGroupMembersUpdate) }));
+        }
+
         [Test]
         public async Task TakeOver_ShouldTellTheNewMindNoDialog_OnceTheOpenOneWasAnswered()
         {
@@ -1061,6 +1107,26 @@ namespace DOL.GS.Tests
             Assert.That(udp.IssuedTimestamp, Is.Zero);
             Assert.That(tcp.IssuedTimestamp, Is.Zero);
             await Close(mind);
+        }
+
+        // The group updates hand their members over as a list: the runtime proxy throws on its first call of a method that takes a span (ADR 0001).
+        [Test]
+        public async Task Out_ShouldTellTheMindAGroupMembersPosition_ThroughTheRuntimeProxy()
+        {
+            FakeMind mind = new();
+            HarnessClient client = InWorld(mind.Link, 0x0101);
+            using AgentTrace trace = new("Greeen", () => TextWriter.Null);
+            IPacketLib packetLib = HarnessPacketLib.Create(client, trace);
+            TestPlayer vue = WorldDoubles.Player(WorldDoubles.Client(0x0304), "Vue");
+            vue.ObjectID = 0x0456;
+            vue.Region = client.Player.CurrentRegion;
+            (vue.X, vue.Y) = (300000, 640000);
+
+            packetLib.SendGroupMembersMapUpdate([vue]);
+            await Close(mind);
+
+            Assert.That(mind.Sent.OfType<PerceptMessage>().Select(static message => message.Percept).OfType<GroupPositionsPercept>().Single().Members,
+                Is.EqualTo(new GroupMemberPosition[] { new(0x0456, 202, 300000, 640000) }));
         }
 
         // Every Harness client has a Mind. This one's link sends nowhere and is closed afterwards.

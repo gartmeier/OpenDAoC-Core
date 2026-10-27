@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { type Entry, Mind, type MindOptions } from "./mind.ts";
 import type { Percept, Primitive } from "./protocol.ts";
 import { FakeClock, settle } from "./test-agent.ts";
-import { encumbrance, inventory, item, message, money, npcCreate, objectCreate, ownPosition, player, playerCreate, points, sayLine, status } from "./test-percepts.ts";
+import { castStarted, encumbrance, gameMessage, groupLine, groupMember, groupPositions, groupStatus, groupWindow, inventory, item, memberStatus, message, money, npcCreate, objectCreate, objectDelete, objectUpdate, ownPosition, petWindow, player, playerCreate, points, sayLine, spellLanded, status, targetChanged } from "./test-percepts.ts";
 
 // A Mind on a clock the test moves on by hand, recording the Primitives it sends and the Journal it writes.
 class TestMind {
@@ -167,6 +167,88 @@ test("the Agent's own stop, or anything else said, doesn't abort a snippet", asy
   expect((await running).isError).toBe(false);
 });
 
+test("a Group member's line in group chat ends the snippet, with nothing attacking, and the line comes with the result", async () => {
+  const t = new TestMind();
+  await t.perceive(ownPosition(296000, 642000, 4848), groupWindow(groupMember("Greeen", 17), groupMember("Fearnan", 0x0456)));
+  const running = t.mind.executeCode({ code: `await agent.send({ name: "attack", on: true });\n${WAIT_FOR_EVER}` });
+  await settle();
+
+  await t.perceive(groupLine("Fearnan", "rest here?"));
+  const { text, isError } = await running;
+
+  expect(isError).toBe(true);
+  expect(text).toContain("Aborted by a line Fearnan said in group chat after 0 s.");
+  expect(text).toContain('CT_Group\t[Party] Fearnan: "rest here?"');
+  expect(t.take()).toEqual([{ name: "attack", on: true }, { name: "attack", on: false }, { name: "stop" }]);
+});
+
+test("a Group member's line ends the snippet only once no Mob is attacking the Agent, a Group member or its Pet", async () => {
+  for (const attacked of [17, 0x0456, 0x0500]) {
+    const t = new TestMind();
+    await t.perceive(
+      ownPosition(296000, 642000, 4848),
+      groupWindow(groupMember("Greeen", 17), groupMember("Fearnan", 0x0456)),
+      petWindow("Open", 0x0500),
+      npcCreate(100, "mudman", 296300, 642400, 4848),
+      objectUpdate(100, 296300, 642400, 4848, { targetId: attacked }),
+    );
+    const running = t.mind.executeCode({ code: WAIT_FOR_EVER });
+    await settle();
+
+    await t.perceive(groupLine("Fearnan", "help!"), ownPosition(296000, 642000, 4848));
+    let ended = false;
+    void running.then(() => (ended = true));
+    await settle();
+    expect(ended).toBe(false);
+
+    await t.perceive(objectDelete(100));
+    expect((await running).text).toContain("Aborted by a line Fearnan said in group chat");
+  }
+});
+
+test("a Group member's line waits for the Agent's cast to land before it ends the snippet", async () => {
+  const t = new TestMind();
+  await t.perceive(ownPosition(296000, 642000, 4848), groupWindow(groupMember("Greeen", 17), groupMember("Fearnan", 0x0456)));
+  const running = t.mind.executeCode({ code: `await agent.send({ name: "castSpell", spell: "Shadowblast" });\n${WAIT_FOR_EVER}` });
+  await settle();
+  await t.perceive(castStarted(17, 3000));
+
+  await t.perceive(groupLine("Fearnan", "pull"));
+  let ended = false;
+  void running.then(() => (ended = true));
+  await settle();
+  expect(ended).toBe(false);
+
+  await t.perceive(spellLanded(17, 100));
+  expect((await running).text).toContain("Aborted by a line Fearnan said in group chat");
+});
+
+test("the Agent's own group line, and lines said or sent to it, don't end a snippet", async () => {
+  const t = new TestMind();
+  await t.perceive(groupWindow(groupMember("Greeen", 17), groupMember("Fearnan", 0x0456)));
+  const running = t.mind.executeCode({ code: `await agent.waitFor(() => undefined, 1000);\nreturn "done";` });
+  await settle();
+
+  await t.perceive(groupLine("Greeen", "on my way"), sayLine('Fearnan says, "hello"'), gameMessage('Fearnan sends, "psst"', "CT_Send"));
+  await t.clock.advance(1000);
+
+  expect((await running).isError).toBe(false);
+});
+
+test("a Group member's line between snippets doesn't end the next one", async () => {
+  const t = new TestMind();
+  await t.perceive(groupWindow(groupMember("Greeen", 17), groupMember("Fearnan", 0x0456)));
+  await t.mind.executeCode({ code: `return 1;` });
+  await t.perceive(groupLine("Fearnan", "ready?"));
+
+  const running = t.mind.executeCode({ code: `await agent.waitFor(() => undefined, 1000);\nreturn "done";` });
+  await settle();
+  await t.perceive(ownPosition(296000, 642000, 4848));
+  await t.clock.advance(1000);
+
+  expect((await running).isError).toBe(false);
+});
+
 test("every result ends with what the Agent believes about itself, what's near it and what it carries", async () => {
   const t = new TestMind();
   await t.perceive(
@@ -206,6 +288,43 @@ test("the summary gives Power after endurance, for a Character that has Power", 
   expect(text).toContain("Health 80% (40/50), endurance 90%, power 25% (3/12), standing at X:296000 Y:642000 Z:4848.");
 });
 
+test("the summary lists the Agent's Group members, but not itself, with how they're doing and how far away", async () => {
+  const t = new TestMind();
+  await t.perceive(
+    ownPosition(296000, 642000, 4848),
+    groupWindow(groupMember("Greeen", 17, "Guardian", 3), groupMember("Fearnan", 0x0456, "Druid", 8), groupMember("Dalta", 0x0789, "Blademaster", 20)),
+    groupStatus(memberStatus(0x0456, { healthPercent: 40, powerPercent: 30, endurancePercent: 90, mezzed: true }), memberStatus(0x0789, { healthPercent: 0, dead: true })),
+    groupPositions({ objectId: 0x0456, zone: 202, x: 296000, y: 642400 }),
+  );
+
+  const { text } = await t.mind.executeCode({ code: `return 1;` });
+
+  expect(text).toContain(
+    [
+      "Group:",
+      "  #1110 Fearnan, level 8 Druid, health 40%, power 30%, endurance 90%, mezzed, 400 away",
+      "  #1929 Dalta, level 20 Blademaster, health 0%, power 100%, endurance 100%, dead",
+    ].join("\n"),
+  );
+});
+
+test("the summary names what the Agent has targeted", async () => {
+  const t = new TestMind();
+  await t.perceive(ownPosition(296000, 642000, 4848), npcCreate(100, "mudman", 296300, 642400, 4848, { level: 2 }), targetChanged(100));
+
+  const { text } = await t.mind.executeCode({ code: `return 1;` });
+
+  expect(text).toContain("Target: #100 mudman.");
+});
+
+test("the summary leaves the Group out while the Agent isn't in one", async () => {
+  const t = new TestMind();
+
+  const { text } = await t.mind.executeCode({ code: `return 1;` });
+
+  expect(text).not.toContain("Group:");
+});
+
 test("the summary lists a World object near the Agent, such as its Grave", async () => {
   const t = new TestMind();
   await t.perceive(ownPosition(296000, 642000, 4848), objectCreate(300, "Greeen's Grave", 296000, 642300, 4848));
@@ -220,6 +339,23 @@ test("the Journal names a World object as it comes into view", async () => {
   await t.perceive({ ...objectCreate(300, "Greeen's Grave", 296000, 642300, 4848), heading: 1024 });
 
   expect(t.journal).toEqual(["#1\t0.100 s\tobjectCreate #300 Greeen's Grave\tX:296000 Y:642300 Z:4848 heading 1024 model 637"]);
+});
+
+test("the Journal names the Group members, how they're doing and where they are, and a target the server picked", async () => {
+  const t = new TestMind();
+  await t.perceive(
+    groupWindow(groupMember("Greeen", 17, "Guardian", 3), groupMember("Fearnan", 0x0456, "Druid", 8)),
+    groupStatus(memberStatus(0x0456, { healthPercent: 40, powerPercent: 30, dead: true }), memberStatus(0x0789, { inAnotherRegion: true })),
+    groupPositions({ objectId: 0x0456, zone: 202, x: 300000, y: 640000 }, { objectId: 0x0789 }),
+    targetChanged(0x0456),
+  );
+
+  expect(t.journal).toEqual([
+    "#1\t0.100 s\tgroupWindow\t#17 Greeen (level 3 Guardian), #1110 Fearnan (level 8 Druid)",
+    "#1\t0.200 s\tgroupStatus\t#1110 Fearnan health 40% power 30% endurance 100% dead, #1929 (unknown) in another region",
+    "#1\t0.300 s\tgroupPositions\t#1110 Fearnan zone 202 X:300000 Y:640000, #1929 (unknown) in another region",
+    "#1\t0.400 s\ttargetChanged #1110 Fearnan",
+  ]);
 });
 
 test("each result has the chat and game messages since the last call, newest 50", async () => {

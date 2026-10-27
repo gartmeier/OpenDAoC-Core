@@ -686,9 +686,10 @@ namespace DOL.GS.PacketHandler
         void SendQuestSubscribeCommand(GameNPC invitingNPC, ushort questid, string inviteMessage);
         void SendQuestAbortCommand(GameNPC abortingNPC, ushort questid, string abortMessage);
         void SendGroupWindowUpdate();
-        void SendGroupMembersUpdate(ReadOnlySpan<GameLiving> livings);
-        void SendGroupMembersIconsUpdate(ReadOnlySpan<GameLiving> livings);
-        void SendGroupMembersMapUpdate(ReadOnlySpan<GameLiving> livings);
+        // Lists rather than spans, which the Harness's runtime proxy (`HarnessPacketLib`) can't pass on.
+        void SendGroupMembersUpdate(IReadOnlyList<GameLiving> livings);
+        void SendGroupMembersIconsUpdate(IReadOnlyList<GameLiving> livings);
+        void SendGroupMembersMapUpdate(IReadOnlyList<GameLiving> livings);
         void SendInventoryItemsUpdate(List<DbInventoryItem> itemsToUpdate);
         void SendInventorySlotsUpdate(List<eInventorySlot> slots);
         void SendInventoryItemsUpdate(eInventoryWindowType windowType, List<DbInventoryItem> itemsToUpdate);

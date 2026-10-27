@@ -20,3 +20,15 @@ export function saidBy(name: string, percept: Percept | undefined): boolean {
   const npc = name.toLowerCase();
   return speaker === npc || speaker === `the ${npc}`;
 }
+
+// How a group chat line reads to everyone in the Group, the speaker included (`Group.SendMessageToGroupMembers` in the server): `[Party] Fearnan: "rest here?"`.
+const GROUP_LINE = /^\[Party\] (.+?): "([\s\S]*)"$/;
+
+/** Who said what in group chat, or nothing for a message that isn't a group line. */
+export function readGroupLine(percept: Percept): { speaker: string; words: string } | undefined {
+  if (percept.kind !== "message" || percept.chatType !== "CT_Group")
+    return undefined;
+
+  const [, speaker, words] = GROUP_LINE.exec(percept.text) ?? [];
+  return speaker && words !== undefined ? { speaker, words } : undefined;
+}

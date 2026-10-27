@@ -276,6 +276,10 @@ namespace DOL.GS.Agents
     [JsonDerivedType(typeof(EffectsPercept), "effects")]
     [JsonDerivedType(typeof(ConcentrationPercept), "concentration")]
     [JsonDerivedType(typeof(PetWindowPercept), "petWindow")]
+    [JsonDerivedType(typeof(TargetChangedPercept), "targetChanged")]
+    [JsonDerivedType(typeof(GroupWindowPercept), "groupWindow")]
+    [JsonDerivedType(typeof(GroupStatusPercept), "groupStatus")]
+    [JsonDerivedType(typeof(GroupPositionsPercept), "groupPositions")]
     [JsonDerivedType(typeof(CastStartedPercept), "castStarted")]
     [JsonDerivedType(typeof(SpellLandedPercept), "spellLanded")]
     [JsonDerivedType(typeof(InterruptedPercept), "interrupted")]
@@ -587,6 +591,44 @@ namespace DOL.GS.Agents
     // The Agent's Character's pet window: `Open` when it gets a pet, `Update` when the Pet's aggression or walk changes, `Close` when it loses the Pet, which then has `ObjectId` 0.
     // `ObjectId` is the Pet's, as its `npcCreate` has it. The packet's effect icons aren't carried.
     public sealed record PetWindowPercept(int ObjectId, ePetWindowAction Action, eAggressionState Aggression, eWalkState Walk) : Percept;
+
+    // The server has the client select `ObjectId`, 0 for nothing, as `/assist` does with what the assisted Character has targeted. The client then selects it, as a click would.
+    public sealed record TargetChangedPercept(int ObjectId) : Percept;
+
+    // The Agent's Character's group window: every Group member in the window's order, its own Character too, or no one when it isn't in a Group.
+    // Sent when someone joins or leaves, the leader changes, members are reordered or a name changes.
+    public sealed record GroupWindowPercept(GroupMember[] Members) : Percept;
+
+    // One Group member, by the object ID its `playerCreate` has.
+    public sealed record GroupMember(string Name, string ClassName, int ObjectId, int Level);
+
+    // How the Group members the server names are doing, as the group window shows it, sent when they join and whenever their percents or some of their Effects change.
+    public sealed record GroupStatusPercept(GroupMemberStatus[] Members) : Percept;
+
+    // One Group member's health, Power and endurance percent and status. A member in another region has only `InAnotherRegion`, and 0 for the rest.
+    // `Nearsighted` is a spell or archery range debuff, which the server doesn't send an update for on its own.
+    public sealed record GroupMemberStatus(
+        int ObjectId,
+        int HealthPercent,
+        int PowerPercent,
+        int EndurancePercent,
+        bool Dead,
+        bool Mezzed,
+        bool Diseased,
+        bool Poisoned,
+        bool Linkdead,
+        bool Nearsighted,
+        bool InAnotherRegion);
+
+    // Where the Agent's Group members are, as the client's map shows them, sent every 2.5 s for every member but the Agent's own Character.
+    public sealed record GroupPositionsPercept(GroupMemberPosition[] Members) : Percept;
+
+    // One Group member's zone and position in global coordinates; the packet gives no height. All three are null for a member in another region, whom the packet gives no place.
+    public sealed record GroupMemberPosition(
+        int ObjectId,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Zone,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? X,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Y);
 
     // A caster in view started a cast, the Agent's Character and Mobs included: its object ID and how long the cast takes, 0 for an instant spell.
     // The server sends it once every check before the cast has passed, and not at all for an instant spell that isn't harmful. Which spell isn't carried: a client shows only its animation.

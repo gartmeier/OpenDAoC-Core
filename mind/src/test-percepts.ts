@@ -12,6 +12,12 @@ import type {
   EffectsPercept,
   EncumbrancePercept,
   ExaminedPercept,
+  GroupMember,
+  GroupMemberPosition,
+  GroupMemberStatus,
+  GroupPositionsPercept,
+  GroupStatusPercept,
+  GroupWindowPercept,
   InterruptedPercept,
   InventoryItem,
   InventoryPercept,
@@ -41,6 +47,7 @@ import type {
   StatusPercept,
   StopReason,
   StoppedPercept,
+  TargetChangedPercept,
 } from "./protocol.ts";
 
 export function message(percept: Percept, elapsedMs = 1000): PerceptMessage {
@@ -54,6 +61,11 @@ export function ownPosition(x: number, y: number, z: number, objectId = 17): Own
 
 export function sayLine(text: string): Percept {
   return { kind: "message", text, chatType: "CT_Say", chatLocation: "CL_ChatWindow" };
+}
+
+/** A line in group chat, as `Group.SendMessageToGroupMembers` writes it for everyone in the Group, the speaker included. */
+export function groupLine(speaker: string, words: string): Percept {
+  return { kind: "message", text: `[Party] ${speaker}: "${words}"`, chatType: "CT_Group", chatLocation: "CL_ChatWindow" };
 }
 
 /** A game message, of the type the server gives every cast refusal unless said otherwise. */
@@ -243,6 +255,47 @@ export function concentration(...buffs: ConcentrationBuff[]): ConcentrationPerce
 /** The pet window, for the pet with object ID `objectId` (0 when it closes), defensive and following unless said otherwise. */
 export function petWindow(action: PetWindowPercept["action"], objectId: number, aggression: PetWindowPercept["aggression"] = "Defensive", walk: PetWindowPercept["walk"] = "Follow"): PetWindowPercept {
   return { kind: "petWindow", objectId, action, aggression, walk };
+}
+
+/** The group window, with these members in order. */
+export function groupWindow(...members: GroupMember[]): GroupWindowPercept {
+  return { kind: "groupWindow", members };
+}
+
+export function groupMember(name: string, objectId: number, className = "Druid", level = 7): GroupMember {
+  return { name, className, objectId, level };
+}
+
+/** How these Group members are doing. */
+export function groupStatus(...members: GroupMemberStatus[]): GroupStatusPercept {
+  return { kind: "groupStatus", members };
+}
+
+/** A Group member at full health, Power and endurance, with no status, unless said otherwise. */
+export function memberStatus(objectId: number, fields: Partial<GroupMemberStatus> = {}): GroupMemberStatus {
+  return {
+    objectId,
+    healthPercent: 100,
+    powerPercent: 100,
+    endurancePercent: 100,
+    dead: false,
+    mezzed: false,
+    diseased: false,
+    poisoned: false,
+    linkdead: false,
+    nearsighted: false,
+    inAnotherRegion: false,
+    ...fields,
+  };
+}
+
+/** Where these Group members are. */
+export function groupPositions(...members: GroupMemberPosition[]): GroupPositionsPercept {
+  return { kind: "groupPositions", members };
+}
+
+export function targetChanged(objectId: number): TargetChangedPercept {
+  return { kind: "targetChanged", objectId };
 }
 
 /** A cast started by `casterId`, taking `castingMs`: 0 for an instant harmful Spell. */

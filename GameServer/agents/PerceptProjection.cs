@@ -59,6 +59,11 @@ namespace DOL.GS.Agents
                 nameof(IPacketLib.SendUpdateIcons) => Effects(client),
                 nameof(IPacketLib.SendConcentrationList) => Concentration(client),
                 nameof(IPacketLib.SendPetWindow) => PetWindow((GameLiving) args[0], (ePetWindowAction) args[1], (eAggressionState) args[2], (eWalkState) args[3]),
+                // Mirrors `PacketLib168.SendChangeTarget`, which no later library overrides.
+                nameof(IPacketLib.SendChangeTarget) => new TargetChangedPercept(((GameObject) args[0])?.ObjectID ?? 0),
+                nameof(IPacketLib.SendGroupWindowUpdate) => GroupWindow(client),
+                nameof(IPacketLib.SendGroupMembersUpdate) => GroupStatus(client, (IReadOnlyList<GameLiving>) args[0]),
+                nameof(IPacketLib.SendGroupMembersMapUpdate) => GroupPositions(client, (IReadOnlyList<GameLiving>) args[0]),
                 nameof(IPacketLib.SendSpellCastAnimation) => new CastStartedPercept(((GameLiving) args[0]).ObjectID, (ushort) args[2] * 100),
                 nameof(IPacketLib.SendSpellEffectAnimation) => SpellLanded(client, (GameObject) args[0], (GameObject) args[1], (byte) args[5]),
                 nameof(IPacketLib.SendInterruptAnimation) => new InterruptedPercept(((GameLiving) args[0]).ObjectID),
@@ -510,6 +515,61 @@ namespace DOL.GS.Agents
         private static PetWindowPercept PetWindow(GameLiving pet, ePetWindowAction action, eAggressionState aggression, eWalkState walk)
         {
             return new PetWindowPercept(pet?.ObjectID ?? 0, action, aggression, walk);
+        }
+
+        // Mirrors `PacketLib1125.SendGroupWindowUpdate`, which 1.126 and 1.127 don't override. A member that isn't a player has the class "NPC".
+        private static GroupWindowPercept GroupWindow(GameClient client)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            return new GroupWindowPercept([.. (player.Group?.GetMembersInTheGroup() ?? [])
+                .Where(static living => living != null)
+                .Select(static living => new GroupMember(Encoded(living.Name), Encoded(living is GamePlayer member ? member.CharacterClass.Name : "NPC"), living.ObjectID, living.Level))]);
+        }
+
+        // Mirrors `PacketLib168.SendGroupMembersUpdate` with the `WriteGroupMemberUpdate` of `PacketLib1125`, which 1.126 and 1.127 don't override: nothing out of a Group or for no members.
+        private static GroupStatusPercept GroupStatus(GameClient client, IReadOnlyList<GameLiving> livings)
+        {
+            GamePlayer player = client.Player;
+
+            if (player?.Group == null || livings.Count == 0)
+                return null;
+
+            return new GroupStatusPercept([.. livings.Select(living => living.CurrentRegion != player.CurrentRegion
+                ? new GroupMemberStatus(living.ObjectID, 0, 0, 0, Dead: false, Mezzed: false, Diseased: false, Poisoned: false, Linkdead: false, Nearsighted: false, InAnotherRegion: true)
+                : new GroupMemberStatus(
+                    living.ObjectID,
+                    living is GamePlayer member ? member.HealthPercentGroupWindow : living.HealthPercent,
+                    living.ManaPercent,
+                    living.EndurancePercent,
+                    Dead: living.Health <= 0,
+                    Mezzed: living.IsMezzed,
+                    Diseased: living.IsDiseased,
+                    Poisoned: living.IsPoisoned,
+                    Linkdead: living is GamePlayer { Client.ClientState: GameClient.eClientState.Linkdead },
+                    Nearsighted: living.DebuffCategory[eProperty.SpellRange] != 0 || living.DebuffCategory[eProperty.ArcheryRange] != 0,
+                    InAnotherRegion: false))]);
+        }
+
+        // Mirrors `PacketLib174.SendGroupMembersMapUpdate`, which no later library overrides: every member but the Agent's own Character, with a zone, and nothing at all when that leaves none.
+        // The packet gives the position within the zone, which the client turns back into the global one.
+        private static GroupPositionsPercept GroupPositions(GameClient client, IReadOnlyList<GameLiving> livings)
+        {
+            GamePlayer player = client.Player;
+
+            if (player == null)
+                return null;
+
+            GroupMemberPosition[] members = [.. livings
+                .Where(living => living != player && living.CurrentZone != null)
+                .Select(living => living.CurrentRegion == player.CurrentRegion
+                    ? new GroupMemberPosition(living.ObjectID, living.CurrentZone.ZoneSkinID, living.X, living.Y)
+                    : new GroupMemberPosition(living.ObjectID, null, null, null))];
+
+            return members.Length == 0 ? null : new GroupPositionsPercept(members);
         }
 
         // Mirrors `PacketLib174.SendSpellEffectAnimation`, which drops the effects the client's effect filter hides. The packet writes 0 for no target,

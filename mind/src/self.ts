@@ -80,6 +80,7 @@ export class Self {
   #constitutionLost: number | undefined;
   #pet: Pet | undefined;
   #dialog: Dialog | undefined;
+  #target: number | undefined;
   #castSpell: string | undefined;
   #casting: Casting | undefined;
   #cooldowns = new Map<string, number>();
@@ -169,6 +170,15 @@ export class Self {
         this.#dialog = dialog;
         break;
       }
+      case "targetChanged":
+        this.#target = percept.objectId || undefined;
+        break;
+      case "objectDelete":
+      case "objectRemove":
+        if (percept.objectId === this.#target)
+          this.#target = undefined;
+
+        break;
       case "castStarted":
         // Each Spell sent starts one cast at most.
         if (percept.casterId === this.#objectId && this.#castSpell !== undefined) {
@@ -215,6 +225,11 @@ export class Self {
       this.#dialog = undefined;
     else if (primitive.name === "castSpell")
       this.#castSpell = primitive.spell;
+    else if (primitive.name === "target")
+      this.#target = primitive.objectId || undefined;
+    // The client selects what it talks to or picks up first.
+    else if (primitive.name === "talkTo" || primitive.name === "pickUp")
+      this.#target = primitive.objectId;
   }
 
   /** Its own cast in progress, from the server starting it until it lands, is interrupted, or is well past when it should have landed. An instant friendly Spell is never in progress: the server starts only harmful ones. */
@@ -328,6 +343,11 @@ export class Self {
   /** Its Pet, from when the server opens the pet window until it closes it, when the Pet dies or is released. */
   get pet(): Pet | undefined {
     return this.#pet;
+  }
+
+  /** The object ID of what it has targeted: what it picked with `target`, or what the server told it to select, as `/assist` does. Forgotten once that object is out of view, as the client forgets it. */
+  get target(): number | undefined {
+    return this.#target;
   }
 
   /** The Dialog the server opened, until it's answered or a newer one takes its place. */

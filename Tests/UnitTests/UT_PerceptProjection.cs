@@ -55,6 +55,10 @@ namespace DOL.GS.Tests
         private static readonly MethodInfo SendPlayerJump = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPlayerJump));
         private static readonly MethodInfo SendConcentrationList = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendConcentrationList));
         private static readonly MethodInfo SendPetWindow = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendPetWindow));
+        private static readonly MethodInfo SendChangeTarget = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendChangeTarget));
+        private static readonly MethodInfo SendGroupWindowUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendGroupWindowUpdate));
+        private static readonly MethodInfo SendGroupMembersUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendGroupMembersUpdate));
+        private static readonly MethodInfo SendGroupMembersMapUpdate = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendGroupMembersMapUpdate));
         private static readonly MethodInfo SendSpellCastAnimation = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendSpellCastAnimation));
         private static readonly MethodInfo SendSpellEffectAnimation = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendSpellEffectAnimation));
         private static readonly MethodInfo SendInterruptAnimation = typeof(IPacketLib).GetMethod(nameof(IPacketLib.SendInterruptAnimation));
@@ -911,6 +915,113 @@ namespace DOL.GS.Tests
             Percept percept = PerceptProjection.Project(Playing(), SendPetWindow, [null, ePetWindowAction.Close, eAggressionState.Aggressive, eWalkState.Follow]);
 
             Assert.That(percept, Is.EqualTo(new PetWindowPercept(0, ePetWindowAction.Close, eAggressionState.Aggressive, eWalkState.Follow)));
+        }
+
+        // Mirrors `PacketLib1125.SendGroupWindowUpdate`: every member in window order, the Agent's own Character too, with its name, class, object ID and level.
+        [Test]
+        public void Project_ShouldGiveEveryMember_ForTheGroupWindowCall()
+        {
+            Zone zone = WorldDoubles.Zone(201, 0, 0, 65536, 65536);
+            GameClient client = AgentInWorld(zone);
+            TestPlayer greeen = (TestPlayer) client.Player;
+            TestPlayer vue = PlayerIn(zone, "Vue");
+            (greeen.ObjectID, greeen.ClassName, greeen.CharacterLevel) = (0x0101, "Eldritch", 7);
+            (vue.ObjectID, vue.ClassName, vue.CharacterLevel) = (0x0456, "Druid", 8);
+            WorldDoubles.Group(vue, greeen);
+
+            GroupWindowPercept percept = (GroupWindowPercept) PerceptProjection.Project(client, SendGroupWindowUpdate, []);
+
+            Assert.That(percept.Members, Is.EqualTo(new GroupMember[] { new("Vue", "Druid", 0x0456, 8), new("Greeen", "Eldritch", 0x0101, 7) }));
+        }
+
+        // Mirrors `PacketLib1125.WriteGroupMemberUpdate`: health, Power and endurance percent and the status flags of each member the server names.
+        [Test]
+        public void Project_ShouldGiveEachMembersPercentsAndStatus_ForTheGroupMembersCall()
+        {
+            Zone zone = WorldDoubles.Zone(201, 0, 0, 65536, 65536);
+            GameClient client = AgentInWorld(zone);
+            TestPlayer vue = PlayerIn(zone, "Vue");
+            vue.ObjectID = 0x0456;
+            (vue.TestHealthPercent, vue.TestManaPercent, vue.TestEndurancePercent, vue.TestHealth) = (40, 75, 90, 120);
+            vue.IsMezzed = true;
+            WorldDoubles.Group(client.Player, vue);
+
+            GroupStatusPercept percept = (GroupStatusPercept) PerceptProjection.Project(client, SendGroupMembersUpdate, [new List<GameLiving> { vue }]);
+
+            Assert.That(percept.Members, Is.EqualTo(new GroupMemberStatus[] {
+                new(0x0456, 40, 75, 90, Dead: false, Mezzed: true, Diseased: false, Poisoned: false, Linkdead: false, Nearsighted: false, InAnotherRegion: false) }));
+        }
+
+        // The packet marks a member with no health dead, and gives a member in another region nothing but that.
+        [Test]
+        public void Project_ShouldMarkAMemberDeadOrInAnotherRegion_ForTheGroupMembersCall()
+        {
+            Zone zone = WorldDoubles.Zone(201, 0, 0, 65536, 65536);
+            GameClient client = AgentInWorld(zone);
+            TestPlayer vue = PlayerIn(zone, "Vue");
+            TestPlayer dalta = PlayerIn(WorldDoubles.Zone(202, 0, 0, 65536, 65536), "Dalta");
+            (vue.ObjectID, dalta.ObjectID) = (0x0456, 0x0789);
+            (vue.TestHealthPercent, vue.TestManaPercent, dalta.TestHealthPercent) = (0, 30, 100);
+            WorldDoubles.Group(client.Player, vue, dalta);
+
+            GroupStatusPercept percept = (GroupStatusPercept) PerceptProjection.Project(client, SendGroupMembersUpdate, [new List<GameLiving> { vue, dalta }]);
+
+            Assert.That(percept.Members, Is.EqualTo(new GroupMemberStatus[] {
+                new(0x0456, 0, 30, 0, Dead: true, Mezzed: false, Diseased: false, Poisoned: false, Linkdead: false, Nearsighted: false, InAnotherRegion: false),
+                new(0x0789, 0, 0, 0, Dead: false, Mezzed: false, Diseased: false, Poisoned: false, Linkdead: false, Nearsighted: false, InAnotherRegion: true) }));
+        }
+
+        // Mirrors `PacketLib174.SendGroupMembersMapUpdate`: every member but the Agent's own Character, with its zone and global position, and no place for one in another region.
+        [Test]
+        public void Project_ShouldGiveEveryOtherMembersPlace_ForTheGroupMapCall()
+        {
+            Zone zone = WorldDoubles.Zone(201, 524288, 458752, 65536, 65536);
+            GameClient client = AgentInWorld(zone);
+            TestPlayer vue = PlayerIn(zone, "Vue");
+            TestPlayer dalta = PlayerIn(WorldDoubles.Zone(202, 0, 0, 65536, 65536), "Dalta");
+            (vue.ObjectID, dalta.ObjectID) = (0x0456, 0x0789);
+
+            GroupPositionsPercept percept = (GroupPositionsPercept) PerceptProjection.Project(client, SendGroupMembersMapUpdate, [new List<GameLiving> { client.Player, vue, dalta }]);
+
+            Assert.That(percept.Members, Is.EqualTo(new GroupMemberPosition[] { new(0x0456, 201, 526288, 460752), new(0x0789, null, null, null) }));
+        }
+
+        // As the library sends nothing when the Agent's own Character is the only member it's handed.
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheGroupMapCallWithNoOtherMember()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+
+            Assert.That(PerceptProjection.Project(client, SendGroupMembersMapUpdate, [new List<GameLiving> { client.Player }]), Is.Null);
+        }
+
+        // As the library sends nothing for a Character out of a Group.
+        [Test]
+        public void Project_ShouldGiveNothing_ForTheGroupMembersCallOutOfAGroup()
+        {
+            GameClient client = AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536));
+
+            Assert.That(PerceptProjection.Project(client, SendGroupMembersUpdate, [new List<GameLiving> { client.Player }]), Is.Null);
+        }
+
+        // Mirrors `PacketLib168.SendChangeTarget`, which `/assist` sends with what the assisted Character has targeted.
+        [Test]
+        public void Project_ShouldGiveTheNewTarget_ForTheChangeTargetCall()
+        {
+            TestNpc rat = WorldDoubles.Npc("rat");
+            rat.ObjectID = 0x0456;
+
+            Assert.That(PerceptProjection.Project(Playing(), SendChangeTarget, [rat]), Is.EqualTo(new TargetChangedPercept(0x0456)));
+            Assert.That(PerceptProjection.Project(Playing(), SendChangeTarget, [null]), Is.EqualTo(new TargetChangedPercept(0)));
+        }
+
+        // A Character out of a Group, as after it leaves, gets a window with no one in it.
+        [Test]
+        public void Project_ShouldGiveNoMembers_ForTheGroupWindowCallOutOfAGroup()
+        {
+            GroupWindowPercept percept = (GroupWindowPercept) PerceptProjection.Project(AgentInWorld(WorldDoubles.Zone(201, 0, 0, 65536, 65536)), SendGroupWindowUpdate, []);
+
+            Assert.That(percept.Members, Is.Empty);
         }
 
         // Mirrors `PacketLib168.SendSpellCastAnimation`: the caster and the casting time in tenths of a second, which `SpellHandler.SendCastAnimation` sends for any caster in view. The client effect isn't carried.

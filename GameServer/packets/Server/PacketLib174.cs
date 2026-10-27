@@ -334,7 +334,7 @@ namespace DOL.GS.PacketHandler
 			}
 		}
 
-		public override void SendGroupMembersMapUpdate(ReadOnlySpan<GameLiving> livings)
+		public override void SendGroupMembersMapUpdate(IReadOnlyList<GameLiving> livings)
 		{
 			GamePlayer player = m_gameClient.Player;
 
@@ -342,8 +342,10 @@ namespace DOL.GS.PacketHandler
 
 			using (var pak = PooledObjectFactory.GetForTick<GSTCPPacketOut>().Init(GetPacketCode(eServerPackets.GroupMemberUpdate)))
 			{
-				foreach (GameLiving living in livings)
+				for (int i = 0; i < livings.Count; i++)
 				{
+					GameLiving living = livings[i];
+
 					if (player == living)
 						continue;
 

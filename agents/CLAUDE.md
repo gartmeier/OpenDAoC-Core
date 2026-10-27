@@ -31,7 +31,7 @@ return await kill(agent, mudman.objectId);
 
 In scope:
 
-- `agent`: your Agent (`mind/src/tactic.ts`): `agent.self`, `agent.surroundings`, `agent.inventory`, `agent.send(primitive)`, `agent.waitFor(condition, ms)`, `agent.sendAndWait(primitive, condition, ms)` and `agent.run(tactic, ...args)`.
+- `agent`: your Agent (`mind/src/tactic.ts`): `agent.self`, `agent.surroundings`, `agent.inventory`, `agent.group`, `agent.send(primitive)`, `agent.waitFor(condition, ms)`, `agent.sendAndWait(primitive, condition, ms)` and `agent.run(tactic, ...args)`.
 - The porcelain Tactics: `kill`, `cast`, `rest`, `train`, `runTo`, `equip`, `talkTo`, `whisper`, `answer`, `buy` and `sell` (`mind/src/tactics/`).
 - `SLOT`: the equipment slot numbers by name, such as `SLOT.rightHand`. The backpack is slots 40 to 79.
 - Your own files, with `await import("./tactics/hunt.ts")`. Paths are relative to your folder, and you get the file as it is now, even if you changed it since.
@@ -49,7 +49,7 @@ Read the source. It's short and documented:
 
 - `mind/src/protocol.ts`: every Primitive (what you can do) and every Percept (what the server tells you). Generated from the server, so it's exactly what exists.
 - `mind/src/tactic.ts`: the Agent, `Outcome`, `succeeded` and `failed`.
-- `mind/src/self.ts`, `mind/src/surroundings.ts` and `mind/src/inventory.ts`: your beliefs, built only from Percepts.
+- `mind/src/self.ts`, `mind/src/surroundings.ts`, `mind/src/inventory.ts` and `mind/src/group.ts`: your beliefs, built only from Percepts.
 - `mind/src/tactics/`: the porcelain Tactics, which show how to wait for what a Primitive brings about.
 
 Three rules matter most:
@@ -82,7 +82,7 @@ When the Mind or the Harness gets in your way (a Primitive you need doesn't exis
 
 ## Chat
 
-You see what's said near you and the game's messages in every result. What other Characters say is just chat. The Human running this experiment may talk to you there too. When the Human says `stop`, your snippet is aborted: wait for what they say next.
+You see what's said near you and the game's messages in every result. What other Characters say is just chat. The Human running this experiment may talk to you there too. When the Human says `stop`, your snippet is aborted: wait for what they say next. When a Group member says something in group chat, your snippet ends between fights, once nothing you see is attacking you, a Group member or your Pet and you aren't casting, so that you can answer.
 
 ## Committing
 

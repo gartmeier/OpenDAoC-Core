@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { describePercept, describePrimitive } from "./journal.ts";
 import type { Percept, PerceptMessage, Primitive, PrimitiveResultMessage } from "./protocol.ts";
 import { Runner } from "./runner.ts";
-import { readSayLine } from "./say-line.ts";
+import { readGroupLine, readSayLine } from "./say-line.ts";
 import { SNIPPET_GLOBALS } from "./snippet-globals.ts";
 import { type Import, snippetModules } from "./snippet-modules.ts";
 import { summarize } from "./summary.ts";
@@ -66,6 +66,8 @@ export class Mind {
   #execution: Execution | undefined;
   /** The chat and game messages since the last call. */
   #chat: string[] = [];
+  /** The Group member whose line in group chat ends the snippet running at its next safe point (ADR 0010). */
+  #groupSpeaker: string | undefined;
 
   constructor(options: MindOptions) {
     this.#options = options;
@@ -92,7 +94,10 @@ export class Mind {
     this.#runner = new Runner(agent);
   }
 
-  /** Takes in a Percept. A `stop` someone says next to the Agent aborts the snippet running. */
+  /**
+   * Takes in a Percept. A `stop` someone says next to the Agent aborts the snippet running.
+   * A Group member's line in group chat ends it too, once nothing it sees is fighting the Agent, a Group member or its Pet, and it isn't casting.
+   */
   perceive(message: PerceptMessage): void {
     this.agent.perceive(message);
     this.#options.journal(describePercept(this.agent, this.#options.character, message));
@@ -100,10 +105,23 @@ export class Mind {
     if (message.percept.kind === "message")
       this.#chat.push(`${message.percept.chatType}\t${message.percept.text}`);
 
+    if (!this.#execution)
+      return;
+
     const speaker = heardStop(message.percept, this.#options.character);
 
-    if (speaker && this.#execution)
+    if (speaker) {
       void this.#abort(`a stop ${speaker} said`);
+      return;
+    }
+
+    const groupLine = readGroupLine(message.percept);
+
+    if (groupLine && groupLine.speaker.toLowerCase() !== this.#options.character.toLowerCase())
+      this.#groupSpeaker ??= groupLine.speaker;
+
+    if (this.#groupSpeaker && betweenFights(this.agent))
+      void this.#abort(`a line ${this.#groupSpeaker} said in group chat`);
   }
 
   /** The `execute_code` tool. */
@@ -202,6 +220,7 @@ export class Mind {
   async #abort(reason: string): Promise<void> {
     this.#execution?.abort(reason);
     this.#execution = undefined;
+    this.#groupSpeaker = undefined;
     await this.#runner.stop();
   }
 }
@@ -213,6 +232,12 @@ function heardStop(percept: Percept, character: string): string | undefined {
 
   const { speaker, words } = readSayLine(percept.text) ?? {};
   return speaker && words?.toLowerCase() === "stop" && speaker.toLowerCase() !== character.toLowerCase() ? speaker : undefined;
+}
+
+/** Whether no Mob the Agent sees is attacking it, a Group member or its Pet, and it isn't casting. */
+function betweenFights({ self, surroundings, group }: Agent): boolean {
+  const ours = [self.objectId, self.pet?.objectId, ...group.members.map((member) => member.objectId)].filter((objectId) => objectId !== undefined);
+  return !self.casting && ours.every((objectId) => surroundings.attacking(objectId).length === 0);
 }
 
 type SnippetEnding = { value: unknown } | { error: unknown } | { aborted: string };

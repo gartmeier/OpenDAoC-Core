@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import type { JumpPercept, MovedPercept, OwnPositionPercept, Percept, PerceptMessage } from "./protocol.ts";
 import { ownPositionIn, Self } from "./self.ts";
 import { FakeClock } from "./test-agent.ts";
-import { castStarted, concentration, cooldowns, dialog, died, effects, interrupted, petWindow, player, points, revived, skills, spec, spellLanded, stats, status } from "./test-percepts.ts";
+import { castStarted, concentration, cooldowns, dialog, died, effects, interrupted, objectDelete, objectRemove, petWindow, player, points, revived, skills, spec, spellLanded, stats, status, targetChanged } from "./test-percepts.ts";
 
 function message(percept: Percept): PerceptMessage {
   return { type: "percept", sequence: 1, elapsedMs: 1000, percept };
@@ -450,4 +450,49 @@ test("knows each skill on Cooldown until it's ready again, from every cooldowns 
 
   await clock.advance(15_000);
   expect(agentSelf.cooldowns.size).toBe(0);
+});
+
+test("has targeted what it picked itself, and nothing once it picks nothing", () => {
+  const agentSelf = new Self(new FakeClock());
+  expect(agentSelf.target).toBeUndefined();
+
+  agentSelf.sent({ name: "target", objectId: 0x1f0b });
+  expect(agentSelf.target).toBe(0x1f0b);
+
+  agentSelf.sent({ name: "target", objectId: 0 });
+  expect(agentSelf.target).toBeUndefined();
+});
+
+test("has targeted what the server told it to, as `/assist` does", () => {
+  const agentSelf = new Self(new FakeClock());
+  agentSelf.sent({ name: "target", objectId: 0x1f0b });
+
+  agentSelf.perceive(message(targetChanged(0x0456)));
+
+  expect(agentSelf.target).toBe(0x0456);
+});
+
+test("forgets its target once it's out of view, but not when something else goes", () => {
+  const agentSelf = new Self(new FakeClock());
+  agentSelf.sent({ name: "target", objectId: 0x1f0b });
+
+  agentSelf.perceive(message(objectDelete(0x0456)));
+  expect(agentSelf.target).toBe(0x1f0b);
+
+  agentSelf.perceive(message(objectRemove(0x1f0b)));
+  expect(agentSelf.target).toBeUndefined();
+
+  agentSelf.sent({ name: "target", objectId: 0x1f0b });
+  agentSelf.perceive(message(objectDelete(0x1f0b)));
+  expect(agentSelf.target).toBeUndefined();
+});
+
+test("has targeted what it talked to or picked up, which the client selects first", () => {
+  const agentSelf = new Self(new FakeClock());
+
+  agentSelf.sent({ name: "talkTo", objectId: 0x0456 });
+  expect(agentSelf.target).toBe(0x0456);
+
+  agentSelf.sent({ name: "pickUp", objectId: 0x0789 });
+  expect(agentSelf.target).toBe(0x0789);
 });
