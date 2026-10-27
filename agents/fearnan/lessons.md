@@ -19,6 +19,6 @@ What I've learned while playing, which I read again before I next act.
 - A Mind restart or relog loses the Pet: `ensurePet` again.
 - Level 6: died once to a hill toad (L6–7, hits me for 20) that turned on me while I meleed beside the Pet. Avoid hill toads too: `["mudman", "hill toad"]`.
 - Villainous youths drop good loot (mace L6 3.0 DPS, small shield, leather L5–6): equip it, sell the rest to Alun. Merchants won't buy training gear.
-- Nurture 5 gives Strength of the Tree (str+con, 4 conc); `bestBuffs` drops the single str/con buffs it covers. Four buffs on me and four on the Pet fit in my Concentration at level 6.
+- Nurture 5 gives Strength of the Tree (str+con, 4 conc). It stacks with Strength of the Oak and Oak's Stoutness (baseline and spec buffs add up), so `bestBuffs` keeps all three. Concentration may not fit them all on me and the Pet: "requires N concentration" means it ran out.
 - Level 7 reached with `petGrind(agent, 18, 7, [0, 2], ["mudman", "hill toad"], true)` near X:307500 Y:647000: 46 kills in ~33 min at level 6, no deaths. Pray at my grave (`target` it, `/pray`) to win back lost XP.
 - Level 7: trained Nature 4, saving 4 points for Nature 5 (Contamination DoT) at level 8. The Pet is still the L4 lynx cub: release and resummon for an L5 one. At 7, L5 youths go grey-ish; look for L5–7 Mobs other than hill toads.

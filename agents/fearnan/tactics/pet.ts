@@ -31,8 +31,8 @@ export async function castOn(agent: Agent, objectId: number, spell: string): Pro
 }
 
 /**
- * Its best Concentration buff of each kind (only those it can cast on others if `others`),
- * leaving out a single-stat buff when a two-stat one covers that stat.
+ * Its best Concentration buff of each kind (only those it can cast on others if `others`).
+ * A single-stat buff (baseline) and a two-stat one (spec) of the same stat both count, so both stay.
  */
 export function bestBuffs(agent: Agent, others: boolean): Spell[] {
   const kind = (description: string) => description.replace(/[\d.]+/g, "#");
@@ -42,15 +42,7 @@ export function bestBuffs(agent: Agent, others: boolean): Spell[] {
     const other = best.get(kind(spell.details.description));
     if (!other || spell.level > other.level) best.set(kind(spell.details.description), spell);
   }
-  const covered = new Set<string>();
-  for (const spell of best.values()) {
-    const both = spell.details!.description.match(/target's (\w+) and (\w+) by/);
-    if (both) covered.add(both[1]).add(both[2]);
-  }
-  return [...best.values()].filter((spell) => {
-    const one = spell.details!.description.match(/target's (\w+) by/);
-    return !one || !covered.has(one[1]);
-  });
+  return [...best.values()];
 }
 
 /** Summons a Pet if it has none, then puts its best Concentration buffs of each kind on it. */
