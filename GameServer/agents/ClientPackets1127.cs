@@ -20,6 +20,9 @@ namespace DOL.GS.Agents
         // The target packet's flags when the captured Human clicked an NPC in plain view.
         private const ushort TARGET_FLAGS = 0xE000;
 
+        // The target packet's flags when the captured client selected what `/assist` named: no examine bit, only line of sight.
+        private const ushort ASSIST_TARGET_FLAGS = 0x6000;
+
         // What the client sent after the character index in both captures. Data offset 19 (0x71 here) is unknown and varies between captures.
         private static readonly byte[] REGION_LIST_TAIL = Convert.FromHexString("01664C415F401E1E00FFFFFFFF0F036D233471DE100000162200000D");
 
@@ -170,6 +173,12 @@ namespace DOL.GS.Agents
         public static ClientPacket Target(ushort objectId)
         {
             return Target(objectId, TARGET_FLAGS);
+        }
+
+        // Selects what the server told the client to, as the client does by itself after `/assist`. Without the examine bit, so the server doesn't describe it.
+        public static ClientPacket AssistTarget(ushort objectId)
+        {
+            return Target(objectId, ASSIST_TARGET_FLAGS);
         }
 
         // Selects nothing, as Esc does, or as the client does by itself when what it attacked dies. The flags are then only the attack mode bit (0x0001), set while attacking.

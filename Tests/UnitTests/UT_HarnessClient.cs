@@ -181,9 +181,9 @@ namespace DOL.GS.Tests
             await Close(mind);
         }
 
-        // `/assist` has the server tell the client to select what the assisted Character has targeted. The client selects it, as a click would, which sets the server's target.
+        // `/assist` has the server tell the client to select what the assisted Character has targeted. The client selects it, which sets the server's target, as in `assist.tsv`.
         [Test]
-        public async Task ChangeTarget_ShouldSelectTheNewTarget_AsAClickDoes()
+        public async Task ChangeTarget_ShouldSelectTheNewTarget_AsTheClientDoesAfterAssist()
         {
             FakeMind mind = new();
             HarnessClient client = InWorld(mind.Link, 0x0101);
@@ -191,7 +191,7 @@ namespace DOL.GS.Tests
             client.OnPerceived(new TargetChangedPercept(0x1F0B));
 
             Assert.That(client.TargetId, Is.EqualTo(0x1F0B));
-            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.Target(0x1F0B)])));
+            Assert.That(Wire(Inbound(client)), Is.EqualTo(Wire([ClientPackets1127.AssistTarget(0x1F0B)])));
             await Close(mind);
         }
 

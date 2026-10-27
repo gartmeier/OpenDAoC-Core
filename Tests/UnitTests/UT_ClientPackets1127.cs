@@ -187,6 +187,20 @@ namespace DOL.GS.Tests
             AssertMatches(ClientPackets1127.AttackRequest(false, byClient: true), captured[3], 2, 3);
         }
 
+        // Clicks on Fearnan or a Mob between four `/assist`s. The second found the Mob Fearnan had targeted selected already, and the client sent nothing for it.
+        [Test]
+        public void AssistTarget_ShouldMatchCapture_BesideTheClicks()
+        {
+            CapturedPacket[] captured = ClientCaptures.WhilePlaying(ClientCaptures.ASSIST, eClientPackets.PlayerTarget);
+            Assert.That(captured, Has.Length.EqualTo(8));
+
+            AssertMatches(ClientPackets1127.Target(0x454A), captured[0]);
+            AssertMatches(ClientPackets1127.AssistTarget(0x454B), captured[3]);
+            AssertMatches(ClientPackets1127.AssistTarget(0x2686), captured[5]);
+            AssertMatches(ClientPackets1127.Target(0x454B), captured[6]);
+            AssertMatches(ClientPackets1127.AssistTarget(0x2686), captured[7]);
+        }
+
         // Clicked twice on the same Mob, cleared once with Esc, and cleared by the client when the Mob it was attacking died.
         [Test]
         public void TargetAndClearTarget_ShouldMatchCapture()

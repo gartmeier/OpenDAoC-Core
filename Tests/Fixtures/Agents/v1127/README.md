@@ -18,6 +18,7 @@ What a real 1.127 game client sends the server, from character select through wo
 - `cast-damage.tsv` is 640 s of account `agentorla`'s Character Orla, a level 1 Magician, from login in Shannon Estuary: it casts Lesser Powerward on itself, targets a Mob and casts Gleam Ray at it until it dies, then targets itself and quits. Recorded with `/agent capture agentorla` on 2026-10-25, unmodified apart from its first line. See Spells of a list caster.
 - `quick-cast.tsv` is 71 s of account `admin`'s Character Vue, a level 50 Mentalist, already in the world: it clicks Quick Cast on the quickbar four times, three of them followed by a spell, with a Mob, nothing or itself targeted. Recorded with `/agent capture admin` on 2026-10-25, unmodified apart from its first line. See Abilities.
 - `pet-window.tsv` is 207 s of account `agentfearnan`'s Character Fearnan, a level 5 Druid, from login: it summons its pet, then clicks each button in the pet window once, each announced with a say, casts spells from the quickbar while the pet is out, and releases it. Recorded with `/agent capture agentfearnan` on 2026-10-26, unmodified apart from its first line. See Pets.
+- `assist.tsv` is 52 s of account `agentorla`'s Character Orla, a level 7 Eldritch, already in the world next to Fearnan: it targets Fearnan, invites it into a Group, and types `/assist` three times and `/assist fearnan` once while Fearnan targets Mobs, clicking on Fearnan or a Mob between. Recorded with `/agent capture agentorla` on 2026-10-27, unmodified apart from its first line. See Assist.
 - Packets sent before the server knows the Account aren't recorded: the version and crypt-key request (0xF4) and the login request (0xA7). The Harness skips both.
 
 ## Format
@@ -285,6 +286,22 @@ From `pet-window.tsv`. The Human played Fearnan, a Druid, and said the name of e
 | 203663, 205803 | release |
 
 - **A click is one byte on its row (0x8A).** Each sends 4 bytes: aggression (1 aggressive, 2 defensive, 3 passive), walk (1 follow, 2 stay, 3 go to target, 4 here) and command (1 attack, 2 release), with 0 on the two rows not clicked, then a 0 that `PetWindowHandler` doesn't read. Parameter 0x0000. Nothing else varies.
+
+## Assist
+
+From `assist.tsv`. The Human played Orla and assisted Fearnan (0x454A), which targeted a Mob (0x454B), then another (0x2686).
+
+| ms | Part |
+|----|------|
+| 3299, 4799 | targets Fearnan, then `/invite` |
+| 22299, 22865 | clears the target, then targets Fearnan again |
+| 25465, 25499 | `/assist`, then selects 0x454B |
+| 31599 | `/assist` again, with 0x454B selected already: nothing follows |
+| 37199–39899 | targets Fearnan, `/assist`, then selects 0x2686 |
+| 42732–46632 | targets 0x454B, `/assist fearnan`, then selects 0x2686 |
+
+- **After `/assist` the client selects the target itself (0xB0).** The server's change-target packet names it, and the client answers with the target packet, flags `6000`: both line-of-sight bits but not the examine bit a click sets, so the server doesn't describe it. It sends nothing when that object is selected already.
+- **`/assist` is a command (0xAF)**, with or without a name. The capture has no `/assist` while Fearnan had nothing targeted.
 
 ## Fields that vary between captures
 

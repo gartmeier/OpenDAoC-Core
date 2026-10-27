@@ -588,11 +588,12 @@ namespace DOL.GS.Agents
                     _movement.OnJump(jump);
                     break;
                 }
-                // The client selects what the server tells it to, as a click would, which sets the server's target too.
+                // The client selects what the server tells it to, which sets the server's target too, as the captured client did after `/assist`.
+                // Selecting nothing this way is a guess: `/assist` never asks for it.
                 case TargetChangedPercept changed when changed.ObjectId != _targetId:
                 {
                     _targetId = (ushort) changed.ObjectId;
-                    Enqueue(_targetId == 0 ? ClientPackets1127.ClearTarget(_attacking) : ClientPackets1127.Target(_targetId));
+                    Enqueue(_targetId == 0 ? ClientPackets1127.ClearTarget(_attacking) : ClientPackets1127.AssistTarget(_targetId));
                     break;
                 }
                 // The client forgets what it can't see any more, and its selection with it. When it was attacking it, as when it dies, the captured client also stops attacking and clears its target itself.
