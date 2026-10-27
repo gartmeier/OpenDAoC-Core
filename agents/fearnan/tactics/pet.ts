@@ -20,6 +20,9 @@ export function petNpc(agent: Agent) {
 
 /** Casts `spell` on `objectId`, waiting out "must wait" holds. Returns the server's answer. */
 export async function castOn(agent: Agent, objectId: number, spell: string): Promise<string | undefined> {
+  // A cast fails while sitting and is interrupted by a run still going.
+  if (agent.self.sitting) await agent.send({ name: "stand" });
+  if (agent.self.movement.kind === "moving") await agent.send({ name: "stop" });
   for (let tries = 0; tries < 3; tries++) {
     await agent.send({ name: "target", objectId });
     const reply = await agent.sendAndWait({ name: "castSpell", spell }, (percept) =>

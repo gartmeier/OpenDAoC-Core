@@ -12,7 +12,7 @@ const away = (agent: Agent, p: { x: number; y: number }) => {
 /** The other Group member called `name`, as a player in view, with how the group window says it's doing. */
 function mate(agent: Agent, name: string) {
   const member = agent.group.named(name);
-  const player = agent.surroundings.players.find((p) => p.name === name);
+  const player = member && agent.surroundings.players.find((p) => p.objectId === member.objectId);
   return member && { member, player };
 }
 
@@ -34,25 +34,64 @@ export async function healMate(agent: Agent, name: string, below = 60): Promise<
   }
 }
 
+/** The buffs worth keeping on a caster mate: armour and constitution, the best of each it has. */
+const MATE_BUFFS = [/^Increases the target's armor factor/, /^Increases the target's constitution by/];
+
+/** Puts its armour and constitution buffs on the mate when it's close and alive and lacks them. */
+export async function buffMate(agent: Agent, name: string): Promise<void> {
+  const m = mate(agent, name);
+  if (!m?.player || m.member.dead || !m.member.position || away(agent, m.member.position) > 1200) return;
+  const cut = (s: string) => (s.length > 14 ? `${s.slice(0, 12)}..` : s);
+  for (const kind of MATE_BUFFS) {
+    const buff = agent.self.skills.filter((s) => s.page === "Spells" && kind.test(s.details?.description ?? "") && s.details?.concentrationCost)
+      .sort((a, b) => b.level - a.level)[0];
+    if (!buff || agent.self.concentrationBuffs.some((k) => k.spell === cut(buff.name) && k.target === cut(name))) continue;
+    if ((buff.details?.concentrationCost ?? 0) > agent.self.concentration) continue;
+    await castOn(agent, m.player.objectId, buff.name);
+  }
+}
+
 /** Mobs attacking it, its Pet or a Group member. */
 function hostile(agent: Agent) {
   const ours = [agent.self.objectId, agent.self.pet?.objectId, ...agent.group.members.map((m) => m.objectId)].filter((id) => id !== undefined);
   return ours.flatMap((id) => agent.surroundings.attacking(id!)).filter((npc) => npc.realm === "None");
 }
 
-/** One step of melee on `mobId`: runs in range, faces it and keeps attack on. */
-async function strike(agent: Agent, mobId: number): Promise<void> {
-  const mob = agent.surroundings.npc(mobId);
-  const at = agent.self.position;
-  if (!mob || !at) return;
-  if (agent.self.target !== mobId) await agent.send({ name: "target", objectId: mobId });
-  if (distance(at, mob.position) > 120) {
-    await agent.send({ name: "moveTo", x: mob.position.x, y: mob.position.y, z: mob.position.z, within: 80 });
-  } else {
-    const heading = headingTowards(at, mob.position);
-    if (heading !== undefined) await agent.send({ name: "face", heading });
+/** Melee on `mobId` without spamming the server: it sends only what changed since the last step. */
+class Striker {
+  #swinging = false;
+  #runningTo: { x: number; y: number } | undefined;
+  #facing: number | undefined;
+  constructor(readonly agent: Agent, readonly mobId: number) {}
+
+  async step(): Promise<void> {
+    const { agent, mobId } = this;
+    const mob = agent.surroundings.npc(mobId);
+    const at = agent.self.position;
+    if (!mob || !at) return;
+    if (agent.self.target !== mobId) { await agent.send({ name: "target", objectId: mobId }); this.#swinging = false; }
+    if (!this.#swinging) { await agent.send({ name: "attack", on: true }); this.#swinging = true; }
+    if (distance(at, mob.position) > 120) {
+      if (!this.#runningTo || distance(this.#runningTo, mob.position) > 80) {
+        this.#runningTo = mob.position;
+        await agent.send({ name: "moveTo", x: mob.position.x, y: mob.position.y, z: mob.position.z, within: 80 });
+      }
+      this.#facing = undefined;
+    } else {
+      this.#runningTo = undefined;
+      const heading = headingTowards(at, mob.position);
+      if (heading !== undefined && (this.#facing === undefined || Math.abs(((heading - this.#facing + 6144) % 4096) - 2048) > 300)) {
+        this.#facing = heading;
+        await agent.send({ name: "face", heading });
+      }
+    }
   }
-  await agent.send({ name: "attack", on: true });
+
+  async halt(): Promise<void> {
+    if (this.#swinging) await this.agent.send({ name: "attack", on: false });
+    this.#swinging = false;
+    this.#runningTo = undefined;
+  }
 }
 
 /**
@@ -62,6 +101,7 @@ async function strike(agent: Agent, mobId: number): Promise<void> {
 export async function groupFight(agent: Agent, mobId: number, name: string): Promise<Outcome> {
   const end = agent.clock.now() + 120_000;
   let sent = false;
+  const striker = new Striker(agent, mobId);
   try {
     while (agent.clock.now() < end) {
       if (agent.self.dead) return failed("died");
@@ -81,18 +121,18 @@ export async function groupFight(agent: Agent, mobId: number, name: string): Pro
       const melee = onMe || onMate || !agent.self.pet;
 
       // Heals: the mate first, then itself, then the Pet. Out of melee they don't get interrupted.
-      if (m && !m.member.dead && (m.member.healthPercent ?? 100) < 50) { await agent.send({ name: "attack", on: false }); await healMate(agent, name, 70); continue; }
-      if (agent.self.healthPercent < 45 && !onMe) { await healMe(agent, 70); continue; }
+      if (m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, name, onMate ? 95 : 70); continue; }
+      if (agent.self.healthPercent < 45 && !onMe) { await striker.halt(); await healMe(agent, 70); continue; }
       const pet = petNpc(agent);
-      if (pet && pet.healthPercent < 45 && !onMe) { await agent.send({ name: "attack", on: false }); await healPet(agent, 70); continue; }
+      if (pet && pet.healthPercent < 45 && !onMe) { await striker.halt(); await healPet(agent, 70); continue; }
 
-      if (melee) await strike(agent, mobId);
-      else await agent.send({ name: "attack", on: false });
+      if (melee) await striker.step();
+      else await striker.halt();
       await agent.waitFor(() => undefined, 1_000);
     }
     return failed("timeout");
   } finally {
-    await agent.send({ name: "attack", on: false });
+    await striker.halt();
   }
 }
 
@@ -120,6 +160,7 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
     const pet = await ensurePet(agent);
     if (!pet.ok && pet.reason !== "petOutOfView") return { ...pet, kills };
     await buffSelf(agent);
+    await buffMate(agent, name);
     await healMate(agent, name, 90);
     await healPet(agent, 85);
     await healMe(agent, 85);
