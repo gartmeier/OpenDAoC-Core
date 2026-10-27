@@ -11,6 +11,9 @@ const MAX_CASTS = 3;
 /** Past the N seconds the server says to wait, which it rounds down. */
 const WAIT_MARGIN_MS = 300;
 
+/** In milliseconds: the server drops a `/sit` or `/stand` within this long of the last one it took, without a word (`command_spam_delay`). Static knowledge, as a Human learns it. */
+const SIT_STAND_SPAM_MS = 1_500;
+
 /** The refusals and failures the server gives only as chat, all as `CT_SpellResisted`, with the reason each ends the cast with. Any other is `refused`. */
 const REASONS: [RegExp, string][] = [
   // A hit's line, which comes just before the interrupt itself.
@@ -28,7 +31,7 @@ type Answer = { kind: "started"; castingMs: number } | { kind: "wait"; seconds: 
 
 /**
  * Casts `spell` at `targetId`, the Agent's own object ID for a heal or a buff on itself, and ends once it has landed (ADR 0008).
- * Before sending anything it fails with `noSpell`, `cooldown`, `noPower` or `wrongTarget` (a friendly Spell at a Mob). It stands up, stops a run and targets first.
+ * Before sending anything it fails with `noSpell`, `cooldown`, `noPower` or `wrongTarget` (a friendly Spell at a Mob). It stands up, failing with `sitting` if the server won't let it, stops a run and targets first.
  * With `quickCast` it turns attack off and uses Quick Cast first, failing with `noQuickCast` if it doesn't come up.
  * It succeeds once the Spell lands, a bolt at launch, and fails with `noEffect` when it doesn't take, with `interrupted`, or with the server's refusal: `tooFar`, `notInView`, `noTarget`, `noPower` or any other as `refused`.
  * It waits out "You must wait N seconds" and casts again, failing with `mustWait` after the third, and fails with `timeout` when the server doesn't answer.
@@ -51,8 +54,8 @@ export async function cast(agent: Agent, spell: string, targetId: number, { quic
   if (/^(Realm|GROUP)/i.test(details?.target ?? "") && surroundings.npcs.some((npc) => npc.objectId === targetId && npc.realm === "None"))
     return failed("wrongTarget");
 
-  if (self.sitting)
-    await agent.send({ name: "stand" });
+  if (self.sitting && !(await standUp(agent)))
+    return failed("sitting");
 
   // Moving interrupts the cast.
   if (self.movement.kind === "moving")
@@ -86,6 +89,15 @@ export async function cast(agent: Agent, spell: string, targetId: number, { quic
 
     await agent.waitFor(() => undefined, answer.seconds * 1000 + WAIT_MARGIN_MS);
   }
+}
+
+/** Stands, and stands again once if the server dropped the first, as it does right after a sit. Whether the server says it stands. */
+async function standUp(agent: Agent): Promise<boolean> {
+  for (let stands = 1; stands <= 2; stands++)
+    if (await agent.sendAndWait({ name: "stand" }, () => !agent.self.sitting, SIT_STAND_SPAM_MS + WAIT_MARGIN_MS))
+      return true;
+
+  return false;
 }
 
 function quickCastUp(agent: Agent): boolean {

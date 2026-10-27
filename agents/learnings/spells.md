@@ -33,6 +33,7 @@ It fails before it sends anything with:
 Otherwise with what the server answered:
 
 - `noEffect`: it landed but didn't take. The target resisted, it had nothing to heal, or a better buff of its kind is up.
+- `sitting`: the server didn't let you stand up. It ignores a `/stand` or `/sit` within 1.5 s of the last one it took, without a word, so `cast` stands a second time after that.
 - `interrupted`: something hit you before its halfway point.
 - `mustWait`: "You must wait N seconds to cast a spell!" three times. `cast` waits out each one and casts again by itself, so this means something is still swinging at you.
 - `tooFar`, `notInView` (behind you or out of sight), `noTarget` or `noPower`.

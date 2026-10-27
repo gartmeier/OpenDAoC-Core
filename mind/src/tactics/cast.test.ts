@@ -217,10 +217,31 @@ test("fails with wrongTarget, sending nothing, for a friendly Spell at a Mob", a
   expect(t.take()).toEqual([]);
 });
 
-test("stands up first when sitting", async () => {
-  const { t } = await casting("Minor Revigoration", ME, {}, status(100, { power: 20, maxPower: 20, powerPercent: 100, sitting: true }));
+const SITTING = status(100, { power: 20, maxPower: 20, powerPercent: 100, sitting: true });
+const STANDING = status(100, { power: 20, maxPower: 20, powerPercent: 100 });
 
-  expect(t.take()).toEqual([{ name: "stand" }, { name: "target", objectId: ME }, { name: "castSpell", spell: "Minor Revigoration" }]);
+test("stands up first when sitting, and casts once the server says it stands", async () => {
+  const { t } = await casting("Minor Revigoration", ME, {}, SITTING);
+  expect(t.take()).toEqual([{ name: "stand" }]);
+
+  await t.perceive(STANDING);
+
+  expect(t.take()).toEqual([{ name: "target", objectId: ME }, { name: "castSpell", spell: "Minor Revigoration" }]);
+});
+
+// The server drops a /stand within 1.5 s of the /sit before it, without a word.
+test("stands again when the server drops the first stand, and fails with sitting when it drops the second", async () => {
+  const { t, outcome } = await casting("Minor Revigoration", ME, {}, SITTING);
+  expect(t.take()).toEqual([{ name: "stand" }]);
+
+  await t.clock.advance(1799);
+  expect(t.take()).toEqual([]);
+  await t.clock.advance(1);
+  expect(t.take()).toEqual([{ name: "stand" }]);
+
+  await t.clock.advance(1800);
+  expect(await outcome).toEqual({ ok: false, reason: "sitting" });
+  expect(t.take()).toEqual([]);
 });
 
 test("stops a run in progress first", async () => {

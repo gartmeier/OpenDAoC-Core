@@ -114,10 +114,32 @@ export class Agent {
    * Throws `Stopped` once the Agent is stopped.
    */
   waitFor<T>(condition: (percept: Percept | undefined) => T | undefined | false, timeoutMs: number): Promise<T | undefined> {
-    if (this.#stopped)
-      return Promise.reject(new Stopped());
+    return this.#wait(condition, timeoutMs).done;
+  }
 
-    return new Promise((resolve, reject) => {
+  /**
+   * Sends a Primitive and waits for what it should bring about, as `waitFor` does, or gives `undefined` at once when the Primitive isn't sent.
+   * The wait starts before the Primitive goes, because the Harness can answer with Percepts before the Primitive's result.
+   */
+  async sendAndWait<T>(primitive: Primitive, condition: (percept: Percept | undefined) => T | undefined | false, timeoutMs: number): Promise<T | undefined> {
+    const waiting = this.#wait(condition, timeoutMs);
+    // Stopping rejects the wait too, and the send's own `Stopped` is the one that's thrown.
+    waiting.done.catch(() => {});
+
+    // Nothing it would bring about comes.
+    if (!(await this.send(primitive)).queued)
+      waiting.giveUp();
+
+    return waiting.done;
+  }
+
+  /** A `waitFor`, and a way to end it early with `undefined`. */
+  #wait<T>(condition: (percept: Percept | undefined) => T | undefined | false, timeoutMs: number): { done: Promise<T | undefined>; giveUp: () => void } {
+    if (this.#stopped)
+      return { done: Promise.reject(new Stopped()), giveUp: () => {} };
+
+    let giveUp = () => {};
+    const done = new Promise<T | undefined>((resolve, reject) => {
       const finish = (end: () => void) => {
         cancel();
         this.#waiters.delete(waiter);
@@ -136,22 +158,13 @@ export class Agent {
         stop: () => finish(() => reject(new Stopped())),
       };
       const cancel = this.clock.schedule(timeoutMs, () => finish(() => resolve(undefined)));
+      giveUp = () => finish(() => resolve(undefined));
 
       if (!waiter.check(undefined))
         this.#waiters.add(waiter);
     });
-  }
 
-  /**
-   * Sends a Primitive and waits for what it should bring about, as `waitFor` does.
-   * The wait starts before the Primitive goes, because the Harness can answer with Percepts before the Primitive's result.
-   */
-  async sendAndWait<T>(primitive: Primitive, condition: (percept: Percept | undefined) => T | undefined | false, timeoutMs: number): Promise<T | undefined> {
-    const waiting = this.waitFor(condition, timeoutMs);
-    // Stopping rejects the wait too, and the send's own `Stopped` is the one that's thrown.
-    waiting.catch(() => {});
-    await this.send(primitive);
-    return waiting;
+    return { done, giveUp };
   }
 
   /** Runs a Tactic to its end. A Tactic stopped on the way ends failed with the reason `stopped`. */

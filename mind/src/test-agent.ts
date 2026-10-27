@@ -51,6 +51,8 @@ export class TestAgent {
   readonly sent: Primitive[] = [];
   readonly lines: string[] = [];
   readonly agent: Agent;
+  /** While set, every Primitive comes back not sent, for this reason. */
+  notSending: string | undefined;
   #elapsedMs = 0;
 
   /** `random` gives these numbers in turn, then 0.5. */
@@ -58,7 +60,9 @@ export class TestAgent {
     this.agent = new Agent({
       send: async (primitive) => {
         this.sent.push(primitive);
-        return { type: "primitiveResult", id: this.sent.length, queued: true };
+        return this.notSending === undefined
+          ? { type: "primitiveResult", id: this.sent.length, queued: true }
+          : { type: "primitiveResult", id: this.sent.length, queued: false, reason: this.notSending };
       },
       clock: this.clock,
       random: () => random.shift() ?? 0.5,
