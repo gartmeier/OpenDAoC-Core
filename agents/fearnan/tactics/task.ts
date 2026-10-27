@@ -17,8 +17,10 @@ export async function turnIn(agent: Agent, guard: Point, guardName: string): Pro
   if (!npc) return failed("noGuard");
   await talkTo(agent, npc.objectId);
   await agent.waitFor((p) => p?.kind === "message" && /finish the Kill Task|reward/.test(p.text) || undefined, 3_000);
+  // Listen before whispering: `whisper` waits for the guard's answer itself, so a wait started after it misses the task.
+  const listening = agent.waitFor((p) => p?.kind === "message" && /and kill an? ([^.]+?) and return/.exec(p.text)?.[1], 6_000);
   await whisper(agent, npc.objectId, "task");
-  const given = await agent.waitFor((p) => p?.kind === "message" && /and kill an? ([^.]+?) and return/.exec(p.text)?.[1], 3_000);
+  const given = await listening;
   return given ? { ...succeeded, mob: given } : failed("noTask");
 }
 
@@ -52,6 +54,13 @@ export async function taskLoop(agent: Agent, name: string, guard: Point, guardNa
     const ready = await upkeep(agent, name);
     if (ready === "rested") continue;
     if (!ready.ok) return { ...ready, done };
+
+    // A kill counts for the mate only when it's close: wait up to 90 s for it to catch up before pulling.
+    const mateAway = () => { const p = agent.group.named(name)?.position; return p ? away(agent, p) : 0; };
+    if (mateAway() > 1500 && !agent.group.named(name)?.dead) {
+      await agent.waitFor(() => mateAway() <= 1500 || hostile(agent)[0] ? true : undefined, 90_000);
+      if (hostile(agent)[0]) continue;
+    }
 
     const target = agent.surroundings.npcs
       .filter((n) => n.name === mob && n.healthPercent > 0)
