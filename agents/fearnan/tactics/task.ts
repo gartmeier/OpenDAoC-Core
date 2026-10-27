@@ -29,6 +29,8 @@ export async function turnIn(agent: Agent, guard: Point, guardName: string): Pro
 export async function taskLoop(agent: Agent, name: string, guard: Point, guardName: string, mob: string, area: Point, rounds: number, stopAtLevel = 20): Promise<Outcome & { done?: number; mob?: string }> {
   let done = 0, idle = 0, killed = false;
   while (done < rounds && agent.self.level < stopAtLevel) {
+    // A timer, not a microtask: a loop that awaits nothing else must still let the connection breathe.
+    await agent.waitFor(() => undefined, 50);
     if (agent.self.dead) return { ...failed("died"), done };
 
     const foe = hostile(agent)[0];

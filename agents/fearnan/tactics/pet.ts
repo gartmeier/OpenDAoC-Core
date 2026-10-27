@@ -181,6 +181,8 @@ export async function petGrind(agent: Agent, minutes: number, stopAtLevel: numbe
   const shunned = new Map<number, number>();
 
   while (agent.clock.now() < end && agent.self.level < stopAtLevel) {
+    // A timer, not a microtask: a loop that awaits nothing else must still let the connection breathe.
+    await agent.waitFor(() => undefined, 50);
     if (agent.self.dead) {
       deaths++;
       await agent.sendAndWait({ name: "command", text: "/release" }, () => !agent.self.dead, 30_000);

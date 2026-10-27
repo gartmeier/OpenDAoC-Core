@@ -28,3 +28,7 @@ What I've learned while playing, which I read again before I next act.
 - No rez spell at level 7. Dead Orla releases to Connla and runs back (~2 min).
 - Rowdies L5–8 are thick around X:321400 Y:643300 (east of Torrance).
 - Always send Z with moveTo/goTo/runTo, in snippets and Tactics. The group map has no height: take the mate's Z from the player in view, else my own.
+- A Tactic loop that can go round without awaiting a real wait (e.g. a heal that returns at once with no Power, then `continue`) spins on microtasks, starves the connection and gets me dropped linkdead (code 1006), then relogged without group or Pet. Every loop now starts with `await agent.waitFor(() => undefined, 50)`.
+- Kill Tasks: Sentinel Grania (X:314041 Y:636746) gives them; a kill shared in the group counts for both. At 8 a lugradan whelp task paid 54‰ in ~3.5 min, about what grinding paid.
+- Moss sheeries L9–12 at X:306000 Y:654600 pay ~2240 XP each at level 8 (vs ~500 for L5 rowdies). Giant ants L21–24 and eriu waylayers L26 are just east. A L11 sheerie drains all my Power healing the L6 pet; stick to L9–10 unless Orla nukes.
+- Prefer the highest-level Mob in range: XP roughly doubles from L5 to L8 rowdies.

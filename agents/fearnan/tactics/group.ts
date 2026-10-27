@@ -23,6 +23,13 @@ function bestHeal(agent: Agent) {
     .sort((a, b) => b.level - a.level)[0];
 }
 
+/** Its best damage over time Spell it has the Power for. */
+function bestDot(agent: Agent) {
+  return agent.self.skills
+    .filter((s) => s.page === "Spells" && /damage every/.test(s.details?.description ?? "") && (s.details?.powerCost ?? 0) <= agent.self.power)
+    .sort((a, b) => b.level - a.level)[0];
+}
+
 /** Heals the Group member `name` while below `below`% and in view. */
 export async function healMate(agent: Agent, name: string, below = 60): Promise<void> {
   for (let i = 0; i < 4; i++) {
@@ -105,10 +112,12 @@ class Striker {
  */
 export async function groupFight(agent: Agent, mobId: number, name: string): Promise<Outcome> {
   const end = agent.clock.now() + 120_000;
-  let sent = false;
+  let sent = false, dotUntil = 0;
   const striker = new Striker(agent, mobId);
   try {
     while (agent.clock.now() < end) {
+      // A timer, not a microtask: a loop that awaits nothing else must still let the connection breathe.
+      await agent.waitFor(() => undefined, 50);
       if (agent.self.dead) return failed("died");
       const mob = agent.surroundings.npc(mobId);
       if (!mob || mob.healthPercent <= 0) return succeeded;
@@ -126,10 +135,22 @@ export async function groupFight(agent: Agent, mobId: number, name: string): Pro
       const melee = onMe || onMate || !agent.self.pet;
 
       // Heals: the mate first, then itself, then the Pet. Out of melee they don't get interrupted.
-      if (m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, name, onMate ? 95 : 70); continue; }
-      if (agent.self.healthPercent < 45 && !onMe) { await striker.halt(); await healMe(agent, 70); continue; }
+      // Only with a heal it has the Power for: else the `continue`s would spin without awaiting anything, starve the connection's
+      // heartbeat and get the Character dropped linkdead.
+      const canHeal = !!bestHeal(agent);
+      if (canHeal && m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, name, onMate ? 95 : 70); continue; }
+      if (canHeal && agent.self.healthPercent < 45 && !onMe) { await striker.halt(); await healMe(agent, 70); continue; }
       const pet = petNpc(agent);
-      if (pet && pet.healthPercent < 45 && !onMe) { await striker.halt(); await healPet(agent, 70); continue; }
+      if (canHeal && pet && pet.healthPercent < 45 && !onMe) { await striker.halt(); await healPet(agent, 70); continue; }
+
+      // Its damage over time on the Mob, renewed as it runs out, while there's Power to spare for heals.
+      const dot = bestDot(agent);
+      if (!melee && dot && agent.clock.now() >= dotUntil && agent.self.powerPercent >= 40) {
+        await striker.halt();
+        const reply = await castOn(agent, mobId, dot.name);
+        dotUntil = agent.clock.now() + (reply?.startsWith("You cast") ? (dot.details?.durationSeconds ?? 24) * 1000 : 5_000);
+        continue;
+      }
 
       if (melee) await striker.step();
       else await striker.halt();
@@ -180,6 +201,8 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
   let kills = 0, idle = 0;
   const shunned = new Map<number, number>();
   while (agent.clock.now() < end && agent.self.level < stopAtLevel) {
+    // A timer, not a microtask: a loop that awaits nothing else must still let the connection breathe.
+    await agent.waitFor(() => undefined, 50);
     if (agent.self.dead) {
       await agent.sendAndWait({ name: "command", text: "/release" }, () => !agent.self.dead, 30_000);
       return { ...failed("died"), kills };
@@ -222,7 +245,8 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
         && npc.level >= level + range[0] && npc.level <= level + range[1] && (shunned.get(npc.objectId) ?? 0) < 2)
       .map((npc) => ({ npc, away: away(agent, npc.position) }))
       .filter((x) => x.away < 2500)
-      .sort((a, b) => a.away - b.away)[0];
+      // Higher Mobs pay about twice as much (L8 rowdy ~1000 XP, L5 ~520), so the highest first, then the nearest.
+      .sort((a, b) => b.npc.level - a.npc.level || a.away - b.away)[0];
     if (!mob) {
       if (++idle > 6) return { ...failed("noMob"), kills };
       await agent.waitFor(() => undefined, 10_000);
