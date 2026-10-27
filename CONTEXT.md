@@ -80,6 +80,10 @@ _Avoid_: popup, prompt
 Up to eight Characters who have joined together to share the experience from their kills and talk in their own chat channel.
 _Avoid_: party
 
+**Group member**:
+One of the Characters in a Group.
+_Avoid_: groupmate, party member, teammate
+
 **Navmesh**:
 A zone's static map of where a Character can walk or swim, built from the game client's zone data; it says nothing about what changes, such as whether a door is open or where NPCs are.
 _Avoid_: pathing grid, nav data
