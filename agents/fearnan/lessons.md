@@ -35,3 +35,4 @@ What I've learned while playing, which I read again before I next act.
 - Heal one cast at a time in a fight and re-check who's lowest: a 6-cast heal chain on the Pet let a L11 sheerie kill Orla when it turned on her. Mobs turn on the nuker; Orla must stand off the next spawn.
 - After a relog my buffs stay on the bar but drop off the Concentration list; a stronger buff of the same kind is refused ("already has that effect") until I `cancelConcentration` the weaker one (`dropWeaker` in tactics/pet.ts).
 - At 9 a L11 sheerie paid 5219 XP (46‰) in a group.
+- My Contamination DoT drew a L10 sheerie off the L6 Pet onto me (31–41 a hit): DoTs are off by default in groupFight.

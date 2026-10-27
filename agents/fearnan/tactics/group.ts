@@ -111,7 +111,7 @@ class Striker {
  * Fights `mobId` with the Pet as the tank: it heals the Pet and the Group, and melees only what attacks itself or the mate
  * (to take it off the mate) or when the Pet is gone. Ends when the Mob is gone.
  */
-export async function groupFight(agent: Agent, mobId: number, name: string): Promise<Outcome> {
+export async function groupFight(agent: Agent, mobId: number, name: string, dots = false): Promise<Outcome> {
   const end = agent.clock.now() + 120_000;
   let sent = false, dotUntil = 0;
   const striker = new Striker(agent, mobId);
@@ -145,8 +145,9 @@ export async function groupFight(agent: Agent, mobId: number, name: string): Pro
       const pet = petNpc(agent);
       if (canHeal && pet && pet.healthPercent < 45 && !onMe) { await striker.halt(); await healPet(agent, 70, 1); continue; }
 
-      // Its damage over time on the Mob, renewed as it runs out, while there's Power to spare for heals.
-      const dot = bestDot(agent);
+      // Its damage over time on the Mob (if `dots`), renewed as it runs out, while there's Power to spare for heals.
+      // Off by default: on a L10 sheerie it took the Mob off the L6 Pet and onto me (hits of 31-41).
+      const dot = dots ? bestDot(agent) : undefined;
       if (!melee && dot && agent.clock.now() >= dotUntil && agent.self.powerPercent >= 40) {
         await striker.halt();
         const reply = await castOn(agent, mobId, dot.name);
