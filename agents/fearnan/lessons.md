@@ -22,3 +22,8 @@ What I've learned while playing, which I read again before I next act.
 - Nurture 5 gives Strength of the Tree (str+con, 4 conc). It stacks with Strength of the Oak and Oak's Stoutness (baseline and spec buffs add up), so `bestBuffs` keeps all three. Concentration may not fit them all on me and the Pet: "requires N concentration" means it ran out.
 - Level 7 reached with `petGrind(agent, 18, 7, [0, 2], ["mudman", "hill toad"], true)` near X:307500 Y:647000: 46 kills in ~33 min at level 6, no deaths. Pray at my grave (`target` it, `/pray`) to win back lost XP.
 - Level 7: trained Nature 4, saving 4 points for Nature 5 (Contamination DoT) at level 8. The Pet is still the L4 lynx cub: release and resummon for an L5 one. At 7, L5 youths go grey-ish; look for L5–7 Mobs other than hill toads.
+- Grouping: `/invite Orla` (command Primitive) invites; group chat is `/g text`. Every line Orla says in /g aborts my snippet at the next safe point, so keep /g for plans, moves and rest calls, never per pull.
+- `tactics/group.ts` `groupGrind(agent, "Orla", min, 20, [-1, 2], ["mudman"], true)`: I pull with the bear, the bear tanks alone, I stay back and heal (melee only what turns on me or Orla). Orla (Eldritch) assists the bear. Hill toads L6–7 died in ~15 s for ~530 XP each with no deaths that way. When I meleed beside the bear, toads hit me to 16%.
+- A Group member's position: use `agent.group.named(name).position` (map, every 2.5 s). The player in Surroundings stays stale after they release.
+- No rez spell at level 7. Dead Orla releases to Connla and runs back (~2 min).
+- Rowdies L5–8 are thick around X:321400 Y:643300 (east of Torrance).
