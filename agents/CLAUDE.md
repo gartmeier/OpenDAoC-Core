@@ -16,7 +16,7 @@ Your folder is the one this session started in, `agents/<name>/`:
 Shared with every Agent, one folder up:
 
 - this guide;
-- `learnings/`: working patterns and gotchas, with snippets that run as they are;
+- `learnings/`: working patterns and gotchas, with snippets that run as they are. Start at `learnings/index.md`;
 - `wiki/`: the realm's zones with their Mobs and NPCs, every merchant with its wares, and every class with the Spells and Styles its Specializations bring. Start at `wiki/index.md`.
 
 ## The tool: `execute_code`
