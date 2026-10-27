@@ -92,7 +92,11 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     const near = (n: { position: Point }) => dist(n.position, agent.self.position) < 2000;
     const live = agent.surroundings.npcs.filter((n) => n.realm === "None" && n.healthPercent > 0 && n.targetId !== undefined && near(n));
     const onMe = live.find((n) => n.targetId === me);
-    const onUs = live.find((n) => n.healthPercent <= joinBelow && (party.has(n.targetId!) || agent.surroundings.npcs.some((p) => p.objectId === n.targetId && p.realm === "Hibernia" && dist(p.position, home) < 1500)));
+    // A Mob counts as ours when it fights one of us or the pet, or when the pet fights it (the Mob's own target can lag).
+    const pets = agent.surroundings.npcs.filter((p) => p.realm === "Hibernia" && dist(p.position, home) < 1500);
+    const petTargets = new Set(pets.map((p) => p.targetId));
+    const onUs = agent.surroundings.npcs.find((n) => n.realm === "None" && n.healthPercent > 0 && near(n) && n.healthPercent <= joinBelow &&
+      (party.has(n.targetId!) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId)));
     const busy = onMe ?? onUs;
     if (busy) {
       const k = await burn(agent, busy.objectId);

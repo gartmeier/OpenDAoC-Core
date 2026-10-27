@@ -37,3 +37,6 @@ What I've learned while playing, which I read again before I next act.
 - Slevin (Shield Merchant, X:309594 Y:645580 Z:4849, by Torrance) is the merchant nearest the rowdies.
 - **Nuke from my specced line only.** Ethereal Blast (baseline, 29 on paper) hit rowdies for 11–21 with Mana at 1; Shadowcharge (Light 8, 41 on paper) hits for 51–55. `duo.ts` picks only "Shadow…" nukes.
 - Duo on rowdies at level 8: 26 kills in 15 min, ~22‰/min. L5 rowdies give ~520 XP, L8 ~1000. Next camp: moss sheeries L9–12, 87 of them north of the rowdies (around X:294500–306000 Y:655000–659000, `wiki/zones/shannon-estuary.md`).
+- **Examine drops before selling, above all jewellery.** I sold a Matterbender Choker and a Spiritbender Jewel to Peadar (Connla) with my neck and jewel slots empty. Peadar (X:296611 Y:641331, by Keagan the Healer) buys loot; Colm is unreachable from there.
+- Sorcha's robes in Connla are "from another realm" and can't be equipped (see papercuts): don't buy cloth there.
+- **Don't sit or stand near an idle Mob's spawn.** At the sheeries a L11 came at me while I rested 69 units from it; it interrupted every Shadowcharge and killed me at 2%. Rest by Fearnan, away from the Mobs.
