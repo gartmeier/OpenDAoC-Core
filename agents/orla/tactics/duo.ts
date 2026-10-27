@@ -1,4 +1,5 @@
 import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/tactic.ts";
+import { answer } from "../../../mind/src/tactics/dialog.ts";
 import { cast } from "../../../mind/src/tactics/cast.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
@@ -58,7 +59,7 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
     const onMe = me !== undefined && m.targetId === me && dist(agent.self.position, m.position) < 300;
     const out = await cast(agent, spell.name, objectId, onMe && agent.self.power >= 2 * cost && !agent.self.cooldowns.has("Quickcast") ? { quickCast: true } : undefined);
     if (!out.ok && out.reason === "tooFar") await runTo(agent, m.position, range - 400);
-    if (!out.ok && !["interrupted", "noEffect", "tooFar", "mustWait"].includes(out.reason)) {
+    if (!out.ok && !["interrupted", "noEffect", "tooFar", "mustWait", "noTarget"].includes(out.reason)) {
       console.log(`cast: ${out.reason}`);
       await agent.waitFor(() => undefined, 1000);
     }
@@ -70,12 +71,15 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
  * Hunts with a partner: assists on whatever fights the group (or, with `lead`, pulls Mobs of `levels` near the partner, announces each pull in group chat,
  * burns them down, and rests (saying so) when low. Stops after `minutes` or at `untilLevel`.
  */
-export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false, joinBelow = 85): Promise<Outcome> {
+export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false, joinBelow = 75): Promise<Outcome> {
   const end = Date.now() + minutes * 60_000;
   let kills = 0;
   const log: string[] = [];
   while (Date.now() < end && agent.self.level < untilLevel) {
     if (agent.self.dead) return failed("died");
+    // A relog drops me from the Group: take the partner's invite again.
+    const d = agent.self.dialog;
+    if (d?.code === "GroupInvite" && d.text.startsWith(partner)) await answer(agent, true);
     const me = agent.self.objectId;
     const home = partnerAt(agent, partner);
     const party = new Set(agent.group.members.map((m) => m.objectId));

@@ -31,3 +31,7 @@ What I've learned while playing, which I read again before I next act.
 - To pray at my grave: `target` the grave's objectId (a World object "Orla's Grave"), then `/pray`.
 - Duo XP at level 7: a level 6–7 hill toad gives ~260–530 (12–25‰) with camp and group bonus.
 - **Always give `runTo` and `moveTo` a real Z: the target's own `position.z`** (a Mob's, a player's in view, a known spot's), never 0 or a made-up value. (Rule from the Human.) Without Z, `runTo` to Fearnan's map position stood still for 5 minutes and timed out. The group map has no Z: `duo.ts` `partnerAt` takes the Z Fearnan last had in view.
+- **Kill Tasks in a group:** Sentinel Grania (X:314041 Y:636746 Z:4849) gives level 7 a lugradan whelp (L4–6, nearest ~X:310500 Y:634900). With Fearnan (L8) and me both on the whelp task, one shared kill counted for both of us, and each turned in for 1329 XP (61‰ at level 7) + ~2.5s. But the L4 whelp gave no kill XP (grey to Fearnan). A task loop is ~3–4 min, ~15–25‰/min; pulling rowdies as a group gave ~29‰/min, so we pull and skip tasks for now.
+- Rowdies L6–8 near X:321200 Y:643300 (Fearnan's camp): ~1 kill a minute as a duo, 450–540 XP each with camp bonus. Wait until the pet has the Mob at 75% before nuking, or it turns on me and every cast is interrupted.
+- A relog of either of us drops me from the Group; Fearnan re-invites and `duo` now accepts the invite itself.
+- Slevin (Shield Merchant, X:309594 Y:645580 Z:4849, by Torrance) is the merchant nearest the rowdies.
