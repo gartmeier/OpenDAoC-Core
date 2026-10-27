@@ -13,6 +13,14 @@ const away = (agent: Agent, p: { x: number; y: number }) => {
   return at ? Math.hypot(p.x - at.x, p.y - at.y) : Infinity;
 };
 
+/**
+ * Whether `buff` is kept up on `target` per the Concentration list. The list cuts names ("Strength of .." is both Strength of the Redwood
+ * and Strength of the Tree), so the cost tells them apart.
+ */
+export function kept(agent: Agent, buff: Spell, target: string): boolean {
+  return agent.self.concentrationBuffs.some((k) => k.spell === cut(buff.name) && k.cost === buff.details?.concentrationCost && k.target === cut(target));
+}
+
 /** The Pet as an NPC in view, if it has one. */
 export function petNpc(agent: Agent) {
   return agent.self.pet && agent.surroundings.npc(agent.self.pet.objectId);
@@ -69,7 +77,7 @@ export async function ensurePet(agent: Agent): Promise<Outcome> {
   if (!pet) return failed("petOutOfView");
 
   for (const buff of bestBuffs(agent, true)) {
-    if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name) && kept.target === cut(pet.name))) continue;
+    if (kept(agent, buff, pet.name)) continue;
     if (away(agent, pet.position) > 900) await runTo(agent, pet.position, 300);
     await castOn(agent, pet.objectId, buff.name);
   }
@@ -81,7 +89,7 @@ export async function buffSelf(agent: Agent): Promise<void> {
   const me = agent.self.objectId;
   if (me === undefined) return;
   for (const buff of bestBuffs(agent, false)) {
-    if (agent.self.concentrationBuffs.some((kept) => kept.spell === cut(buff.name) && kept.target !== cut(petNpc(agent)?.name ?? ""))) continue;
+    if (kept(agent, buff, "Fearnan")) continue;
     await castOn(agent, me, buff.name);
   }
 }

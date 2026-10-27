@@ -27,3 +27,4 @@ What I've learned while playing, which I read again before I next act.
 - A Group member's position: use `agent.group.named(name).position` (map, every 2.5 s). The player in Surroundings stays stale after they release.
 - No rez spell at level 7. Dead Orla releases to Connla and runs back (~2 min).
 - Rowdies L5–8 are thick around X:321400 Y:643300 (east of Torrance).
+- Always send Z with moveTo/goTo/runTo, in snippets and Tactics. The group map has no height: take the mate's Z from the player in view, else my own.

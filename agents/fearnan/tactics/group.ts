@@ -2,7 +2,7 @@ import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/t
 import { distance, headingTowards } from "../../../mind/src/surroundings.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
-import { buffSelf, castOn, ensurePet, healMe, healPet, petNpc } from "./pet.ts";
+import { buffSelf, castOn, ensurePet, healMe, healPet, kept, petNpc } from "./pet.ts";
 
 const away = (agent: Agent, p: { x: number; y: number }) => {
   const at = agent.self.position;
@@ -29,8 +29,14 @@ export async function healMate(agent: Agent, name: string, below = 60): Promise<
     const m = mate(agent, name);
     const heal = bestHeal(agent);
     if (!m?.player || !heal || (m.member.healthPercent ?? 100) >= below || m.member.dead) return;
+    const before = m.member.healthPercent;
     const reply = await castOn(agent, m.player.objectId, heal.name);
     if (!reply?.startsWith("You cast")) return;
+    // The group window lags the heal: wait for it (or "fully healed") so it doesn't overheal on a stale percentage.
+    const full = await agent.waitFor((percept) =>
+      percept?.kind === "message" && /is fully healed/.test(percept.text) ? "full" :
+      mate(agent, name)?.member.healthPercent !== before ? "updated" : undefined, 2_000);
+    if (full === "full") return;
   }
 }
 
@@ -41,20 +47,19 @@ const MATE_BUFFS = [/^Increases the target's armor factor/, /^Increases the targ
 export async function buffMate(agent: Agent, name: string): Promise<void> {
   const m = mate(agent, name);
   if (!m?.player || m.member.dead || !m.member.position || away(agent, m.member.position) > 1200) return;
-  const cut = (s: string) => (s.length > 14 ? `${s.slice(0, 12)}..` : s);
   for (const kind of MATE_BUFFS) {
     const buff = agent.self.skills.filter((s) => s.page === "Spells" && kind.test(s.details?.description ?? "") && s.details?.concentrationCost)
       .sort((a, b) => b.level - a.level)[0];
-    if (!buff || agent.self.concentrationBuffs.some((k) => k.spell === cut(buff.name) && k.target === cut(name))) continue;
+    if (!buff || kept(agent, buff, name)) continue;
     if ((buff.details?.concentrationCost ?? 0) > agent.self.concentration) continue;
     await castOn(agent, m.player.objectId, buff.name);
   }
 }
 
 /** Mobs attacking it, its Pet or a Group member. */
-function hostile(agent: Agent) {
+export function hostile(agent: Agent) {
   const ours = [agent.self.objectId, agent.self.pet?.objectId, ...agent.group.members.map((m) => m.objectId)].filter((id) => id !== undefined);
-  return ours.flatMap((id) => agent.surroundings.attacking(id!)).filter((npc) => npc.realm === "None");
+  return ours.flatMap((id) => agent.surroundings.attacking(id!)).filter((npc) => npc.realm === "None" && npc.healthPercent > 0);
 }
 
 /** Melee on `mobId` without spamming the server: it sends only what changed since the last step. */
@@ -137,6 +142,36 @@ export async function groupFight(agent: Agent, mobId: number, name: string): Pro
 }
 
 /**
+ * Between fights: a Pet, buffs on itself and the mate, heals, then a rest while it or the mate is low.
+ * "rested" when it rested (look around again), else whether both are ready to pull.
+ */
+export async function upkeep(agent: Agent, name: string): Promise<Outcome | "rested"> {
+  const pet = await ensurePet(agent);
+  if (!pet.ok && pet.reason !== "petOutOfView") return pet;
+  await buffSelf(agent);
+  await buffMate(agent, name);
+  await healMate(agent, name, 90);
+  await healPet(agent, 85);
+  await healMe(agent, 85);
+
+  const m = mate(agent, name);
+  if (!m) return failed("notGrouped");
+  if (m.member.dead) return failed("mateDead");
+
+  // Rest until it is full, and give the mate time to get its Power back.
+  if (agent.self.healthPercent < 90 || agent.self.powerPercent < 70 || (m.member.powerPercent ?? 100) < 60 || (m.member.healthPercent ?? 100) < 80) {
+    await Promise.race([
+      rest(agent, 100),
+      agent.waitFor(() => (agent.self.powerPercent >= 90 && agent.self.healthPercent >= 95 && (mate(agent, name)?.member.powerPercent ?? 100) >= 80) || undefined, 120_000),
+      agent.waitFor(() => hostile(agent)[0], 120_000),
+    ]);
+    await agent.send({ name: "stand" });
+    return "rested";
+  }
+  return succeeded;
+}
+
+/**
  * Grinds with the Group member `name` for `minutes`: rests until both are ready, waits for them to be close, pulls the nearest Mob
  * of `below` levels relative to its own (e.g. [-2, 1] = two above to one below) with the Pet, and heals everyone.
  */
@@ -157,42 +192,27 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
       continue;
     }
 
-    const pet = await ensurePet(agent);
-    if (!pet.ok && pet.reason !== "petOutOfView") return { ...pet, kills };
-    await buffSelf(agent);
-    await buffMate(agent, name);
-    await healMate(agent, name, 90);
-    await healPet(agent, 85);
-    await healMe(agent, 85);
-
-    const m = mate(agent, name);
-    if (!m) return { ...failed("notGrouped"), kills };
-    if (m.member.dead) return { ...failed("mateDead"), kills };
-
-    // Rest until it is full, and give the mate time to get its Power back.
-    if (agent.self.healthPercent < 90 || agent.self.powerPercent < 70 || (m.member.powerPercent ?? 100) < 60 || (m.member.healthPercent ?? 100) < 80) {
-      const rested = await Promise.race([
-        rest(agent, 100),
-        agent.waitFor(() => (agent.self.powerPercent >= 90 && agent.self.healthPercent >= 95 && (mate(agent, name)?.member.powerPercent ?? 100) >= 80) || undefined, 120_000).then(() => succeeded),
-        agent.waitFor(() => hostile(agent)[0], 120_000).then((foe) => (foe ? failed("attacked") : succeeded)),
-      ]);
-      await agent.send({ name: "stand" });
-      if (!rested.ok && rested.reason === "attacked") continue;
-      continue;
-    }
+    const ready = await upkeep(agent, name);
+    if (ready === "rested") continue;
+    if (!ready.ok) return { ...ready, kills };
+    const m = mate(agent, name)!;
 
     // Stay close to the mate.
     // The group map's position, not the player in view, which stays stale after a release.
     const where = m.member.position;
-    if (!m.player || !where || away(agent, where) > 1200) {
-      if (where && away(agent, where) < 3000) await runTo(agent, { ...where, z: agent.self.position!.z }, 400);
+    // Following, it keeps closer, and runs to where the mate is seen, not the map's 2.5 s old point.
+    const leash = lead ? 1200 : 500;
+    const there = m.player?.position ?? (where && { ...where, z: agent.self.position!.z });
+    if (!m.player || !where || away(agent, where) > leash) {
+      // Not in view though the map says it's close: the map is stale (it lags, or the mate is gone), so wait rather than spin.
+      if (there && away(agent, there) < 8000 && away(agent, there) > (lead ? 400 : 200)) await runTo(agent, there, lead ? 400 : 200);
       else await agent.waitFor(() => undefined, 5_000);
       continue;
     }
 
     if (!lead) {
-      // The mate pulls: wait for a Mob to attack one of us.
-      await agent.waitFor(() => hostile(agent)[0], 15_000);
+      // The mate pulls: wait for a Mob to attack one of us, or for the mate to move off.
+      await agent.waitFor(() => hostile(agent)[0] || (away(agent, mate(agent, name)?.player?.position ?? where) > leash ? "moved" : undefined), 15_000);
       continue;
     }
 
