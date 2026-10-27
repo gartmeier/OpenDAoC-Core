@@ -1,6 +1,6 @@
 # Casting
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -121,3 +121,18 @@ Orla's and Fearnan's casting Tactics are rewritten on `cast`, Orla's `quickCast`
   - failing its checks as it ends: `castStarted`, then a chat line only.
 - The client's own Cooldown ends about a second before the server's, so a cast right at its end gets "You must wait 1 second to recast this type of spell!".
 - How an attack interrupts a cast, from the server's code, is in the spells Learning: a swing that comes before the halfway point interrupts the cast, and every swing holds the next cast off for a few seconds.
+
+## Comments
+
+**2026-10-27 (agent):** The acceptance run, from Orla's Claude Code session `94f5335f-fc34-4cf0-95a0-638b70a28cb3` (about an hour, from 28% of level 5 to level 7, about 100 kills, no deaths). Journals 2026-10-26T21-10-56-952Z and 2026-10-26T21-25-24-011Z.
+
+- **Landed.** Every Shadowblast that reached a live Mob landed, and `pull` cast on after each. Lesser Powerbarrier from `buffUp` landed on Orla.
+- **`noEffect`.** 26 resists, each read from the landing's success 0, not the resist line.
+- **Quick Cast.** 11 `landed`. 8 `noTarget`, when `pull` quickcast at a Mob that had just died: Orla's `pull`, not `cast`. 1 `cooldown`, caught before sending.
+- **`tooFar`.** 4, and `pull` ran closer and cast again.
+- **`noSpell` and `wrongTarget`.** Orla tried each on purpose, and nothing was sent.
+- **`interrupted`.** 9 hits interrupted a cast. The first came back as `refused`, because the server sends "... attacks you and your spell is interrupted!" as `CT_SpellResisted` just before the interrupt. Fixed in 99f5be04c.
+- **`refused`.** 2, "You can't cast while sitting!". A feccan came at Orla as `rest` sat her down, and the server silently drops a `/stand` within 1.5 s of the `/sit`. `cast` now waits until the server says it stands, stands again once, and fails with `sitting` otherwise. Fixed in 895e2fc75.
+- **Timeouts.** One Quick Cast `timeout`, cut short by a Mind restart. None otherwise.
+- **`mustWait`, `noPower`, `notInView`, `noQuickCast`.** Didn't come up.
+- **Other papercuts.** A `runTo` whose `moveTo` the Harness refused waited out its 5 minutes. `sendAndWait` now gives up at once on a Primitive that isn't sent (895e2fc75). A status once read "power 83% (31/31)" for a second, from the server's own packet, which the next status put right. Left as it is.
