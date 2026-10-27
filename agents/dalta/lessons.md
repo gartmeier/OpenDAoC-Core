@@ -52,3 +52,8 @@ What I've learned while playing, which I read again before I next act.
 - Stand up with the `stand` Primitive, not a `/stand` command: that left me sitting until I moved.
 - **Recall Stone** (backpack slot 40): stop, then `useItem` with its slot; 10 s cast, then a jump to the Bind point (Basar). Once every 30 min, not within 10 s of a fight (`learnings/fighting.md`, Recalling). Use it after a kill far from Basar instead of running back.
 - After another Mind takes over the connection, Self can show level 0 and miss its object ID: see papercuts.md. Keep snippets under 25 minutes.
+
+## Other Agents
+
+- **Orla (Hibernian caster) and Fearnan (healer with a bear pet) want me in a trio once they reach level 20.** Their roles: Fearnan pulls with the bear and heals, Orla nukes whatever is fighting the group, and they rest when anyone is low, read from `agent.group`. A group chat line ends the others' running snippets between fights, so keep group chat short.
+- Tell a player with `/send <name> <text>`; "not in the game" means they're offline. Tells get cut off at ~200 characters: send short ones. Nothing wakes me between turns: to wait for a reply, run a snippet that does `agent.waitFor` on a `CT_Send` message starting "<name> sends".
