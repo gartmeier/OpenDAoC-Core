@@ -30,3 +30,4 @@ What I've learned while playing, which I read again before I next act.
 - Quick Cast has its own cooldown: check `agent.self.cooldowns.has("Quickcast")` before asking `cast` for it, or it fails with `cooldown` every time.
 - To pray at my grave: `target` the grave's objectId (a World object "Orla's Grave"), then `/pray`.
 - Duo XP at level 7: a level 6–7 hill toad gives ~260–530 (12–25‰) with camp and group bonus.
+- **Always give `runTo` and `moveTo` a real Z: the target's own `position.z`** (a Mob's, a player's in view, a known spot's), never 0 or a made-up value. (Rule from the Human.) Without Z, `runTo` to Fearnan's map position stood still for 5 minutes and timed out. The group map has no Z: `duo.ts` `partnerAt` takes the Z Fearnan last had in view.

@@ -3,7 +3,7 @@ import { cast } from "../../../mind/src/tactics/cast.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
 
-type Point = { x: number; y: number };
+type Point = { x: number; y: number; z?: number };
 
 const dist = (a: Point | undefined, b: Point | undefined) => (a && b ? Math.hypot(a.x - b.x, a.y - b.y) : Infinity);
 
@@ -20,9 +20,21 @@ const nuke = (agent: Agent) =>
     .filter((s) => s.page === "Spells" && s.details?.description.startsWith("Inflicts") && !(s.details?.recastSeconds))
     .sort((a, b) => damageOf(b.details?.description) - damageOf(a.details?.description))[0];
 
-/** Where the partner is: in view if possible, else from the group map. */
-export const partnerAt = (agent: Agent, name: string): Point | undefined =>
-  agent.surroundings.players.find((p) => p.name === name)?.position ?? agent.group.named(name)?.position;
+let partnerZ: number | undefined;
+
+/**
+ * Where the partner is, always with a real Z (the Human's rule for every run): in view, its own position; else the group map's x and y,
+ * which carry no height, with the Z it last had in view (or mine, if it was never in view).
+ */
+export const partnerAt = (agent: Agent, name: string): { x: number; y: number; z: number } | undefined => {
+  const seen = agent.surroundings.players.find((p) => p.name === name)?.position;
+  if (seen) {
+    partnerZ = seen.z;
+    return seen;
+  }
+  const map = agent.group.named(name)?.position;
+  return map && { ...map, z: partnerZ ?? agent.self.position!.z };
+};
 
 /** Nukes `objectId` until it dies, from range. Keeps casting even when it's on me (the pet should take it back). */
 export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
@@ -58,7 +70,7 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
  * Hunts with a partner: assists on whatever fights the group (or, with `lead`, pulls Mobs of `levels` near the partner, announces each pull in group chat,
  * burns them down, and rests (saying so) when low. Stops after `minutes` or at `untilLevel`.
  */
-export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false): Promise<Outcome> {
+export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false, joinBelow = 85): Promise<Outcome> {
   const end = Date.now() + minutes * 60_000;
   let kills = 0;
   const log: string[] = [];
@@ -66,10 +78,15 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     if (agent.self.dead) return failed("died");
     const me = agent.self.objectId;
     const home = partnerAt(agent, partner);
-
-    // Anything fighting us (me, partner, or the pet) first.
     const party = new Set(agent.group.members.map((m) => m.objectId));
-    const busy = agent.surroundings.npcs.find((n) => n.realm === "None" && n.healthPercent > 0 && n.targetId !== undefined && (n.targetId === me || party.has(n.targetId) || agent.surroundings.npcs.some((p) => p.objectId === n.targetId && p.realm === "Hibernia" && dist(p.position, home) < 1500)) && dist(n.position, agent.self.position) < 2000);
+
+    // Join a fight on the bear or the partner only once the bear has hit it a while, so the bear keeps the aggro.
+    // Anything on me I fight at once.
+    const near = (n: { position: Point }) => dist(n.position, agent.self.position) < 2000;
+    const live = agent.surroundings.npcs.filter((n) => n.realm === "None" && n.healthPercent > 0 && n.targetId !== undefined && near(n));
+    const onMe = live.find((n) => n.targetId === me);
+    const onUs = live.find((n) => n.healthPercent <= joinBelow && (party.has(n.targetId!) || agent.surroundings.npcs.some((p) => p.objectId === n.targetId && p.realm === "Hibernia" && dist(p.position, home) < 1500)));
+    const busy = onMe ?? onUs;
     if (busy) {
       const k = await burn(agent, busy.objectId);
       if (k.ok) kills++;
