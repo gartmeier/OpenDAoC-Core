@@ -69,8 +69,6 @@ for (const buff of agent.self.skills.filter((skill) => skill.page === "Spells" &
 return results.length ? results : "all on";
 ```
 
-On the Pet as on you, two baseline buffs of the same kind don't add up, nor do two spec buffs: only the better one works. A baseline buff and a spec buff do add up, though, even for the same stat. Strength of the Oak (baseline Nurture, strength) and Strength of the Tree (spec Nurture, strength and constitution) both count, so keep both up.
-
 ## Fighting with it
 
 The Pet doesn't join your fights by itself. It defends you when something hits you, and fights back when hit, but a Mob you attack it leaves alone until you send it in with `Attack`.

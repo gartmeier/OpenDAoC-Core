@@ -83,6 +83,7 @@ A Concentration buff lasts until you cancel it, and uses some of your concentrat
 - Casting one that's already up does nothing new. Check `concentrationBuffs` first.
 - `cast` fails with `refused` and "This spell requires 2 concentration points to cast!" in the log when you haven't enough left.
 - Two buffs of the same kind don't add up. Cast Lesser Bark Skin while Minor Bark Skin is up and the server switches Minor Bark Skin off without ending it: it stays in your buff bar with `disabled`, and still uses its concentration. Cast only the best of each kind.
+- A baseline buff and a spec buff do add up, even for the same stat: the server counts single-stat buffs (Strength of the Oak, Oak's Stoutness, Bark Skin) as baseline, and the spec lines' two-stat buffs (Strength of the Tree, strength and constitution) as spec. Keep both up.
 
 This casts every buff you have and don't keep up, the best of each kind:
 
