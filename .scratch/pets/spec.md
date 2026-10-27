@@ -1,6 +1,6 @@
 # Milestone 9: Pets
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -183,3 +183,27 @@ Meanwhile Orla waits at level 5, apart from its run for the `abilities` spec, wh
 - **Milestone ladder:** `.scratch/milestones.md`. This spec is milestone 9.
 
 ## Comments
+
+**2026-10-27 (agent):** The Human's acceptance run, from Fearnan's Journal, commits and Claude Code sessions. Fearnan kept its memory and Lessons from milestone 7 and started as a level 5 Druid with Call Minor Nature Spirit.
+
+1. **The prompts.** At 21:40 Claude Code was told "Grind until level 7. You now have a pet. Get familiar with it." It summoned a wolf cub within 14 s, from the pets Learning. At 21:46 the Human nudged it with "Buffs work on pets too", then stopped it and had it log out at 21:48. At 22:07 a cleared session was told "Grind until level 7 using the pet.", and the Mind was reconnected at 22:11.
+2. **The levels.** Level 6 came at 22:24 and 7 at 23:08, about 1 h 15 min of play from 5. At level 6 to 7 its `petGrind` got 46 kills in about 33 minutes without a death.
+3. **How it used the Pet.** It wrote `tactics/pet.ts`. `ensurePet` summons a Pet when it has none and puts its best Concentration buffs on it. `petFight` sends the Pet in and melees beside it, healing the Pet below 50%. `petGrind` grinds with both. The helpers follow the Learning's snippets, finding the Pet by `agent.self.pet.objectId`.
+4. **Orders.** It sent `commandPet` 78 times, always `Attack`, and the server answered each with "You command the … to kill your target!". It never used another order, and nothing was refused.
+5. **Summons and Pets lost.** It summoned 4 times: a wolf cub, a bear cub, a minor nature spirit and a lynx cub.
+   - The wolf cub died fighting a villainous youth on its own while Fearnan sat.
+   - The bear cub was lost when Fearnan logged out at 21:48.
+   - The minor nature spirit was released when Fearnan died at level 6.
+   - The lynx cub, level 4, lasted to level 7.
+6. **Deaths.** One, at 22:27: a hill toad (level 6–7) turned on Fearnan while it meleed beside the Pet. It added hill toads to the Mobs it avoids.
+7. **Its files.** It added 9 Lessons and one Tactic (`tactics/pet.ts`), and changed `tactics/grind.ts`. Its one papercut isn't about Pets: a Tactic import that failed to link stayed cached, so it had to rename the file.
+8. **The server log** has no speed-check entries for Fearnan.
+
+What it ran into:
+
+- **Buffing the Pet came from the Human.** The Learning didn't say that a Druid's buffs work on its Pet. After the nudge, buffing the Pet before fights became part of `ensurePet`, and the buffed Pet tanked Mobs of Fearnan's level.
+- **It melees beside the Pet instead of staying back.** The Learning warns about the aggro split and suggests healing from behind. Fearnan chose "buffed Pet tanks, I melee beside it", which cost its one death.
+- **A Pet update with object ID 0.** Just before each close, the server updates the pet window with no Pet, and Self briefly believed in Pet #0. Fixed in `cba87f52b`: object ID 0 is no Pet.
+- **It doesn't resummon for a better Pet.** At level 7 the Pet was still the level 4 lynx cub. Fearnan noted it should release it and summon a level 5 one.
+
+**2026-10-27 (Human, recorded by agent):** Resolved. Fearnan went from 5 to 7 fighting with its Pet, with one nudge.
