@@ -15,10 +15,13 @@ const headingTo = (agent: Agent, p: Point) => {
 
 const damageOf = (description = "") => Number(/Inflicts (\d+)/.exec(description)?.[1] ?? 0);
 
-/** The Shadow Control nuke (no recast) that inflicts the most. */
+/**
+ * The Shadow Control nuke (no recast) that inflicts the most. Only "Shadow…" Spells: they are my specced Light line, while the
+ * baseline Ethereal Blast (29 on paper) hit for 11–21 with Mana at 1, against 37–41 for Shadowblast (26 on paper).
+ */
 const nuke = (agent: Agent) =>
   agent.self.skills
-    .filter((s) => s.page === "Spells" && s.details?.description.startsWith("Inflicts") && !(s.details?.recastSeconds))
+    .filter((s) => s.page === "Spells" && s.name.startsWith("Shadow") && s.details?.description.startsWith("Inflicts") && !(s.details?.recastSeconds))
     .sort((a, b) => damageOf(b.details?.description) - damageOf(a.details?.description))[0];
 
 let partnerZ: number | undefined;

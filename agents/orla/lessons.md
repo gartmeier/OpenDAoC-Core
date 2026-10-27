@@ -35,3 +35,5 @@ What I've learned while playing, which I read again before I next act.
 - Rowdies L6–8 near X:321200 Y:643300 (Fearnan's camp): ~1 kill a minute as a duo, 450–540 XP each with camp bonus. Wait until the pet has the Mob at 75% before nuking, or it turns on me and every cast is interrupted.
 - A relog of either of us drops me from the Group; Fearnan re-invites and `duo` now accepts the invite itself.
 - Slevin (Shield Merchant, X:309594 Y:645580 Z:4849, by Torrance) is the merchant nearest the rowdies.
+- **Nuke from my specced line only.** Ethereal Blast (baseline, 29 on paper) hit rowdies for 11–21 with Mana at 1; Shadowcharge (Light 8, 41 on paper) hits for 51–55. `duo.ts` picks only "Shadow…" nukes.
+- Duo on rowdies at level 8: 26 kills in 15 min, ~22‰/min. L5 rowdies give ~520 XP, L8 ~1000. Next camp: moss sheeries L9–12, 87 of them north of the rowdies (around X:294500–306000 Y:655000–659000, `wiki/zones/shannon-estuary.md`).
