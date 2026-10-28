@@ -3,7 +3,24 @@ import { GROUP_MEMBER_FLAGS } from "./group.ts";
 import { merchantIndex } from "./inventory.ts";
 import type { EffectEntry, InventoryItem, Percept, PerceptMessage, Primitive } from "./protocol.ts";
 import type { Position } from "./surroundings.ts";
+import { closeSync, openSync, writeSync } from "node:fs";
 import type { Agent } from "./tactic.ts";
+
+/** A Journal file, appended to line by line. */
+export interface JournalFile {
+  write(line: string): void;
+  close(): void;
+}
+
+/**
+ * Opens the Journal file at `path` for appending. Each line is written before `write` returns.
+ * A snippet's module graph ends whatever it started once the snippet ends, so a line it wrote asynchronously could still be under way then.
+ * That write would never finish, and every line after it would wait for it.
+ */
+export function openJournal(path: string): JournalFile {
+  const fd = openSync(path, "a");
+  return { write: (line) => void writeSync(fd, `${line}\n`), close: () => closeSync(fd) };
+}
 
 /** A Percept's line, after the Agent has taken it in. */
 export function describePercept(agent: Agent, character: string, { sequence, elapsedMs, percept }: PerceptMessage): string {

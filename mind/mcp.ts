@@ -5,7 +5,6 @@
 // Usage: bun mind/mcp.ts <character>
 // The server address and token come from mind/.env (see mind/.env.example).
 
-import { createWriteStream } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -13,6 +12,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { Connection, type Ending } from "./src/connection.ts";
 import { loadEnvFile } from "./src/env.ts";
+import { openJournal } from "./src/journal.ts";
 import { DEFAULT_TIMEOUT_MINUTES, type Entry, MAX_TIMEOUT_MINUTES, Mind, MIN_TIMEOUT_MINUTES } from "./src/mind.ts";
 
 const character = Bun.argv[2] ?? "";
@@ -36,8 +36,8 @@ console.log = console.info = console.debug = console.error;
 
 const folder = process.cwd();
 await mkdir(join(folder, "journal"), { recursive: true });
-const journalFile = createWriteStream(join(folder, "journal", `${new Date().toISOString().replace(/[:.]/g, "-")}.log`), { flags: "a" });
-const journal = (line: string) => journalFile.write(`${line}\n`);
+const journalFile = openJournal(join(folder, "journal", `${new Date().toISOString().replace(/[:.]/g, "-")}.log`));
+const journal = (line: string) => journalFile.write(line);
 
 let connection: Connection | undefined;
 let ending: Ending | undefined;
@@ -130,7 +130,8 @@ async function close(): Promise<void> {
     await connected;
   }
 
-  journalFile.end(() => process.exit(0));
+  journalFile.close();
+  process.exit(0);
 }
 
 process.stdin.on("end", () => void close());
