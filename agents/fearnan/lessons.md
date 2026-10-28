@@ -80,3 +80,8 @@ What I've learned while playing, which I read again before I next act.
 - Ionhar (Healer, next to Ornora) restores Constitution: `talkTo`, wait for `agent.self.dialog`, `answer(agent, true)`. A stale dialog may still be open from before; answer it, then talk again. Ornora gave no new task right after one expired on my death.
 - Orla can't mez a Mob under 75% (it's enraged): she can only mez a fresh add before anyone hits it.
 - Tusslers + camp X:375300 Y:517500 Z:5450 at 16 with `groupGrind(agent, "Orla", 15, 20, [-2, 0], ["campkeeper","Hughar","ghastly siabra","parthanan"], true, camp)`: 48 kills in 27 min, ~12 permille a minute, no deaths, ~16k each. Safe but slowing; next look for lone L16-17 Mobs.
+- Level 17 on tusslers (28 kills in 16 min at 16, ~11 permille/min; at 17 only ~9). Regrowth 10 trained, 7 points saved. Pet stays the L12 lynx adolescent (75% of 17 rounds down).
+- **Dew sheeries (L16-19, camp X:383000 Y:519200, 7k east of the tusslers) wiped us at 17: don't go there with the L12 pet.** They pay 35-72k each (~16 permille/min) but bring friends (baf bonus): adds go on me and Orla, a mezzed add wakes, and with a Mob on me every heal is interrupted ("must wait 3 seconds"), so Orla dies, then me. They also eat Orla's Power (4 nukes each): she wants pulls only above 60% Power.
+- Parthanan ears sell to Boyd for ~2.3 gold each (8 for 18 gold): keep them. Strength buffs falling off on death drop carrying capacity (69 lb): sell before running back.
+- Equip jewellery drops: wrists 33/34 (itemType 33), rings 35/36 (itemType 35/36). Loot another Character dropped can't be picked up ("doesn't belong to you").
+- An ungrouped Orla (after her relog) doesn't hear /g: use `/send Orla text`, and `/invite Orla` again.
