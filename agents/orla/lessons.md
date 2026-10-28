@@ -82,3 +82,6 @@ What I've learned while playing, which I read again before I next act.
 - **A Mob under 75% health can't be mezzed**: "Your target is enraged and resists the spell!" (`CCSpellHandler`). Mez adds while they're fresh, before anyone hits them. `mezAdd` now skips hurt ones.
 - Don't switch to the staff against a Mob above my level, even at 13%: one more nuke kills it, the staff does 10.
 - Boyd (Tir na mBeo) paid 16 gold for 7 Scrap of Cloth and 4.5 gold for 2 Parthanan ears: sell those. Duer (X:345412 Y:530199) sells a silk woven vest (L15, AF 15, 3.6 g): bought.
+- **Tusslers at 16 with Fearnan pulling and me assisting: 38 kills in 20 min, ~12‰/min, no deaths** (16k XP each, 3 Shadowsmashes; Light 16 gave Shadowsmash, 114 a hit). Picks: 15 by `/assist`, 23 by the fallback (the pet's target or what's on us), because Fearnan often has the pet or me targeted for a heal or buff when the fight starts. Ask him to re-target the Mob after each heal, or check his target again a few seconds in.
+- Equipping a new torso piece moves the old one to the backpack: check what I drop by name (I dropped the silk vest I had just bought).
+- Bluntbender Cloth Robe (L18, AF 18, +6 con) and Starbinder Girdle dropped from tusslers: worn.
