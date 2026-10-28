@@ -251,7 +251,8 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
       .filter((npc) => npc.realm === "None" && !npc.peaceful && !npc.pet && npc.healthPercent > 0 && !avoid.includes(npc.name)
         && npc.level >= level + range[0] && npc.level <= level + range[1] && (shunned.get(npc.objectId) ?? 0) < 2)
       .map((npc) => ({ npc, away: away(agent, npc.position) }))
-      .filter((x) => x.away < 2500)
+      // The Pet attacks only within 2000 units.
+      .filter((x) => x.away < 1800)
       // Higher Mobs pay about twice as much (L8 rowdy ~1000 XP, L5 ~520), so the highest first, then the nearest.
       .sort((a, b) => b.npc.level - a.npc.level || a.away - b.away)[0];
     if (!mob) {

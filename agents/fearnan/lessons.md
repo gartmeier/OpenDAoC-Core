@@ -36,3 +36,9 @@ What I've learned while playing, which I read again before I next act.
 - After a relog my buffs stay on the bar but drop off the Concentration list; a stronger buff of the same kind is refused ("already has that effect") until I `cancelConcentration` the weaker one (`dropWeaker` in tactics/pet.ts).
 - At 9 a L11 sheerie paid 5219 XP (46‰) in a group.
 - My Contamination DoT drew a L10 sheerie off the L6 Pet onto me (31–41 a hit): DoTs are off by default in groupFight.
+- `/train <line> <level>` works anywhere, no trainer needed. Regrowth spec makes heals land higher (Resurgence 31-62 at Regrowth 4); Regrowth 5 gives Major Resurgance.
+- L12 moss sheeries are too much for us at 9: 59-61 a hit, they turn on Orla after two nukes and kill her in ~6 s, then me. L11 is the limit.
+- Kill Tasks cap at your level per level (9 at level 9). Grania's spraggonite task paid 5559 XP (48‰ at 9) plus ~4.7 silver; the spraggonites (L7-8) are 1-2 minutes SE of her. `taskLoop` now waits for Orla within 1500 before pulling, or the kill doesn't count for her.
+- Grinding L7-8 spraggonites at X:326800 Y:622000 with Orla: 27 kills in ~22 min, no deaths, ~1000 XP each at 9 (camp bonus). The L6 lynx holds them alone.
+- After a death and release, Orla may vanish from my Surroundings for good (papercut). `mate()` falls back to her object ID and the map position, so heals and buffs still reach her. If `groupGrind` stalls with her "not in view", that's why.
+- Connla healer Keagan (X:296899 Y:641128) restores Constitution; Colm is in a building that `runTo` can't route out of to Keagan directly: run out to X:294768 Y:641635 first.
