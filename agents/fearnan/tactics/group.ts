@@ -68,6 +68,17 @@ export async function buffMate(agent: Agent, name: string): Promise<void> {
   }
 }
 
+let lastBackOff = 0;
+
+/** The nearest Mob within `within` that could fight us (not peaceful, not far below its level), if any. */
+export function idleNear(agent: Agent, within: number) {
+  return agent.surroundings.npcs
+    .filter((n) => n.realm === "None" && !n.peaceful && !n.pet && n.healthPercent > 0 && n.level >= agent.self.level - 3)
+    .map((n) => ({ n, d: away(agent, n.position) }))
+    .filter((x) => x.d < within)
+    .sort((a, b) => a.d - b.d)[0]?.n;
+}
+
 /** Mobs attacking it, its Pet or a Group member. */
 export function hostile(agent: Agent) {
   const ours = [agent.self.objectId, agent.self.pet?.objectId, ...agent.group.members.map((m) => m.objectId)].filter((id) => id !== undefined);
@@ -188,6 +199,15 @@ export async function upkeep(agent: Agent, name: string): Promise<Outcome | "res
 
   // Rest until it is full, and give the mate time to get its Power back.
   if (agent.self.healthPercent < 90 || agent.self.powerPercent < 70 || (m.member.powerPercent ?? 100) < 60 || (m.member.healthPercent ?? 100) < 80) {
+    // Not next to an idle Mob: one that wandered up to us resting 150 from the siabra camp killed us both. Back off 1500 from it first.
+    const near = idleNear(agent, 1500);
+    // Once per 30 s at most, so it doesn't bounce between Mobs for ever: else it rests where it is.
+    if (near && agent.clock.now() - lastBackOff > 30_000) {
+      lastBackOff = agent.clock.now();
+      const at = agent.self.position!, d = Math.max(1, away(agent, near.position));
+      await runTo(agent, { x: Math.round(at.x + (at.x - near.position.x) / d * (1600 - d)), y: Math.round(at.y + (at.y - near.position.y) / d * (1600 - d)), z: at.z }, 100);
+      return "rested";
+    }
     await Promise.race([
       rest(agent, 100),
       agent.waitFor(() => (agent.self.powerPercent >= 90 && agent.self.healthPercent >= 95 && (mate(agent, name)?.member.powerPercent ?? 100) >= 80) || undefined, 120_000),
@@ -248,7 +268,13 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
     }
 
     // A camp keeps it where the Mobs pay: run there first, and pull only Mobs near it (else it drifts onto low Mobs on the way).
-    if (camp && away(agent, camp) > 2500) { await runTo(agent, camp, 300); continue; }
+    // In legs of at most 2000, so the leash above sees a mate that doesn't follow (one long run left Orla 26000 behind).
+    if (camp && away(agent, camp) > 2500) {
+      const at = agent.self.position!, d = away(agent, camp);
+      const leg = d > 2300 ? { x: Math.round(at.x + (camp.x - at.x) / d * 2000), y: Math.round(at.y + (camp.y - at.y) / d * 2000), z: camp.z } : camp;
+      await runTo(agent, leg, 300);
+      continue;
+    }
     const level = agent.self.level;
     const fit = agent.surroundings.npcs
       .filter((npc) => npc.realm === "None" && !npc.peaceful && !npc.pet && npc.healthPercent > 0 && !avoid.includes(npc.name)
@@ -258,8 +284,10 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
     const mob = fit
       // The Pet attacks only within 2000 units.
       .filter((x) => x.away < 1800)
+      // Alone first: a Mob with another within 600 tends to bring it (an add killed us both at the siabras).
+      .map((x) => ({ ...x, crowded: agent.surroundings.npcs.some((o) => o.objectId !== x.npc.objectId && o.realm === "None" && !o.peaceful && !o.pet && o.healthPercent > 0 && o.level >= level - 3 && Math.hypot(o.position.x - x.npc.position.x, o.position.y - x.npc.position.y) < 600) }))
       // Higher Mobs pay about twice as much (L8 rowdy ~1000 XP, L5 ~520), so the highest first, then the nearest.
-      .sort((a, b) => b.npc.level - a.npc.level || a.away - b.away)[0];
+      .sort((a, b) => Number(a.crowded) - Number(b.crowded) || b.npc.level - a.npc.level || a.away - b.away)[0];
     // The camp is picked clean nearby: move up to 1000 short of the nearest fitting Mob farther off (the mate follows).
     const farther = !mob && fit.filter((x) => x.away < 5000).sort((a, b) => a.away - b.away)[0];
     if (farther) {
