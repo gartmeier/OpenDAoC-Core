@@ -25,9 +25,12 @@ export function mateNames(agent: Agent): string[] {
   return agent.group.members.map((m) => m.name).filter((n) => n && n !== agent.self.name);
 }
 
+/** Beyond this my heals say "That target is too far away!" (Dalta at 2247 got spammed with them). */
+const HEAL_RANGE = 1900;
+
 /** The other Group member most in need of a heal (lowest health, alive, in reach), else `name`'s. */
 function neediest(agent: Agent, name: string) {
-  return mateNames(agent).map((n) => mate(agent, n)).filter((m) => m?.player && !m.member.dead)
+  return mateNames(agent).map((n) => mate(agent, n)).filter((m) => m?.player && !m.member.dead && away(agent, m.player.position) < HEAL_RANGE)
     .sort((a, b) => (a!.member.healthPercent ?? 100) - (b!.member.healthPercent ?? 100))[0] ?? mate(agent, name);
 }
 
@@ -43,7 +46,7 @@ export async function healMate(agent: Agent, name: string, below = 60, casts = 4
   for (let i = 0; i < casts; i++) {
     const m = mate(agent, name);
     const heal = bestHeal(agent, 100 - (m?.member.healthPercent ?? 0));
-    if (!m?.player || !heal || (m.member.healthPercent ?? 100) >= below || m.member.dead) return;
+    if (!m?.player || !heal || (m.member.healthPercent ?? 100) >= below || m.member.dead || away(agent, m.player.position) > HEAL_RANGE) return;
     const before = m.member.healthPercent;
     const reply = await castOn(agent, m.player.objectId, heal.name);
     if (!reply?.startsWith("You cast")) return;
@@ -73,6 +76,7 @@ export async function buffMate(agent: Agent, name: string): Promise<void> {
 }
 
 let lastBackOff = 0;
+let lastToTank = 0;
 
 /** Classes with no Power bar (it shows 0%): never wait on their Power. */
 const NO_POWER = /Blademaster|Hero|Warrior|Armsman|Mercenary|Berserker|Savage|Infiltrator|Shadowblade|Scout/;
@@ -167,6 +171,29 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
       // Not on a tank (no Power bar): it holds the Mob, and I stay back to heal it.
       const melee = onMe || !!victim || !agent.self.pet;
 
+      // Any Mob on me interrupts every heal (an add sat on me 60 s and killed me): run to the tank so it can taunt it off me.
+      const onMeAny = agent.surroundings.attacking(me).some((npc) => npc.healthPercent > 0);
+      const tank = mateNames(agent).map((n) => mate(agent, n)).find((x) => x?.player && !x.member.dead && NO_POWER.test(x.member.className));
+      if (onMeAny && tank && agent.self.position && distance(agent.self.position, tank.player!.position) > 200) {
+        if (agent.clock.now() - lastToTank > 2_000) {
+          lastToTank = agent.clock.now();
+          await striker.halt();
+          const p = tank.player!.position;
+          await agent.send({ name: "moveTo", x: p.x, y: p.y, z: p.z, within: 100 });
+        }
+        await agent.waitFor(() => undefined, 500);
+        continue;
+      }
+      // The tank fighting out of heal range (it chased the Mob off the camp): close in to 1200, or it dies unhealed.
+      if (tank && agent.self.position && distance(agent.self.position, tank.player!.position) > HEAL_RANGE - 200 && agent.clock.now() - lastToTank > 2_000) {
+        lastToTank = agent.clock.now();
+        await striker.halt();
+        const p = tank.player!.position;
+        await agent.send({ name: "moveTo", x: p.x, y: p.y, z: p.z, within: 1200 });
+        await agent.waitFor(() => undefined, 500);
+        continue;
+      }
+
       // Heals: the mate first, then itself, then the Pet, one cast at a time so a mate the Mob turns on comes first at once.
       // Out of melee they don't get interrupted.
       // Only with a heal it has the Power for: else the `continue`s would spin without awaiting anything, starve the connection's
@@ -175,7 +202,7 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
       // Nature's Appreciation: instant, so a Mob on me can't interrupt it. For me or the mate in real danger only (15 min reuse).
       const instant = emergencyHeal(agent);
       if (instant && !agent.self.cooldowns.has(instant.name)) {
-        const mateLow = m?.player && !m.member.dead && (m.member.healthPercent ?? 100) < 30;
+        const mateLow = m?.player && away(agent, m.player.position) < HEAL_RANGE && !m.member.dead && (m.member.healthPercent ?? 100) < 30;
         const meLow = agent.self.healthPercent < 30;
         if (mateLow || meLow) {
           await striker.halt();
@@ -183,7 +210,7 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
           if (reply?.startsWith("You cast")) continue;
         }
       }
-      if (canHeal && m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, m.member.name, onMate ? 95 : 70, 1); continue; }
+      if (canHeal && m?.player && away(agent, m.player.position) < HEAL_RANGE && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, m.member.name, onMate ? 95 : 70, 1); continue; }
       if (canHeal && agent.self.healthPercent < 45 && !onMe) { await striker.halt(); await healMe(agent, 70, 1); continue; }
       // Even with it on me: a maiden took me to 13% with 93% Power while I only meleed. A cast may be interrupted, but try.
       if (canHeal && agent.self.healthPercent < 40 && onMe) { await striker.halt(); await healMe(agent, 60, 1); continue; }
