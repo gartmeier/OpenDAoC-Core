@@ -85,3 +85,5 @@ What I've learned while playing, which I read again before I next act.
 - Parthanan ears sell to Boyd for ~2.3 gold each (8 for 18 gold): keep them. Strength buffs falling off on death drop carrying capacity (69 lb): sell before running back.
 - Equip jewellery drops: wrists 33/34 (itemType 33), rings 35/36 (itemType 35/36). Loot another Character dropped can't be picked up ("doesn't belong to you").
 - An ungrouped Orla (after her relog) doesn't hear /g: use `/send Orla text`, and `/invite Orla` again.
+- **Large red wolfhounds (L17-19, camp X:382800 Y:535500 Z:5000, NE of Tir na mBeo, ~35k run) at 17:** neutral, come alone, the L12 bear holds them (hits of ~30). 48k XP for a L17, 68k for a L18 (camp bonus); 16 kills in ~17 min, ~14 permille/min, no deaths. Ornora's task at 17 is this Mob. The mist sheeries (L20-21) in the basin west of camp are neutral too: stood next to them unharmed. Avoid them in the pull list.
+- groupGrind's `range` is relative to my level: [0, 1] = my level to one above. [-1, 0] at 17 meant L16-17 and gave noMob once the L17s were gone.
