@@ -68,3 +68,6 @@ What I've learned while playing, which I read again before I next act.
 - No "/g rest" or "/g Pulling X": each line aborts the partner's loop (Fearnan asked). The partner sees my Power in the group window. `duo` no longer sends either.
 - Druid loot (Plantbound Wrap, Animalbound Pendant) goes to me by autosplit; jewellery fills empty slots anyway. Examine drops: Lightbender Cloth Pants (+2 Light) dropped from a maiden.
 - Ionhar restored 3 con for 16s 59c; praying gave 43k back.
+- **Join a fight wherever the partner's pet is in it.** At 15 the lynx pulled a siabra 2300 out and `duo` ignored it (all its radii were under 2300). `duo` now treats any `pet` NPC of our realm as the partner's and joins its fights up to 4000 from me, running into range. Agreed with Fearnan: he sends the pet only at Mobs within ~1400 of us.
+- Level 15: Light 15 gives Paralyzing Veil (15 s mez, 9 Power, radius 350); `duo` mezzes adds with it. `duo` also recasts Lesser Powerfield when it's down.
+- **Level 15: dergan tusslers (L14, aggressive, X:374000–376000 Y:515000) with Fearnan's pet pulling: 22 kills in 15 min, 215‰, ~14‰/min, no deaths, 16.4k XP each (3 Shadowshocks).** Maidens (L12 by now) gave only 4‰/min: move up to Mobs of our level when the yield drops.
