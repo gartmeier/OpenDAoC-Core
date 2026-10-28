@@ -141,6 +141,9 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
       const mob = agent.surroundings.npc(mobId);
       if (!mob || mob.healthPercent <= 0) return succeeded;
 
+      // Orla /assists me: keep the Mob targeted while it lives, back on it at once after a heal on someone else.
+      if (agent.self.target !== mobId) await agent.send({ name: "target", objectId: mobId });
+
       if (agent.self.pet && !sent) {
         await agent.send({ name: "target", objectId: mobId });
         await agent.send({ name: "commandPet", order: "Attack" });

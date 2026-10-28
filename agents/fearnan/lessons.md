@@ -74,3 +74,5 @@ What I've learned while playing, which I read again before I next act.
 - Boyd pays a lot for Scrap of Cloth (24 for 55 gold) and Human Legs (5 for 11 gold): keep those and sell them in town. Bought shell nadurtha vest, gauntlets and boots (L16) at 16.
 - Siabra task hand-in at 16: 173k XP (~60 permille). Orla gets only 67 permille from hers at 15 and counts the run to Ornora at ~7 permille/min: keep the task done and hand in only when in town anyway.
 - Druids can wield blades: Adroit Falcata (L14) in the right hand.
+- Level 16: parthanans L17-18 at camp X:373000 Y:507500 Z:5080 (8k south of the tusslers): `groupGrind(agent, "Orla", min, 20, [0, 2], ["campkeeper","Hughar","ghastly siabra"], true, camp)` 8 kills in 8 min, ~21 permille a minute (47k each with camp bonus), three times the tusslers by then (7/min). The L12 bear adolescent holds them; they disease it (heals land lower).
+- Orla /assists me: groupFight re-targets the Mob after every heal so my target is always the Mob.

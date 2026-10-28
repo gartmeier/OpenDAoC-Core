@@ -34,7 +34,7 @@ export async function taskGrind(agent: Agent, name: string, guard: Point, guardN
  * with the fewest others around it from 1400 away (the mate mezzes an add), fights whatever comes, and hands in at the guard once the
  * task says so. While the siabras are peaceful it grinds the maidens at the camp. `rounds` tasks, or until `minutes` run out.
  */
-export async function siabraRun(agent: Agent, name: string, guard: Point, guardName: string, camp: Point, rounds: number, minutes: number, stopAtLevel = 20): Promise<Outcome & { done?: number; kills?: number }> {
+export async function siabraRun(agent: Agent, name: string, guard: Point, guardName: string, camp: Point, rounds: number, minutes: number, stopAtLevel = 20, handIn = true): Promise<Outcome & { done?: number; kills?: number }> {
   const { groupFight, hostile, upkeep } = await import("./group.ts");
   const { rest } = await import("../../../mind/src/tactics/rest.ts");
   const { runTo } = await import("../../../mind/src/tactics/run-to.ts");
@@ -51,6 +51,11 @@ export async function siabraRun(agent: Agent, name: string, guard: Point, guardN
     const foe = hostile(agent)[0];
     if (foe) { if ((await groupFight(agent, foe.objectId, name)).ok) kills++; continue; }
 
+    if (finished && !handIn) {
+      // Keep the done task for the next trip to town (the run costs more than it pays, Orla says): just the camp, no siabras.
+      const g = await groupGrind(agent, name, (end - agent.clock.now()) / 60_000, stopAtLevel, [-2, 0], ["ghastly siabra", "campkeeper", "Hughar"], true, camp);
+      return { ...g, done, kills: kills + (g.kills ?? 0) };
+    }
     if (finished) {
       await agent.send({ name: "command", text: "/g Task siabra down. To Ornora to hand in, then back to the west edge." });
       const t = await turnIn(agent, guard, guardName);
@@ -77,7 +82,7 @@ export async function siabraRun(agent: Agent, name: string, guard: Point, guardN
     const all = awake();
     if (!all.length) {
       // Peaceful: maidens until one wakes.
-      const g = await groupGrind(agent, name, Math.min(10, (end - agent.clock.now()) / 60_000), stopAtLevel, [-2, 0], ["ghastly siabra"], true, camp, () => awake().length > 0);
+      const g = await groupGrind(agent, name, Math.min(10, (end - agent.clock.now()) / 60_000), stopAtLevel, [-2, 0], ["ghastly siabra", "campkeeper", "Hughar"], true, camp, () => awake().length > 0);
       kills += g.kills ?? 0;
       if (!g.ok && g.reason !== "noMob") return { ...g, done, kills };
       continue;
