@@ -55,7 +55,8 @@ async function mezAdd(agent: Agent, objectId: number): Promise<boolean> {
   const ours = new Set<number | undefined>([me, ...agent.group.members.map((m) => m.objectId),
     ...agent.surroundings.npcs.filter((p) => p.realm === "Hibernia").map((p) => p.objectId)]);
   // An NPC under 75% health resists every mez ("Your target is enraged", CCSpellHandler): only mez fresh adds.
-  const add = agent.surroundings.npcs.find((n) => n.objectId !== objectId && n.realm === "None" && n.healthPercent >= 75 &&
+  // Not a grey frog: a L1 large frog took a mez once.
+  const add = agent.surroundings.npcs.find((n) => n.objectId !== objectId && n.realm === "None" && n.healthPercent >= 75 && n.level >= (agent.self.level ?? 0) - 5 &&
     ours.has(n.targetId) && dist(n.position, agent.self.position) < 1400 && Date.now() - (mezzedAt.get(n.objectId) ?? 0) > 9000);
   if (!add || agent.self.power < (mez.details?.powerCost ?? 3)) return false;
   // Being hit interrupts every mez (5 in a row at 15): only mez while nothing is in melee on me.
@@ -146,9 +147,11 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     const reach = (n: { position: Point }) => dist(n.position, agent.self.position) < 4000;
     // A Mob on one of us players (the healer above all) I hit at once, at any health: at 20 a fresh sheerie sat on Fearnan
     // for 46 s, interrupting every heal, while I waited for it to drop under joinBelow and then sat down to rest. He died, then me.
+    // But one on the tank (the puller) only under joinBelow, so the tank holds it.
+    const pullerId = puller ? agent.group.named(puller)?.objectId : undefined;
     const onUs = agent.surroundings.npcs.find((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) &&
-      (party.has(n.targetId!) || (n.healthPercent <= joinBelow &&
-        (pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId) || unseenFight(n)))));
+      ((party.has(n.targetId!) && n.targetId !== pullerId) || (n.healthPercent <= joinBelow &&
+        (party.has(n.targetId!) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId) || unseenFight(n)))));
     // With a puller: assist the puller's target (/assist), once the pet or the puller has it engaged (or it's hurt).
     // Anything in melee on me comes first: being hit interrupts every cast anyway. Fallback: the pet's target, then whatever is on one of us.
     let assisted: typeof onUs;
@@ -157,8 +160,10 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
       // Send /assist only when a fight starts or my assisted Mob died, at most every 3 s: not on every pass (it spammed 400 a session).
       const fighting = agent.surroundings.npcs.some((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) &&
         (party.has(n.targetId) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId)));
+      // On the puller (the tank) I wait until it's under joinBelow, so the tank's taunts have built aggro first: sheeries turned
+      // on me after my second nuke. On anyone else of us (the healer, me) or the pet I join at once.
       const isEngaged = (m: { healthPercent: number; targetId?: number }) =>
-        m.healthPercent <= joinBelow || party.has(m.targetId) || pets.some((p) => p.objectId === m.targetId);
+        m.healthPercent <= joinBelow || (party.has(m.targetId) && m.targetId !== pullerId) || pets.some((p) => p.objectId === m.targetId);
       // Re-assist too when my assisted Mob lives but isn't in the fight: the puller has moved on to the next one.
       let last = agent.surroundings.npcs.find((n) => n.objectId === assistedId && n.healthPercent > 0);
       if (last && !isEngaged(last)) last = undefined;
