@@ -140,6 +140,8 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
   // I lead: whoever falls out of the group (a relog drops them) gets a fresh /invite every 60 s, from this roster.
   const roster = new Set([partner, ...(puller ? [puller] : []), ...agent.group.members.map((m) => m.name)].filter((n) => n !== "Orla"));
   let invitedAt = 0;
+  // At most 3 invites a name: someone who left on purpose (the Human logging off) shouldn't get one a minute.
+  const invites = new Map<string, number>();
   let askedPartnerAt = 0;
   let kills = 0;
   const picks: Record<string, number> = {};
@@ -156,10 +158,14 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     // The anchor is the agreed camp (the Human's rule), not the healer: when Fearnan wandered off, I trailed him.
     const home = camp ?? partnerAt(agent, partner);
     for (const m of agent.group.members) if (m.name !== "Orla") roster.add(m.name);
-    const missing = [...roster].filter((n) => !agent.group.named(n));
+    for (const m of agent.group.members) invites.delete(m.name);
+    const missing = [...roster].filter((n) => !agent.group.named(n) && (invites.get(n) ?? 0) < 3);
     if (missing.length && Date.now() - invitedAt > 60_000) {
       invitedAt = Date.now();
-      for (const n of missing) await agent.send({ name: "command", text: `/invite ${n}` } as never);
+      for (const n of missing) {
+        invites.set(n, (invites.get(n) ?? 0) + 1);
+        await agent.send({ name: "command", text: `/invite ${n}` } as never);
+      }
     }
     const party = new Set(agent.group.members.map((m) => m.objectId));
 

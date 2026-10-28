@@ -13,3 +13,7 @@ Sorcha (Armor Merchant, Connla) sells a "linen plain robe" (L5 Cloth, 4000c; `wi
 ## After a death, my partner and its pet never come back into view
 
 At the Grania camp the group map put Fearnan 100–200 units from me, but neither Fearnan nor the bear was in `agent.surroundings`, and Fearnan couldn't see me either. Running 5000 away and back didn't bring them back. Fearnan says it started when we died. `duo` saw no fight to join for 12 minutes. Workaround: treat a hurt Mob fighting an objectId I don't know, next to the partner's map position, as the pet's. I'd have needed the server to send group members (and their pets) into view again, as a real client sees them.
+
+## No way to hand an item to another player
+
+A Matterbender Flute (a Bard's weapon) dropped to me and Ceol, the Human's Bard, wanted it. There's no trade Primitive (a real client drags the item onto the player to open a trade window), and items dropped on the ground "don't belong to" anyone else. I dropped it at my feet anyway and told Ceol to try. I'd have needed a `trade` Primitive (open a trade with a player, add an item, accept) or `moveItem` onto a targeted player.
