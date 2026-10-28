@@ -55,7 +55,8 @@ async function mezAdd(agent: Agent, objectId: number): Promise<boolean> {
   const me = agent.self.objectId;
   const ours = new Set<number | undefined>([me, ...agent.group.members.map((m) => m.objectId),
     ...agent.surroundings.npcs.filter((p) => p.realm === "Hibernia").map((p) => p.objectId)]);
-  const add = agent.surroundings.npcs.find((n) => n.objectId !== objectId && n.realm === "None" && n.healthPercent > 0 &&
+  // An NPC under 75% health resists every mez ("Your target is enraged", CCSpellHandler): only mez fresh adds.
+  const add = agent.surroundings.npcs.find((n) => n.objectId !== objectId && n.realm === "None" && n.healthPercent >= 75 &&
     ours.has(n.targetId) && dist(n.position, agent.self.position) < 1400 && Date.now() - (mezzedAt.get(n.objectId) ?? 0) > 9000);
   if (!add || agent.self.power < (mez.details?.powerCost ?? 3)) return false;
   // Being hit interrupts every mez (5 in a row at 15): only mez while nothing is in melee on me.
@@ -91,7 +92,8 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
     const onMe = me !== undefined && m.targetId === me && dist(agent.self.position, m.position) < 300;
     // In melee on me, a nearly dead Mob interrupts every cast: finish it with the staff instead (a L11 sheerie killed me at 2%).
     // But not when it hits hard: a L14 siabra at 9% hit me for 70 a swing while the staff did 12, and killed me. Then keep casting.
-    if (onMe && interrupted >= 1 && m.healthPercent <= 25 && agent.self.healthPercent > 60) return await kill(agent, objectId);
+    // And never against a Mob above my level: a L18 parthanan at 13% killed me while the staff did 10 a swing.
+    if (onMe && interrupted >= 1 && m.healthPercent <= 25 && agent.self.healthPercent > 60 && m.level < agent.self.level) return await kill(agent, objectId);
     const out = await cast(agent, spell.name, objectId, onMe && agent.self.power >= 2 * cost && !agent.self.cooldowns.has("Quickcast") ? { quickCast: true } : undefined);
     if (!out.ok && out.reason === "interrupted") interrupted++;
     if (!out.ok && out.reason === "tooFar") await runTo(agent, m.position, range - 400);
