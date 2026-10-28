@@ -114,7 +114,7 @@ export async function buffSelf(agent: Agent): Promise<void> {
 /** Its best heal by hit points for the Power it has. */
 function bestHeal(agent: Agent) {
   return spells(agent)
-    .filter((spell) => spell.details?.description.startsWith("Heals") && (spell.details.powerCost ?? 0) <= agent.self.power)
+    .filter((spell) => spell.details?.description.startsWith("Heals") && !spell.name.startsWith("Group") && (spell.details.powerCost ?? 0) <= agent.self.power)
     .sort((a, b) => b.level - a.level)[0];
 }
 

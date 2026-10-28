@@ -23,7 +23,8 @@ function mate(agent: Agent, name: string) {
 /** Its best heal it has the Power for. */
 function bestHeal(agent: Agent) {
   return agent.self.skills
-    .filter((s) => s.page === "Spells" && s.details?.description.startsWith("Heals") && (s.details.powerCost ?? 0) <= agent.self.power)
+    // Not the group heal (Group Revigoration): 17 Power for 33 each, wasted when only the Pet is hurt.
+    .filter((s) => s.page === "Spells" && s.details?.description.startsWith("Heals") && !s.name.startsWith("Group") && (s.details.powerCost ?? 0) <= agent.self.power)
     .sort((a, b) => b.level - a.level)[0];
 }
 
