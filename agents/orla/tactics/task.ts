@@ -6,6 +6,7 @@ import { whisper } from "../../../mind/src/tactics/whisper.ts";
 type Point = { x: number; y: number; z: number };
 
 export const GRANIA = { name: "Sentinel Grania", at: { x: 314041, y: 636846, z: 4849 } };
+export const ORNORA = { name: "Sentinel Ornora", at: { x: 345307, y: 526766, z: 5495 } };
 
 /**
  * Runs to the guard, hands in a finished Kill Task (if one is done) and asks for the next.

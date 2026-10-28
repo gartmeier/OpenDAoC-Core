@@ -124,7 +124,7 @@ export async function hunt(agent: Agent, levels: (level: number) => number[], un
       continue;
     }
 
-    if (agent.inventory.weight >= agent.inventory.capacity - 5) {
+    if (agent.inventory.weight >= agent.inventory.capacity - 2) {
       log.push(`heavy: ${agent.inventory.weight} of ${agent.inventory.capacity} lb`);
       break;
     }

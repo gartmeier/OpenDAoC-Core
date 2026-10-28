@@ -44,3 +44,6 @@ What I've learned while playing, which I read again before I next act.
 - Listen for the guard's reply before `whisper`-ing "task": it arrives before `whisper` returns.
 - Task cap hit at level 9 after 9 Grania tasks (~14‰/min over 9 loops). Then: finish the level grinding, and at level 10 go to Tir na mBeo (Lough Derg, Bindstone X:344830 Y:528095) for Sentinel Ornora's lough wolf tasks (43‰/min for Dalta solo). Fearnan's idea for sheeries: only L10–11, and nuke from ~1000 units, ~5 s after the bear engages.
 - Group chat lines from Fearnan abort my snippets often: start each long snippet again at once, and expect `taskDuo`/`duo` to end early.
+- **Level 10, Ornora's lough wolf tasks as a duo** (`taskDuo(agent, "Fearnan", ORNORA, n, 6)`): 10 tasks, 44‰ + ~6.4s each, 26‰/min, no deaths. One shared wolf (L10–11, 2 Shadowcharges) counts for both. Tir na mBeo is a ~9 min run from Grania's spraggonites (two `runTo`s: one times out at 5 min).
+- Drop junk to the ground with `{ name: "moveItem", from: slot, to: 1 }` (the training staff can't be sold). At 41 of 40 lb I was "encumbered".
+- Shadowcharge with Light 10 hits L7–11 Mobs for 62–87; a spraggonite or lough wolf dies to two.
