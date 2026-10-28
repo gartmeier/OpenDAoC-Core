@@ -89,7 +89,8 @@ export async function siabraRun(agent: Agent, name: string, guard: Point, guardN
       continue;
     }
     const m = mateAt();
-    if (m && away(m) > 1200) { await agent.waitFor(() => { const p = mateAt(); return !p || away(p) < 1000 || hostile(agent)[0] ? true : undefined; }, 60_000); continue; }
+    // Go to the mate rather than wait: she keeps a leash of ~1500 and stood still while I waited for her within 1000 (20 min stalled).
+    if (m && away(m) > 1600) { await runTo(agent, { x: m.x, y: m.y, z: agent.self.position!.z }, 300); continue; }
 
     const crowd = (n: { objectId: number; position: Point }) => all.filter((o) => o.objectId !== n.objectId && Math.hypot(o.position.x - n.position.x, o.position.y - n.position.y) < 700).length;
     const target = all.map((n) => ({ n, c: crowd(n), d: away(n.position) })).sort((a, b) => a.c - b.c || a.d - b.d)[0].n;

@@ -68,3 +68,7 @@ What I've learned while playing, which I read again before I next act.
 - Dergan tusslers L14 at camp X:375000 Y:515300 Z:5390 (Orla's idea): `groupGrind(agent, "Orla", 15, 20, [-1, 1], ["campkeeper", "Hughar"], true, camp)` 22 kills in 15 min at 15, ~16k each, ~14 permille a minute, no deaths: three times the maidens. The lynx adolescent holds them alone.
 - Pull only Mobs within ~1500 (Orla's ask): from farther her assist isn't in range at once. groupGrind and siabraRun do so now.
 - Siabra task at 15: hand-in 121k XP; the siabra itself 17k.
+- siabraRun stalled 20 min (6 kills): it waited for Orla within 1000 while she holds a ~1500 leash. It now runs to her when she's over 1600 away. Use siabraRun with the tussler camp as `camp`: tusslers while siabras sleep, a siabra when one wakes (they're crowded, few lone ones). 29 kills in 20 min that way.
+- Level 16 (tusslers, ~13 permille a minute). Regrowth 8 trained (Regeneration 85 HP for 15 Power), 9 points left. Still a lynx adolescent L11 pet.
+- At 16 the bag is 32/40 and 105 of 108 lb: sell at Boyd (next to Ornora) before the next long grind. Arcane Mace (L15) is two-handed: no use with the shield, sell it.
+- Siabra task in hand (from Ornora at 15): kill one ghastly siabra.
