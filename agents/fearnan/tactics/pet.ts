@@ -124,8 +124,13 @@ export async function healPet(agent: Agent, below = 80, casts = 6): Promise<void
     const pet = petNpc(agent);
     const heal = bestHeal(agent);
     if (!pet || !heal || pet.healthPercent >= below) return;
+    const before = pet.healthPercent;
     const reply = await castOn(agent, pet.objectId, heal.name);
     if (!reply?.startsWith("You cast")) return;
+    // Its health lags the heal: wait for it (or "fully healed"), else it casts again on a full Pet.
+    const full = await agent.waitFor((p) => p?.kind === "message" && /is fully healed/.test(p.text) ? "full"
+      : petNpc(agent)?.healthPercent !== before ? "updated" : undefined, 2_000);
+    if (full === "full") return;
   }
 }
 
