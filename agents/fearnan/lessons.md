@@ -57,3 +57,6 @@ What I've learned while playing, which I read again before I next act.
 - Druids wear reinforced: Boyd (next to Ornora) sells vine nadurtha L11 (gauntlets/boots 3360c, helm 10080c), shell L16.
 - Ghastly siabras (L13-15, X:366000-369000 Y:514000-517000) aggro and come two at a time; they go peaceful for a while (night?) then wake. They hit the L10 pet 23-36, me 16-33, Orla 70. Died twice there (adds while resting, and with no Power left). Task reward at 14: 84613 XP (71 permille) + 11s, kill ~13-18k. Roane maidens L12-13 next to them: ~9k each, easy.
 - The current Mind journal file isn't being written (latest is from the night before), so read chat in results instead.
+- Roane maidens (L12-13) at the siabra west edge, camp X:366000 Y:516500: 8.5-12.4k XP each at 14, ~7-10 permille a minute with Orla; sometimes two come. Red wolfhounds at X:347000 Y:521000 are mostly L10 by now: ~6 a minute.
+- `tactics/siabra.ts` `taskGrind(agent, "Orla", ORNORA, "Sentinel Ornora", "ghastly siabra", {x:366000,y:516500,z:4600}, 3, 20, [-2, 0], [])` grinds the maidens and takes a lone siabra when they're awake, then hands in. groupGrind takes `until` (9th) now; taskLoop picks lone task Mobs, rests to full Power and runs in legs.
+- Siabras were peaceful most of the stint (awake ~04:50 and ~05:30 real time, peaceful between); check `peaceful` before planning a siabra run.

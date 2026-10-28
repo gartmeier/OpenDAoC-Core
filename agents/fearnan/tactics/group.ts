@@ -222,15 +222,17 @@ export async function upkeep(agent: Agent, name: string): Promise<Outcome | "res
 /**
  * Grinds with the Group member `name` for `minutes`: rests until both are ready, waits for them to be close, pulls the nearest Mob
  * of `below` levels relative to its own (e.g. [-2, 1] = two above to one below) with the Pet, and heals everyone.
- * With a `camp`, it goes there first and pulls only Mobs within 3500 of it.
+ * With a `camp`, it goes there first and pulls only Mobs within 3500 of it. With `until`, it stops once that holds between fights.
  */
-export async function groupGrind(agent: Agent, name: string, minutes: number, stopAtLevel: number, range = [-1, 2], avoid: string[] = ["mudman"], lead = true, camp?: { x: number; y: number; z: number }): Promise<Outcome & { kills?: number }> {
+export async function groupGrind(agent: Agent, name: string, minutes: number, stopAtLevel: number, range = [-1, 2], avoid: string[] = ["mudman"], lead = true, camp?: { x: number; y: number; z: number }, until?: () => boolean): Promise<Outcome & { kills?: number }> {
   const end = agent.clock.now() + minutes * 60_000;
   let kills = 0, idle = 0;
   const shunned = new Map<number, number>();
   while (agent.clock.now() < end && agent.self.level < stopAtLevel) {
     // A timer, not a microtask: a loop that awaits nothing else must still let the connection breathe.
     await agent.waitFor(() => undefined, 50);
+    // Stops early once `until` holds and no fight is going on (e.g. a task Mob got killed).
+    if (until?.() && !hostile(agent)[0]) return { ...succeeded, kills };
     if (agent.self.dead) {
       await agent.sendAndWait({ name: "command", text: "/release" }, () => !agent.self.dead, 30_000);
       return { ...failed("died"), kills };

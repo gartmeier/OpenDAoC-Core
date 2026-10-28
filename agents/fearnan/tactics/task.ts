@@ -1,4 +1,5 @@
 import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/tactic.ts";
+import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
 import { talkTo } from "../../../mind/src/tactics/trade.ts";
 import { whisper } from "../../../mind/src/tactics/whisper.ts";
@@ -28,7 +29,7 @@ export async function turnIn(agent: Agent, guard: Point, guardName: string): Pro
  * Runs Kill Tasks with the Group member `name` for `rounds`: goes to `area`, has the Pet kill the nearest `mob` there (a shared kill
  * counts for both of us), heals and fights what attacks the group on the way, and turns in at the guard.
  */
-export async function taskLoop(agent: Agent, name: string, guard: Point, guardName: string, mob: string, area: Point, rounds: number, stopAtLevel = 20): Promise<Outcome & { done?: number; mob?: string }> {
+export async function taskLoop(agent: Agent, name: string, guard: Point, guardName: string, mob: string, area: Point, rounds: number, stopAtLevel = 20, maxAbove = 0): Promise<Outcome & { done?: number; mob?: string }> {
   let done = 0, idle = 0, killed = false;
   while (done < rounds && agent.self.level < stopAtLevel) {
     // A timer, not a microtask: a loop that awaits nothing else must still let the connection breathe.
@@ -54,6 +55,16 @@ export async function taskLoop(agent: Agent, name: string, guard: Point, guardNa
     const ready = await upkeep(agent, name);
     if (ready === "rested") continue;
     if (!ready.ok) return { ...ready, done };
+    // Full Power for both before a pull: a siabra fight drains it, and a second one then finds us empty.
+    const matePower = () => agent.group.named(name)?.powerPercent ?? 100;
+    if (agent.self.powerPercent < 90 || matePower() < 85) {
+      await Promise.race([
+        rest(agent, 100),
+        agent.waitFor(() => (agent.self.powerPercent >= 95 && matePower() >= 90) || hostile(agent)[0] ? true : undefined, 120_000),
+      ]);
+      await agent.send({ name: "stand" });
+      continue;
+    }
 
     // A kill counts for the mate only when it's close: wait up to 90 s for it to catch up before pulling.
     const mateAway = () => { const p = agent.group.named(name)?.position; return p ? away(agent, p) : 0; };
@@ -62,9 +73,13 @@ export async function taskLoop(agent: Agent, name: string, guard: Point, guardNa
       if (hostile(agent)[0]) continue;
     }
 
+    // A lone one, not above its level, the lowest first: ghastly siabras come two at a time and killed Orla when they did.
+    const crowded = (n: { objectId: number; position: Point }) => agent.surroundings.npcs.some((o) => o.objectId !== n.objectId
+      && o.realm === "None" && !o.peaceful && !o.pet && o.healthPercent > 0 && o.level >= agent.self.level - 3
+      && Math.hypot(o.position.x - n.position.x, o.position.y - n.position.y) < 900);
     const target = agent.surroundings.npcs
-      .filter((n) => n.name === mob && n.healthPercent > 0)
-      .sort((a, b) => away(agent, a.position) - away(agent, b.position))[0];
+      .filter((n) => n.name === mob && n.healthPercent > 0 && !n.peaceful && n.level <= agent.self.level + maxAbove && !crowded(n))
+      .sort((a, b) => a.level - b.level || away(agent, a.position) - away(agent, b.position))[0];
     if (target && away(agent, target.position) < 3500) {
       idle = 0;
       if (away(agent, target.position) > 1500) {
@@ -78,7 +93,12 @@ export async function taskLoop(agent: Agent, name: string, guard: Point, guardNa
       continue;
     }
 
-    if (away(agent, area) > 600) { await runTo(agent, area, 300); continue; }
+    // In legs of at most 2000, so the mate check above sees a mate that doesn't follow.
+    if (away(agent, area) > 600) {
+      const at = agent.self.position!, d = away(agent, area);
+      await runTo(agent, d > 2300 ? { x: Math.round(at.x + (area.x - at.x) / d * 2000), y: Math.round(at.y + (area.y - at.y) / d * 2000), z: area.z } : area, 300);
+      continue;
+    }
     if (++idle > 6) return { ...failed("noMob"), done };
     await agent.waitFor(() => undefined, 10_000);
   }
