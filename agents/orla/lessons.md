@@ -49,3 +49,6 @@ What I've learned while playing, which I read again before I next act.
 - Shadowcharge with Light 10 hits L7–11 Mobs for 62–87; a spraggonite or lough wolf dies to two.
 - Level 11: Ornora's 11 lough wolf tasks ("North" now) paid 60‰ each: 694‰ in 21 min, **33‰/min**, no deaths, no chat. Between task caps, grind red wolfhounds/badgers L10–13 (neutral, X:348000 Y:520500, 7000 S of Ornora) with the pet: ~4000–8600 XP each, **21‰/min**. Ghostly siabras are peaceful by day.
 - I sold a Thrustbender Belt unexamined with my belt slot empty, again. Sell with `tactics/sell.ts` `sellJunk`, which keeps jewellery/belt/cloak for empty slots and better cloth.
+- **Level 12: Ornora's badger tasks ("South East", ~X:347000 Y:520000) pay 68‰ each: 12 tasks, 897‰ in 23 min, 40‰/min**, no deaths. Shadowshock (Light 12) hits badgers for 98–126: two kill one. Plan per level: the level's tasks at Ornora first, then red wolfhounds/badgers south with the pet to the next level.
+- Grinding at 11 dropped to ~13‰/min once the pet took L9–10 Mobs: L12–13 wolfhounds pay 2–4 times as much. A L13 hits me for 55 when it turns, so join at 85% and Quick Cast.
+- `sellJunk` then `keep` + `equip` put a Forestbound Cloak (+10 hits) and a Matterbender Jewel (+3 qui) into empty slots.
