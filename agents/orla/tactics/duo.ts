@@ -115,6 +115,7 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
   const picks: Record<string, number> = {};
   let assistedId: number | undefined;
   let assistedAt = 0;
+  let fightStart = 0;
   const log: string[] = [];
   while (Date.now() < end && agent.self.level < untilLevel && !until()) {
     if (agent.self.dead) return failed("died");
@@ -150,15 +151,27 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
       // Send /assist only when a fight starts or my assisted Mob died, at most every 3 s: not on every pass (it spammed 400 a session).
       const fighting = agent.surroundings.npcs.some((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) &&
         (party.has(n.targetId) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId)));
-      const last = agent.surroundings.npcs.find((n) => n.objectId === assistedId && n.healthPercent > 0);
+      const isEngaged = (m: { healthPercent: number; targetId?: number }) =>
+        m.healthPercent <= joinBelow || party.has(m.targetId) || pets.some((p) => p.objectId === m.targetId);
+      // Re-assist too when my assisted Mob lives but isn't in the fight: the puller has moved on to the next one.
+      let last = agent.surroundings.npcs.find((n) => n.objectId === assistedId && n.healthPercent > 0);
+      if (last && !isEngaged(last)) last = undefined;
       if (!last && fighting && Date.now() - assistedAt > 3000) {
         assistedAt = Date.now();
         assistedId = await assistTarget(agent, puller);
       }
       const id = last ? last.objectId : assistedId;
       const m = id === undefined ? undefined : agent.surroundings.npcs.find((n) => n.objectId === id && n.healthPercent > 0);
-      const engaged = !!m && (m.healthPercent <= joinBelow || party.has(m.targetId) || pets.some((p) => p.objectId === m.targetId));
+      const engaged = !!m && isEngaged(m);
       if (m && engaged && reach(m)) assisted = m;
+      // The puller often has the pet or me targeted for a heal when the fight starts: give /assist a few more tries
+      // (every 3 s, up to 8 s into the fight) before falling back, so with several Mobs I hit the one the puller chose.
+      if (fighting && !fightStart) fightStart = Date.now();
+      if (!fighting) fightStart = 0;
+      if (!assisted && !onMe && fighting && Date.now() - fightStart < 8000) {
+        await agent.waitFor(() => undefined, 1000);
+        continue;
+      }
     }
     const busy = assisted ?? onMe ?? onUs;
     if (busy) {
@@ -166,14 +179,19 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
       picks[how] = (picks[how] ?? 0) + 1;
       const k = await burn(agent, busy.objectId);
       if (k.ok) kills++;
-      else log.push(`${busy.name}: ${k.reason}`);
+      else {
+        log.push(`${busy.name}: ${k.reason}`);
+        // Never spin on a failed burn: out of Power at 17 the loop ran millions of passes, the server dropped me, and the Mob killed me.
+        // Out of Power: the pet and the puller finish it; I wait and regain Power. Never the staff on a Mob above my level.
+        await agent.waitFor(() => undefined, k.reason === "noPower" ? 3000 : 1000);
+      }
       continue;
     }
 
     // Rest when I'm low, and sit with the partner while it is: once, waiting on beliefs, not on a loop of sends.
     const f = agent.group.named(partner);
     const partnerLow = !!f && ((f.powerPercent ?? 100) < 40 || (f.healthPercent ?? 100) < 60);
-    if (agent.self.powerPercent < 50 || agent.self.healthPercent < 70 || partnerLow) {
+    if (agent.self.powerPercent < 60 || agent.self.healthPercent < 70 || partnerLow) {
       // No "/g rest": the partner sees my Power in its group window, and every /g line aborts its snippet.
       await rest(agent, 100);
       if (!agent.self.sitting) await agent.send({ name: "sit" } as never);
