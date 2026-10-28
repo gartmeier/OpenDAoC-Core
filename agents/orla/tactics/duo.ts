@@ -77,6 +77,10 @@ async function mezAdd(agent: Agent, objectId: number): Promise<boolean> {
   const add = agent.surroundings.npcs.find((n) => n.objectId !== objectId && n.realm === "None" && n.healthPercent >= 75 && n.level >= (agent.self.level ?? 0) - 5 &&
     ours.has(n.targetId) && dist(n.position, agent.self.position) < 1400 && Date.now() - (mezzedAt.get(n.objectId) ?? 0) > 9000);
   if (!add || agent.self.power < (mez.details?.powerCost ?? 3)) return false;
+  // The mez hits everything within 350 of the add: at 21 it woke a neutral L19 wolfhound next to camp, which then bit me.
+  // Skip it when an idle Mob stands that close to the add.
+  if (agent.surroundings.npcs.some((n) => n.objectId !== add.objectId && n.realm === "None" && !n.peaceful && n.healthPercent > 0 &&
+    !n.targetId && n.level >= 5 && dist(n.position, add.position) < 450)) return false;
   // Being hit interrupts every mez (5 in a row at 15): only mez while nothing is in melee on me.
   if (agent.surroundings.npcs.some((n) => n.targetId === me && n.healthPercent > 0 && dist(n.position, agent.self.position) < 300)) return false;
   await agent.send({ name: "face", heading: headingTo(agent, add.position) });
@@ -131,8 +135,12 @@ export async function burn(agent: Agent, objectId: number, healer?: () => Point 
  * Hunts with a partner: assists on whatever fights the group (or, with `lead`, pulls Mobs of `levels` near the partner, announces each pull in group chat,
  * burns them down, and rests (saying so) when low. Stops after `minutes` or at `untilLevel`.
  */
-export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false, joinBelow = 75, until: () => boolean = () => false, puller?: string): Promise<Outcome> {
+export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false, joinBelow = 75, until: () => boolean = () => false, puller?: string, camp?: { x: number; y: number; z: number }): Promise<Outcome> {
   const end = Date.now() + minutes * 60_000;
+  // I lead: whoever falls out of the group (a relog drops them) gets a fresh /invite every 60 s, from this roster.
+  const roster = new Set([partner, ...(puller ? [puller] : []), ...agent.group.members.map((m) => m.name)].filter((n) => n !== "Orla"));
+  let invitedAt = 0;
+  let askedPartnerAt = 0;
   let kills = 0;
   const picks: Record<string, number> = {};
   let assistedId: number | undefined;
@@ -145,7 +153,14 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     const d = agent.self.dialog;
     if (d?.code === "GroupInvite" && d.text.startsWith(partner)) await answer(agent, true);
     const me = agent.self.objectId;
-    const home = partnerAt(agent, partner);
+    // The anchor is the agreed camp (the Human's rule), not the healer: when Fearnan wandered off, I trailed him.
+    const home = camp ?? partnerAt(agent, partner);
+    for (const m of agent.group.members) if (m.name !== "Orla") roster.add(m.name);
+    const missing = [...roster].filter((n) => !agent.group.named(n));
+    if (missing.length && Date.now() - invitedAt > 60_000) {
+      invitedAt = Date.now();
+      for (const n of missing) await agent.send({ name: "command", text: `/invite ${n}` } as never);
+    }
     const party = new Set(agent.group.members.map((m) => m.objectId));
 
     // Join a fight on the bear or the partner only once the bear has hit it a while, so the bear keeps the aggro.
@@ -212,7 +227,7 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     if (busy) {
       const how = assisted ? "assist" : busy === onMe ? "onMe" : "fallback";
       picks[how] = (picks[how] ?? 0) + 1;
-      const k = await burn(agent, busy.objectId, () => partnerAt(agent, partner));
+      const k = await burn(agent, busy.objectId, () => camp ?? partnerAt(agent, partner));
       if (k.ok) kills++;
       else {
         if (k.reason !== "farFromHealer") log.push(`${busy.name}: ${k.reason}`);
@@ -262,7 +277,13 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
       else console.log(`barrier: ${out.reason}`);
     }
 
-    // Stay with the partner.
+    // The partner drifting from camp: ask once (every 10 min at most) and hold my spot; never trail him.
+    const pm = agent.group.named(partner)?.position;
+    if (camp && pm && dist(pm, camp) > 1500 && Date.now() - askedPartnerAt > 600_000) {
+      askedPartnerAt = Date.now();
+      await agent.send({ name: "command", text: `/g ${partner}, where are you going? Camp is at X:${Math.round(camp.x)} Y:${Math.round(camp.y)}.` } as never);
+    }
+    // Stay at camp (or with the partner, without one).
     if (home && dist(agent.self.position, home) > 300) {
       await runTo(agent, home, 150);
       continue;

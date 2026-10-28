@@ -108,3 +108,8 @@ What I've learned while playing, which I read again before I next act.
 - `sellJunk` sold a +21 Insightful Focus Staff (+7 int) while I wore a +20: it now keeps Focus Staffs above my staff's level. Examine and equip before going to the merchant.
 - Dying at 20 again: the next pull came while I was at 18% health; one nuke turned the sheerie on me. `duo` now won't open on a Mob (not on me) below 55% health.
 - **Level 21 on mist sheeries** with all `duo` fixes in (join under 85% on the tank, heal-range leash, no nukes under 55% health): 25 kills in 15 min and then ~10 more, ~13‰/min, no deaths, 27 of 32 picks by `/assist Dalta`. Light 21. Stopped at 21 on the Human's word; waiting at the Tir na mBeo bindstone.
+- **Ceol (the Human, L21 Bard) joined at 21: a group of four.** Roles: Dalta pulls and tanks, Fearnan heals and rezzes, I `/assist Dalta` and nuke, Ceol base buffs, mezzes adds, plays mana song, backs up heals and has a rez. Fearnan gives spec buffs only. Mist sheeries as four: ~100–125k XP a kill (~9‰/min at 21).
+- A /g line over ~250 characters is cut off: keep each line short, two lines if needed.
+- **Anchor on the agreed camp, never on the healer (the Human's rule).** `duo(..., "Dalta", camp)` takes the camp `{x, y, z}`: I hold that spot, the heal-range leash in `burn` uses it, and if Fearnan drifts 1500+ from it I ask once in /g where he's going and stay put. Mist sheerie camp: X:382600 Y:536100 Z:4890.
+- **As leader, re-invite anyone who falls out at once** (a relog drops them): `duo` keeps a roster and sends `/invite` every 60 s for a missing name.
+- **Paralyzing Veil hits everything within 350 of the add**: at camp it woke a neutral L19 wolfhound, which then bit me. `mezAdd` now skips an add with an idle Mob within 450.
