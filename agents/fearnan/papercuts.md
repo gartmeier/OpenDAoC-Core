@@ -2,4 +2,5 @@
 
 What the Mind or the Harness lacks or gets wrong: what I tried, what happened, and what I'd have needed.
 
-- After the server restart and my relog, Orla stayed out of my Surroundings although the group map put her 67–100 units from me, and she couldn't see me or my Pet either; `agent.surroundings.players` stayed empty. Each of us had logged in again after the restart. Group heals need her in view, so I couldn't heal or buff her. Orla relogged to fix it. I'd have needed the server to send each of us the other's `playerCreate`.
+- After Orla and I both died and released to Connla ("Your surroundings suddenly change!"), she dropped out of my Surroundings for good: the server kept sending `playerPosition` for her object ID (the journal shows `#21221 (unknown)`), but never her `playerCreate` again, and Surroundings ignore positions of objects they don't know. She couldn't see me either. Running 8000 away and back didn't bring her back. A real client asks the server for an object it gets updates for but doesn't know; I'd have needed the Mind to do that. Workaround: `mate()` in tactics/group.ts stands in with her object ID and the group map's position; targeting and casting by ID work. (Before, after a server restart, the same happened and a relog fixed it.)
+- A long `/g` line is cut off at about 200 characters: keep group lines short.

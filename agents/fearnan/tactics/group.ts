@@ -12,7 +12,11 @@ const away = (agent: Agent, p: { x: number; y: number }) => {
 /** The other Group member called `name`, as a player in view, with how the group window says it's doing. */
 function mate(agent: Agent, name: string) {
   const member = agent.group.named(name);
-  const player = member && agent.surroundings.players.find((p) => p.objectId === member.objectId);
+  const seen = member && agent.surroundings.players.find((p) => p.objectId === member.objectId);
+  // After a death and release the server may never send the mate's playerCreate again (see papercuts), so it drops out of
+  // Surroundings for good. Stand in with its object ID and the group map's position (my own Z): targeting and casting by ID still work.
+  const player = seen ?? (member?.objectId !== undefined && member.position && !member.dead && away(agent, member.position) < 4000
+    ? { objectId: member.objectId, position: { ...member.position, z: agent.self.position?.z ?? 0 } } : undefined);
   return member && { member, player };
 }
 
