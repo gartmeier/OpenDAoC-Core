@@ -32,14 +32,14 @@ export async function turnIn(agent: Agent, guard: { name: string; at: Point }): 
  * Kill Tasks with a partner who pulls with a pet: assists with `duo` until the server says the task is done
  * ("You must now return to <guard>"), then turns in at the guard, takes the next task and does it again, `rounds` times.
  */
-export async function taskDuo(agent: Agent, partner: string, guard: { name: string; at: Point }, rounds: number, minutesEach = 8): Promise<Outcome & { done: number; log: string[] }> {
+export async function taskDuo(agent: Agent, partner: string, guard: { name: string; at: Point }, rounds: number, minutesEach = 8, joinBelow = 90): Promise<Outcome & { done: number; log: string[] }> {
   const { duo } = await import("./duo.ts");
   const log: string[] = [];
   let done = 0;
   for (let round = 0; round < rounds; round++) {
     let finished = false;
     const watch = agent.waitFor((p) => (p?.kind === "message" && p.text.includes(`return to ${guard.name}`)) || undefined, minutesEach * 60_000).then((x) => { finished = !!x; });
-    const fought = await duo(agent, partner, (l) => [l - 1, l, l + 1], minutesEach, 99, [], false, 90, () => finished);
+    const fought = await duo(agent, partner, (l) => [l - 1, l, l + 1], minutesEach, 99, [], false, joinBelow, () => finished);
     void watch;
     if (!fought.ok) return { ...fought, done, log };
     if (!finished) { log.push("task not done in time"); break; }

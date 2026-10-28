@@ -58,3 +58,7 @@ What I've learned while playing, which I read again before I next act.
 - Ornora's 14 task is still the siabra: skip tasks at 14 unless we can kill one safely.
 - **I'm bound at Tir na mBeo now** (Bindstone X:344830 Y:528095 Z:5448). From Connla, `runTo` to Lough Derg is `unreachable`; go via the spraggonites (X:326818 Y:621997 Z:5545), then on to Ornora. Connla's Local Bard (X:297246 Y:643086) hastes. Ionhar (Tir na mBeo) restores con.
 - Pray at my grave (`target` it, `/pray`): it gave back 14k XP.
+- **Grinding at 14 is slow: ~6–9‰/min** on L10–13 red wolfhounds south of Ornora and on roane maidens (L12–13, X:366000 Y:516500, west edge of the siabra camp), 8–12k XP each. Maidens turn on me after 1–2 nukes whether I join at 90%, 75% or 60%; the L10 pet holds nothing, and Fearnan heals me through it. A siabra task turn-in paid Fearnan 84.6k (71‰); a careful loop (~9 min) beats grinding if no one dies.
+- Siabras show "peaceful" at night and can't be pulled then: kill the task siabra by day, grind maidens at night.
+- `taskDuo(agent, partner, guard, rounds, minutesEach, joinBelow)` now takes `joinBelow`.
+- Next stint (left at 14, 431‰, sitting by Fearnan at the maidens X:365978 Y:516887 Z:4574, both holding a siabra task, bound at Tir na mBeo): by day, one lone L13–14 siabra with full Power, then both run to Ornora (~2.5 min) and hand in (~71‰), and repeat; by night maidens. Train Light 15 at 15 for Paralyzing Veil (15 s mez): mez the add. At 20, invite Dalta.
