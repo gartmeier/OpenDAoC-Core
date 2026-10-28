@@ -2,7 +2,6 @@ import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/t
 import { answer } from "../../../mind/src/tactics/dialog.ts";
 import { cast } from "../../../mind/src/tactics/cast.ts";
 import { kill } from "../../../mind/src/tactics/kill.ts";
-import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
 import { assistTarget } from "./assist.ts";
 
@@ -69,7 +68,7 @@ async function mezAdd(agent: Agent, objectId: number): Promise<boolean> {
 }
 
 /** Nukes `objectId` until it dies, from range. Keeps casting even when it's on me (the pet should take it back). */
-export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
+export async function burn(agent: Agent, objectId: number, healer?: () => Point | undefined): Promise<Outcome> {
   const spell = nuke(agent);
   if (!spell) return failed("noSpell");
   const range = (spell.details?.range ?? 1500) - 150;
@@ -83,6 +82,10 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
     if (!m || m.healthPercent <= 0) return succeeded;
     if (agent.self.power < cost) return failed("noPower");
     if (dist(agent.self.position, m.position) > range) {
+      // Never chase a fight far from the healer: at 20 I ran 2700 to where Dalta tanked a sheerie, the next sheerie came
+      // at me there, out of Fearnan's reach, and killed me. Only run in when the Mob is within 2000 of the healer.
+      const h = healer?.();
+      if (h && dist(m.position, h) > 2000) return failed("farFromHealer");
       const ran = await runTo(agent, m.position, range - 200);
       if (!ran.ok) return ran;
     }
@@ -141,8 +144,11 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     const known = (id?: number) => !!id && (agent.surroundings.npcs.some((o) => o.objectId === id) || agent.surroundings.players.some((o) => o.objectId === id));
     const unseenFight = (n: { targetId?: number; position: Point }) => !!n.targetId && !known(n.targetId) && dist(n.position, home) < 1200;
     const reach = (n: { position: Point }) => dist(n.position, agent.self.position) < 4000;
-    const onUs = agent.surroundings.npcs.find((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) && n.healthPercent <= joinBelow &&
-      (party.has(n.targetId!) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId) || unseenFight(n)));
+    // A Mob on one of us players (the healer above all) I hit at once, at any health: at 20 a fresh sheerie sat on Fearnan
+    // for 46 s, interrupting every heal, while I waited for it to drop under joinBelow and then sat down to rest. He died, then me.
+    const onUs = agent.surroundings.npcs.find((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) &&
+      (party.has(n.targetId!) || (n.healthPercent <= joinBelow &&
+        (pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId) || unseenFight(n)))));
     // With a puller: assist the puller's target (/assist), once the pet or the puller has it engaged (or it's hurt).
     // Anything in melee on me comes first: being hit interrupts every cast anyway. Fallback: the pet's target, then whatever is on one of us.
     let assisted: typeof onUs;
@@ -177,10 +183,10 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     if (busy) {
       const how = assisted ? "assist" : busy === onMe ? "onMe" : "fallback";
       picks[how] = (picks[how] ?? 0) + 1;
-      const k = await burn(agent, busy.objectId);
+      const k = await burn(agent, busy.objectId, () => partnerAt(agent, partner));
       if (k.ok) kills++;
       else {
-        log.push(`${busy.name}: ${k.reason}`);
+        if (k.reason !== "farFromHealer") log.push(`${busy.name}: ${k.reason}`);
         // Never spin on a failed burn: out of Power at 17 the loop ran millions of passes, the server dropped me, and the Mob killed me.
         // Out of Power: the pet and the puller finish it; I wait and regain Power. Never the staff on a Mob above my level.
         await agent.waitFor(() => undefined, k.reason === "noPower" ? 3000 : 1000);
@@ -191,14 +197,22 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     // Rest when I'm low, and sit with the partner while it is: once, waiting on beliefs, not on a loop of sends.
     const f = agent.group.named(partner);
     const partnerLow = !!f && ((f.powerPercent ?? 100) < 40 || (f.healthPercent ?? 100) < 60);
-    if (agent.self.powerPercent < 60 || agent.self.healthPercent < 70 || partnerLow) {
+    // Never sit while anything fights one of us or the pet: rest only breaks on a Mob on me.
+    const fightOn = agent.surroundings.npcs.some((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) &&
+      (party.has(n.targetId) || pets.some((p) => p.objectId === n.targetId)));
+    if (!fightOn && (agent.self.powerPercent < 60 || agent.self.healthPercent < 70 || partnerLow)) {
       // No "/g rest": the partner sees my Power in its group window, and every /g line aborts its snippet.
-      await rest(agent, 100);
+      // Sit until I'm full and the partner is fine, but stand at once when anything starts fighting one of us or the pet
+      // (porcelain `rest` only stands for a Mob on me).
       if (!agent.self.sitting) await agent.send({ name: "sit" } as never);
-      await agent.waitFor(() => {
+      const ended = await agent.waitFor(() => {
+        if (agent.surroundings.npcs.some((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) &&
+          (party.has(n.targetId) || pets.some((p) => p.objectId === n.targetId)))) return "fight";
         const g = agent.group.named(partner);
-        return !g || ((g.powerPercent ?? 100) >= 90 && (g.healthPercent ?? 100) >= 90) || agent.surroundings.npcs.some((n) => n.targetId === agent.self.objectId) || undefined;
-      }, 60_000);
+        const partnerOk = !g || ((g.powerPercent ?? 100) >= 90 && (g.healthPercent ?? 100) >= 90);
+        return agent.self.healthPercent >= 100 && agent.self.powerPercent >= 100 && partnerOk ? "rested" : undefined;
+      }, 120_000);
+      if (ended && agent.self.sitting) await agent.send({ name: "stand" } as never);
       continue;
     }
 
