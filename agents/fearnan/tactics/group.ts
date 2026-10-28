@@ -154,7 +154,9 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
       // Orla /assists me: keep the Mob targeted while it lives, back on it at once after a heal on someone else.
       if (agent.self.target !== mobId) await agent.send({ name: "target", objectId: mobId });
 
-      if (agent.self.pet && !sent) {
+      // With a tank in the group, the Pet joins only once the tank has hit the Mob (else the Pet takes it and costs heals).
+      const hasTank = mateNames(agent).some((n) => NO_POWER.test(agent.group.named(n)?.className ?? "") && !agent.group.named(n)?.dead);
+      if (agent.self.pet && !sent && (!hasTank || mob.healthPercent < 95)) {
         await agent.send({ name: "target", objectId: mobId });
         await agent.send({ name: "commandPet", order: "Attack" });
         sent = true;
@@ -242,6 +244,18 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
  * "rested" when it rested (look around again), else whether both are ready to pull.
  */
 export async function upkeep(agent: Agent, name: string): Promise<Outcome | "rested"> {
+  // A dead mate in reach: resurrect it (Regrowth 16 brings Minor Reconstitution), so it needn't release and run back.
+  const rez = agent.self.skills.filter((sp) => sp.page === "Spells" && /Reconstitution/.test(sp.name) && (sp.details?.powerCost ?? 0) <= agent.self.power)
+    .sort((a, b) => b.level - a.level)[0];
+  for (const n of mateNames(agent)) {
+    const member = agent.group.named(n);
+    if (!rez || !member?.dead || member.objectId === undefined || !member.position || away(agent, member.position) > 3000) continue;
+    const corpse = agent.surroundings.players.find((pl) => pl.objectId === member.objectId);
+    if (!corpse) continue;
+    if (away(agent, corpse.position) > 1300) { await runTo(agent, corpse.position, 1000); }
+    const reply = await castOn(agent, member.objectId, rez.name);
+    if (reply?.startsWith("You cast")) await agent.waitFor(() => !agent.group.named(n)?.dead || undefined, 15_000);
+  }
   const pet = await ensurePet(agent);
   if (!pet.ok && pet.reason !== "petOutOfView") return pet;
   await buffSelf(agent);
