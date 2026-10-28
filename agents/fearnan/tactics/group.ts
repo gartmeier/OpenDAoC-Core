@@ -2,7 +2,7 @@ import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/t
 import { distance, headingTowards } from "../../../mind/src/surroundings.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
-import { bestHeal, buffSelf, castOn, dropBase, dropWeaker, emergencyHeal, ensurePet, healMe, healPet, kept, petNpc } from "./pet.ts";
+import { bardBuffs, bestHeal, buffSelf, castOn, dropBase, dropWeaker, emergencyHeal, ensurePet, healMe, healPet, kept, petNpc } from "./pet.ts";
 
 const away = (agent: Agent, p: { x: number; y: number }) => {
   const at = agent.self.position;
@@ -61,6 +61,8 @@ export async function healMate(agent: Agent, name: string, below = 60, casts = 4
 
 /** The buffs I keep on mates: only the spec strength/constitution. Ceol (Bard) gives the base buffs (AF, str, con, dex) and asked me to drop mine. */
 const MATE_BUFFS = [/^Increases the target's strength and constitution/];
+/** With no living Bard grouped, the base armour and constitution buffs go on mates again (Ceol logged off and they went bare). */
+const BASE_MATE_BUFFS = [/^Increases the target's armor factor by/, /^Increases the target's constitution by/];
 /** Buffs a mate refused ("already has that effect"), by "spell|mate", until when: don't spend Power on them every upkeep. */
 const refused = new Map<string, number>();
 
@@ -68,7 +70,7 @@ const refused = new Map<string, number>();
 export async function buffMate(agent: Agent, name: string): Promise<void> {
   const m = mate(agent, name);
   if (!m?.player || m.member.dead || !m.member.position || away(agent, m.member.position) > 1200) return;
-  for (const kind of MATE_BUFFS) {
+  for (const kind of bardBuffs(agent) ? MATE_BUFFS : [...MATE_BUFFS, ...BASE_MATE_BUFFS]) {
     const buff = agent.self.skills.filter((s) => s.page === "Spells" && kind.test(s.details?.description ?? "") && s.details?.concentrationCost)
       .sort((a, b) => b.level - a.level)[0];
     if (!buff || kept(agent, buff, name)) continue;
