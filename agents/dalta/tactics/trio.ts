@@ -1,4 +1,5 @@
 import { type Agent, failed, type Outcome } from "../../../mind/src/tactic.ts";
+import { answer } from "../../../mind/src/tactics/dialog.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
 import { fight } from "./fight.ts";
@@ -33,9 +34,15 @@ export async function trio(agent: Agent, { minutes = 20, mob = "large red wolfho
   const healer = () => agent.group.named("Fearnan")?.position;
 
   while (Date.now() < deadline) {
+    // The group's rule: stay dead, say so once in /g, and wait for Fearnan to rez once the fight is safe.
     if (agent.self.dead) {
-      log.push("died");
-      return failed("died");
+      await agent.send({ name: "command", text: "/g Dalta dead, need a rez when it's safe." });
+      const offer = await agent.waitFor(() => agent.self.dialog || undefined, 180_000);
+      if (offer) await answer(agent, true);
+      const alive = await agent.waitFor(() => !agent.self.dead || undefined, 10_000);
+      log.push(`died: ${offer ? `offered "${offer.text}"` : "no rez offer"}, ${alive ? "alive" : "still dead"}`);
+      if (!alive) return failed("died");
+      continue;
     }
     await trainBlades(agent);
 
