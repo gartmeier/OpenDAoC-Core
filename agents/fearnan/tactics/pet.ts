@@ -118,10 +118,13 @@ const healed = (spell: { details?: { description: string } }) => Number(/for (\d
  * Its biggest heal by hit points for the Power it has. Not by Spell level: at 18 that picked Minor Regrowth (48 HP), the newest.
  * Not the group heal, and not one with a reuse timer (Nature's Appreciation, kept for emergencies: see `emergencyHeal`).
  */
-export function bestHeal(agent: Agent) {
-  return spells(agent)
-    .filter((spell) => healed(spell) > 0 && !spell.name.startsWith("Group") && !spell.details?.recastSeconds && (spell.details?.powerCost ?? 0) <= agent.self.power)
-    .sort((a, b) => healed(b) - healed(a))[0];
+export function bestHeal(agent: Agent, missingPercent = 100) {
+  const heals = spells(agent)
+    .filter((spell) => healed(spell) > 0 && !spell.name.startsWith("Group") && !spell.details?.recastSeconds && (spell.details?.powerCost ?? 0) <= agent.self.power);
+  // A top-off (a quarter or less missing) takes the cheapest heal: a 29-Power Greater Revival on someone at 90% mostly overheals
+  // ("is fully healed"), and the Power it wastes is rest time.
+  if (missingPercent <= 25) return heals.sort((a, b) => (a.details?.powerCost ?? 0) - (b.details?.powerCost ?? 0))[0];
+  return heals.sort((a, b) => healed(b) - healed(a))[0];
 }
 
 /** Its instant heal with a reuse timer (Nature's Appreciation, 33%), if it has one: a Mob on me can't interrupt it. */
@@ -133,7 +136,7 @@ export function emergencyHeal(agent: Agent) {
 export async function healPet(agent: Agent, below = 80, casts = 6): Promise<void> {
   for (let i = 0; i < casts; i++) {
     const pet = petNpc(agent);
-    const heal = bestHeal(agent);
+    const heal = bestHeal(agent, 100 - (pet?.healthPercent ?? 0));
     if (!pet || !heal || pet.healthPercent >= below) return;
     const before = pet.healthPercent;
     const reply = await castOn(agent, pet.objectId, heal.name);
@@ -148,7 +151,7 @@ export async function healPet(agent: Agent, below = 80, casts = 6): Promise<void
 /** Heals itself while below `below`% and there's Power. */
 export async function healMe(agent: Agent, below = 70, casts = 6): Promise<void> {
   for (let i = 0; i < casts; i++) {
-    const heal = bestHeal(agent);
+    const heal = bestHeal(agent, 100 - agent.self.healthPercent);
     if (!heal || agent.self.healthPercent >= below || agent.self.objectId === undefined) return;
     const reply = await castOn(agent, agent.self.objectId, heal.name);
     if (!reply?.startsWith("You cast")) return;

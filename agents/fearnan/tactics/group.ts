@@ -31,7 +31,7 @@ function bestDot(agent: Agent) {
 export async function healMate(agent: Agent, name: string, below = 60, casts = 4): Promise<void> {
   for (let i = 0; i < casts; i++) {
     const m = mate(agent, name);
-    const heal = bestHeal(agent);
+    const heal = bestHeal(agent, 100 - (m?.member.healthPercent ?? 0));
     if (!m?.player || !heal || (m.member.healthPercent ?? 100) >= below || m.member.dead) return;
     const before = m.member.healthPercent;
     const reply = await castOn(agent, m.player.objectId, heal.name);
