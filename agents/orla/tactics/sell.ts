@@ -17,6 +17,8 @@ export const keep = (agent: Agent) =>
     const worn = agent.inventory.item(item.itemType);
     if (JEWELLERY.includes(item.itemType)) return !worn;
     if (item.objectType === CLOTH) return !worn || item.dpsAf > worn.dpsAf;
+    // A Focus Staff of a higher level than mine may focus more levels: I sold a +21 Insightful one while wearing a +20.
+    if (/Focus Staff/.test(item.name)) return item.level > (agent.inventory.item(12)?.level ?? 0);
     return false;
   });
 

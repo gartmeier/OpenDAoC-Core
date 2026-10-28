@@ -41,6 +41,24 @@ export const partnerAt = (agent: Agent, name: string): { x: number; y: number; z
   return map && { ...map, z: partnerZ ?? agent.self.position!.z };
 };
 
+/**
+ * Dead: never release while the healer lives (the Human's rule). Says once in /g that I need a rez, then waits for the rez
+ * dialog and accepts it. Ends ok once I'm alive, or `healerDead`/`timeout` (then release yourself).
+ */
+export async function awaitRez(agent: Agent, healer: string, minutes = 10): Promise<Outcome> {
+  if (!agent.self.dead) return succeeded;
+  const h = agent.group.named(healer);
+  if (h && (h.healthPercent ?? 100) <= 0) return failed("healerDead");
+  await agent.send({ name: "command", text: `/g I'm dead, need a rez please, ${healer}.` } as never);
+  const end = Date.now() + minutes * 60_000;
+  while (agent.self.dead && Date.now() < end) {
+    const d = agent.self.dialog;
+    if (d?.yesNo) await answer(agent, true);
+    await agent.waitFor(() => !agent.self.dead || agent.self.dialog?.yesNo || undefined, 30_000);
+  }
+  return agent.self.dead ? failed("timeout") : succeeded;
+}
+
 const mezzedAt = new Map<number, number>();
 
 /**
@@ -185,6 +203,12 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
       }
     }
     const busy = assisted ?? onMe ?? onUs;
+    // Low on health, I don't open on a Mob that isn't on me: one nuke turns it on me, and it kills me. At 20 I nuked the
+    // next sheerie at 18% health right after the last fight and died to its first hit. Wait for the healer instead.
+    if (busy && busy !== onMe && agent.self.healthPercent < 55 && busy.targetId !== agent.group.named(partner)?.objectId) {
+      await agent.waitFor(() => agent.self.healthPercent >= 55 || undefined, 1500);
+      continue;
+    }
     if (busy) {
       const how = assisted ? "assist" : busy === onMe ? "onMe" : "fallback";
       picks[how] = (picks[how] ?? 0) + 1;
