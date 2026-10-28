@@ -41,6 +41,28 @@ export const partnerAt = (agent: Agent, name: string): { x: number; y: number; z
   return map && { ...map, z: partnerZ ?? agent.self.position!.z };
 };
 
+const mezzedAt = new Map<number, number>();
+
+/**
+ * Mesmerizes an add: a second Mob fighting one of us, me or the pet, while I burn `objectId`. Paralyzing Wind holds it 10 s
+ * (radius 350, so it may catch the main Mob too; the next nuke wakes that one). Recast every ~9 s. Ends true if it cast.
+ */
+async function mezAdd(agent: Agent, objectId: number): Promise<boolean> {
+  const mez = agent.self.skills.find((s) => s.name === "Paralyzing Wind");
+  if (!mez) return false;
+  const me = agent.self.objectId;
+  const ours = new Set<number | undefined>([me, ...agent.group.members.map((m) => m.objectId),
+    ...agent.surroundings.npcs.filter((p) => p.realm === "Hibernia").map((p) => p.objectId)]);
+  const add = agent.surroundings.npcs.find((n) => n.objectId !== objectId && n.realm === "None" && n.healthPercent > 0 &&
+    ours.has(n.targetId) && dist(n.position, agent.self.position) < 1400 && Date.now() - (mezzedAt.get(n.objectId) ?? 0) > 9000);
+  if (!add || agent.self.power < (mez.details?.powerCost ?? 3)) return false;
+  await agent.send({ name: "face", heading: headingTo(agent, add.position) });
+  const out = await cast(agent, mez.name, add.objectId);
+  if (out.ok) mezzedAt.set(add.objectId, Date.now());
+  console.log(`mez ${add.name}: ${out.ok ? "ok" : out.reason}`);
+  return out.ok;
+}
+
 /** Nukes `objectId` until it dies, from range. Keeps casting even when it's on me (the pet should take it back). */
 export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
   const spell = nuke(agent);
@@ -59,6 +81,7 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
       const ran = await runTo(agent, m.position, range - 200);
       if (!ran.ok) return ran;
     }
+    if (await mezAdd(agent, objectId)) continue;
     await agent.send({ name: "face", heading: headingTo(agent, m.position) });
     const me = agent.self.objectId;
     const onMe = me !== undefined && m.targetId === me && dist(agent.self.position, m.position) < 300;
@@ -119,7 +142,7 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     const f = agent.group.named(partner);
     const partnerLow = !!f && ((f.powerPercent ?? 100) < 40 || (f.healthPercent ?? 100) < 60);
     if (agent.self.powerPercent < 50 || agent.self.healthPercent < 70 || partnerLow) {
-      if (!partnerLow) await agent.send({ name: "command", text: "/g rest" });
+      // No "/g rest": the partner sees my Power in its group window, and every /g line aborts its snippet.
       await rest(agent, 100);
       if (!agent.self.sitting) await agent.send({ name: "sit" } as never);
       await agent.waitFor(() => {
@@ -142,13 +165,13 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     }
     const wanted = levels(agent.self.level);
     const mob = agent.surroundings.npcs
-      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && wanted.includes(n.level) && !avoid.includes(n.name) && dist(n.position, home ?? agent.self.position) < 1600)
+      .filter((n) => n.realm === "None" && !n.peaceful && n.healthPercent > 0 && wanted.includes(n.level) && !avoid.includes(n.name) && dist(n.position, home ?? agent.self.position) < 2600)
       .sort((a, b) => dist(a.position, agent.self.position) - dist(b.position, agent.self.position))[0];
     if (!mob) {
       log.push("no Mob near");
       break;
     }
-    await agent.send({ name: "command", text: `/g Pulling ${mob.name} (L${mob.level}).` });
+    // No /g per pull: each line aborts the partner's snippet. Agree once that I pull, then the pet picks up what reaches us.
     const k = await burn(agent, mob.objectId);
     if (k.ok) kills++;
     else log.push(`${mob.name}: ${k.reason}`);
