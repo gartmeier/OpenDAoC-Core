@@ -48,7 +48,8 @@ const mezzedAt = new Map<number, number>();
  * (radius 350, so it may catch the main Mob too; the next nuke wakes that one). Recast every ~9 s. Ends true if it cast.
  */
 async function mezAdd(agent: Agent, objectId: number): Promise<boolean> {
-  const mez = agent.self.skills.find((s) => s.name === "Paralyzing Wind");
+  // Paralyzing Veil (Light 15) holds 15 s; Paralyzing Wind 10 s.
+  const mez = agent.self.skills.find((s) => s.name === "Paralyzing Veil") ?? agent.self.skills.find((s) => s.name === "Paralyzing Wind");
   if (!mez) return false;
   const me = agent.self.objectId;
   const ours = new Set<number | undefined>([me, ...agent.group.members.map((m) => m.objectId),
@@ -122,13 +123,16 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     const live = agent.surroundings.npcs.filter((n) => n.realm === "None" && n.healthPercent > 0 && n.targetId !== undefined && near(n));
     const onMe = live.find((n) => n.targetId === me);
     // A Mob counts as ours when it fights one of us or the pet, or when the pet fights it (the Mob's own target can lag).
-    const pets = agent.surroundings.npcs.filter((p) => p.realm === "Hibernia" && dist(p.position, home) < 1500);
+    // The partner's pet: any controlled Hibernian NPC (I have none). No radius: the pet may pull from 2000+ away of us,
+    // and a fight it is in is ours wherever it is, within reach once I run up (a L14 siabra died to the lynx 2300 away unhelped).
+    const pets = agent.surroundings.npcs.filter((p) => p.realm === "Hibernia" && (p.pet || dist(p.position, home) < 1500));
     const petTargets = new Set(pets.map((p) => p.targetId));
     // After a death the server may never send the partner and its pet into my view again: then a hurt Mob fighting
     // something I can't see, next to the partner's map position, is the pet's.
     const known = (id?: number) => !!id && (agent.surroundings.npcs.some((o) => o.objectId === id) || agent.surroundings.players.some((o) => o.objectId === id));
     const unseenFight = (n: { targetId?: number; position: Point }) => !!n.targetId && !known(n.targetId) && dist(n.position, home) < 1200;
-    const onUs = agent.surroundings.npcs.find((n) => n.realm === "None" && n.healthPercent > 0 && near(n) && n.healthPercent <= joinBelow &&
+    const reach = (n: { position: Point }) => dist(n.position, agent.self.position) < 4000;
+    const onUs = agent.surroundings.npcs.find((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) && n.healthPercent <= joinBelow &&
       (party.has(n.targetId!) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId) || unseenFight(n)));
     const busy = onMe ?? onUs;
     if (busy) {
@@ -150,6 +154,14 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
         return !g || ((g.powerPercent ?? 100) >= 90 && (g.healthPercent ?? 100) >= 90) || agent.surroundings.npcs.some((n) => n.targetId === agent.self.objectId) || undefined;
       }, 60_000);
       continue;
+    }
+
+    // Keep my own AF buff up (+71 AF, 20 min); it beats the partner's Bark Skin.
+    const field = agent.self.skills.find((s) => s.page === "Spells" && /Powerfield/.test(s.name));
+    if (field && !agent.self.effects.some((e: any) => /Powerfield|energy shield/i.test(e.name ?? String(e))) && agent.self.power >= (field.details?.powerCost ?? 8)) {
+      const out = await cast(agent, field.name, agent.self.objectId!);
+      if (out.ok) await agent.waitFor(() => undefined, 2000);
+      else console.log(`powerfield: ${out.reason}`);
     }
 
     // Stay with the partner.
