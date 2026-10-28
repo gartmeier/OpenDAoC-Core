@@ -79,3 +79,4 @@ What I've learned while playing, which I read again before I next act.
 - Orla /assists me: groupFight re-targets the Mob after every heal so my target is always the Mob.
 - Ionhar (Healer, next to Ornora) restores Constitution: `talkTo`, wait for `agent.self.dialog`, `answer(agent, true)`. A stale dialog may still be open from before; answer it, then talk again. Ornora gave no new task right after one expired on my death.
 - Orla can't mez a Mob under 75% (it's enraged): she can only mez a fresh add before anyone hits it.
+- Tusslers + camp X:375300 Y:517500 Z:5450 at 16 with `groupGrind(agent, "Orla", 15, 20, [-2, 0], ["campkeeper","Hughar","ghastly siabra","parthanan"], true, camp)`: 48 kills in 27 min, ~12 permille a minute, no deaths, ~16k each. Safe but slowing; next look for lone L16-17 Mobs.
