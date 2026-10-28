@@ -203,7 +203,8 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     }
 
     // Keep my own AF buff up (+71 AF, 20 min); it beats the partner's Bark Skin.
-    const field = agent.self.skills.find((s) => s.page === "Spells" && /Powerfield/.test(s.name));
+    // The best one: Powerfield (Light 18) over Lesser Powerfield.
+    const field = agent.self.skills.filter((s) => s.page === "Spells" && /Powerfield/.test(s.name)).sort((a, b) => b.level - a.level)[0];
     if (field && !agent.self.effects.some((e: any) => /Powerfield|energy shield/i.test(e.name ?? String(e))) && agent.self.power >= (field.details?.powerCost ?? 8)) {
       const out = await cast(agent, field.name, agent.self.objectId!);
       if (out.ok) await agent.waitFor(() => undefined, 2000);
