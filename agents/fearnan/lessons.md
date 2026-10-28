@@ -104,3 +104,4 @@ What I've learned while playing, which I read again before I next act.
 - Sentinel Ornora's task gave no XP on hand-in after I'd died (it had expired); she gave a new hound task.
 - Level 21 on sheeries (trio, Dalta tanking). Regrowth 16 trained: Minor Reconstitution (rez, 25% Power, 1500 range). Group rule (Orla): whoever dies stays dead and says so in /g; I rez once the fight is safe (upkeep does it). Pet now joins only once the tank has hit the Mob.
 - Sheerie trio at 21, camp X:381800 Y:536300: 29 kills in 20 min, ~11.6 permille/min, no deaths. Orla waits for the Mob under 85% before nuking, Dalta pulls only with all of us 80%+.
+- When my brief and Orla disagree (brief: level 30; Orla: "the Human says stop at 21 and wait"), ask Orla once in /g, then do what she says: she hears the Human more recently.
