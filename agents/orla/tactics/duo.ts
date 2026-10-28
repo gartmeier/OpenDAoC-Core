@@ -210,6 +210,14 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
       if (out.ok) await agent.waitFor(() => undefined, 2000);
       else console.log(`powerfield: ${out.reason}`);
     }
+    // Barrier of Negation (Light 19): absorbs one melee hit, so the first bite of a Mob that turns on me doesn't land (nor interrupt?).
+    // A negative powerCost is a percentage of max Power. Recast between fights while Power is high.
+    const barrier = agent.self.skills.find((s) => s.name === "Barrier of Negation");
+    if (barrier && agent.self.powerPercent >= 75 && !agent.self.effects.some((e: any) => e.name === barrier.name)) {
+      const out = await cast(agent, barrier.name, agent.self.objectId!);
+      if (out.ok) await agent.waitFor(() => undefined, 2000);
+      else console.log(`barrier: ${out.reason}`);
+    }
 
     // Stay with the partner.
     if (home && dist(agent.self.position, home) > 300) {
