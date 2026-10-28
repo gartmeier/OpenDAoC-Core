@@ -111,11 +111,22 @@ export async function buffSelf(agent: Agent): Promise<void> {
   }
 }
 
-/** Its best heal by hit points for the Power it has. */
-function bestHeal(agent: Agent) {
+/** Hit points a heal Spell heals, from its description. */
+const healed = (spell: { details?: { description: string } }) => Number(/for (\d+) hit points/.exec(spell.details?.description ?? "")?.[1] ?? 0);
+
+/**
+ * Its biggest heal by hit points for the Power it has. Not by Spell level: at 18 that picked Minor Regrowth (48 HP), the newest.
+ * Not the group heal, and not one with a reuse timer (Nature's Appreciation, kept for emergencies: see `emergencyHeal`).
+ */
+export function bestHeal(agent: Agent) {
   return spells(agent)
-    .filter((spell) => spell.details?.description.startsWith("Heals") && !spell.name.startsWith("Group") && (spell.details.powerCost ?? 0) <= agent.self.power)
-    .sort((a, b) => b.level - a.level)[0];
+    .filter((spell) => healed(spell) > 0 && !spell.name.startsWith("Group") && !spell.details?.recastSeconds && (spell.details?.powerCost ?? 0) <= agent.self.power)
+    .sort((a, b) => healed(b) - healed(a))[0];
+}
+
+/** Its instant heal with a reuse timer (Nature's Appreciation, 33%), if it has one: a Mob on me can't interrupt it. */
+export function emergencyHeal(agent: Agent) {
+  return spells(agent).find((spell) => spell.details?.description.startsWith("Heals") && spell.details.recastSeconds && spell.details.castingSeconds === 0);
 }
 
 /** Heals the Pet while it's below `below`% and there's Power. */

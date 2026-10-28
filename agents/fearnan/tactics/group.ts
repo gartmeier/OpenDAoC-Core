@@ -2,7 +2,7 @@ import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/t
 import { distance, headingTowards } from "../../../mind/src/surroundings.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
-import { buffSelf, castOn, dropWeaker, ensurePet, healMe, healPet, kept, petNpc } from "./pet.ts";
+import { bestHeal, buffSelf, castOn, dropWeaker, emergencyHeal, ensurePet, healMe, healPet, kept, petNpc } from "./pet.ts";
 
 const away = (agent: Agent, p: { x: number; y: number }) => {
   const at = agent.self.position;
@@ -18,14 +18,6 @@ function mate(agent: Agent, name: string) {
   const player = seen ?? (member?.objectId !== undefined && member.position && !member.dead && away(agent, member.position) < 4000
     ? { objectId: member.objectId, position: { ...member.position, z: agent.self.position?.z ?? 0 } } : undefined);
   return member && { member, player };
-}
-
-/** Its best heal it has the Power for. */
-function bestHeal(agent: Agent) {
-  return agent.self.skills
-    // Not the group heal (Group Revigoration): 17 Power for 33 each, wasted when only the Pet is hurt.
-    .filter((s) => s.page === "Spells" && s.details?.description.startsWith("Heals") && !s.name.startsWith("Group") && (s.details.powerCost ?? 0) <= agent.self.power)
-    .sort((a, b) => b.level - a.level)[0];
 }
 
 /** Its best damage over time Spell it has the Power for. */
@@ -161,6 +153,17 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
       // Only with a heal it has the Power for: else the `continue`s would spin without awaiting anything, starve the connection's
       // heartbeat and get the Character dropped linkdead.
       const canHeal = !!bestHeal(agent);
+      // Nature's Appreciation: instant, so a Mob on me can't interrupt it. For me or the mate in real danger only (15 min reuse).
+      const instant = emergencyHeal(agent);
+      if (instant && !agent.self.cooldowns.has(instant.name)) {
+        const mateLow = m?.player && !m.member.dead && (m.member.healthPercent ?? 100) < 30;
+        const meLow = agent.self.healthPercent < 30;
+        if (mateLow || meLow) {
+          await striker.halt();
+          const reply = await castOn(agent, mateLow ? m!.player!.objectId : me, instant.name);
+          if (reply?.startsWith("You cast")) continue;
+        }
+      }
       if (canHeal && m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, name, onMate ? 95 : 70, 1); continue; }
       if (canHeal && agent.self.healthPercent < 45 && !onMe) { await striker.halt(); await healMe(agent, 70, 1); continue; }
       // Even with it on me: a maiden took me to 13% with 93% Power while I only meleed. A cast may be interrupted, but try.
