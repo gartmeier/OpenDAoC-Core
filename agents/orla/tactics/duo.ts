@@ -57,6 +57,8 @@ async function mezAdd(agent: Agent, objectId: number): Promise<boolean> {
   const add = agent.surroundings.npcs.find((n) => n.objectId !== objectId && n.realm === "None" && n.healthPercent > 0 &&
     ours.has(n.targetId) && dist(n.position, agent.self.position) < 1400 && Date.now() - (mezzedAt.get(n.objectId) ?? 0) > 9000);
   if (!add || agent.self.power < (mez.details?.powerCost ?? 3)) return false;
+  // Being hit interrupts every mez (5 in a row at 15): only mez while nothing is in melee on me.
+  if (agent.surroundings.npcs.some((n) => n.targetId === me && n.healthPercent > 0 && dist(n.position, agent.self.position) < 300)) return false;
   await agent.send({ name: "face", heading: headingTo(agent, add.position) });
   const out = await cast(agent, mez.name, add.objectId);
   if (out.ok) mezzedAt.set(add.objectId, Date.now());
