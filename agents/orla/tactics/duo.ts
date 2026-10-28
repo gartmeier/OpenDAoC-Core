@@ -100,8 +100,12 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     // A Mob counts as ours when it fights one of us or the pet, or when the pet fights it (the Mob's own target can lag).
     const pets = agent.surroundings.npcs.filter((p) => p.realm === "Hibernia" && dist(p.position, home) < 1500);
     const petTargets = new Set(pets.map((p) => p.targetId));
+    // After a death the server may never send the partner and its pet into my view again: then a hurt Mob fighting
+    // something I can't see, next to the partner's map position, is the pet's.
+    const known = (id?: number) => !!id && (agent.surroundings.npcs.some((o) => o.objectId === id) || agent.surroundings.players.some((o) => o.objectId === id));
+    const unseenFight = (n: { targetId?: number; position: Point }) => !!n.targetId && !known(n.targetId) && dist(n.position, home) < 1200;
     const onUs = agent.surroundings.npcs.find((n) => n.realm === "None" && n.healthPercent > 0 && near(n) && n.healthPercent <= joinBelow &&
-      (party.has(n.targetId!) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId)));
+      (party.has(n.targetId!) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId) || unseenFight(n)));
     const busy = onMe ?? onUs;
     if (busy) {
       const k = await burn(agent, busy.objectId);
