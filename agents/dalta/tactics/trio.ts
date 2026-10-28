@@ -50,7 +50,8 @@ export async function trio(agent: Agent, { minutes = 20, mob = "large red wolfho
     const ids = [agent.self.objectId, ...others().map((m) => m.objectId)].filter((id): id is number => id !== undefined);
     // A Mob near me is still in the fight even when it attacks nobody I can see: it's on a Pet, between swings,
     // or an add Orla mezzed at full health. Finish it before sitting, or the mez breaks on whoever sits.
-    const me = agent.self.position;
+    // Measured from the healer, not from me: out on a pull, a sheerie beside me is no add of the group's.
+    const me = healer() ?? agent.self.position;
     const near = (n: { position: { x: number; y: number } }, r: number) => me !== undefined && Math.hypot(n.position.x - me.x, n.position.y - me.y) < r;
     const wounded = agent.surroundings.npcs.find((n) => n.name === mob && n.healthPercent > 0 && ((n.healthPercent < 100 && near(n, 1500)) || near(n, 800)));
     const attacker = ids.flatMap((id) => agent.surroundings.attacking(id))[0] ?? wounded;
