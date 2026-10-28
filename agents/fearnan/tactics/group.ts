@@ -2,7 +2,7 @@ import { type Agent, failed, type Outcome, succeeded } from "../../../mind/src/t
 import { distance, headingTowards } from "../../../mind/src/surroundings.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
-import { bestHeal, buffSelf, castOn, dropWeaker, emergencyHeal, ensurePet, healMe, healPet, kept, petNpc } from "./pet.ts";
+import { bestHeal, buffSelf, castOn, dropBase, dropWeaker, emergencyHeal, ensurePet, healMe, healPet, kept, petNpc } from "./pet.ts";
 
 const away = (agent: Agent, p: { x: number; y: number }) => {
   const at = agent.self.position;
@@ -22,7 +22,8 @@ function mate(agent: Agent, name: string) {
 
 /** The names of the other Group members. */
 export function mateNames(agent: Agent): string[] {
-  return agent.group.members.map((m) => m.name).filter((n) => n && n !== agent.self.name);
+  // Self has no name: tell myself apart by object ID (by name it let "Fearnan" in, and I buffed myself as a mate).
+  return agent.group.members.filter((m) => m.objectId !== agent.self.objectId && m.name !== "Fearnan").map((m) => m.name).filter((n) => !!n);
 }
 
 /** Beyond this my heals say "That target is too far away!" (Dalta at 2247 got spammed with them). */
@@ -58,8 +59,10 @@ export async function healMate(agent: Agent, name: string, below = 60, casts = 4
   }
 }
 
-/** The buffs worth keeping on a caster mate: armour and constitution, the best of each it has. */
-const MATE_BUFFS = [/^Increases the target's armor factor/, /^Increases the target's constitution by/];
+/** The buffs I keep on mates: only the spec strength/constitution. Ceol (Bard) gives the base buffs (AF, str, con, dex) and asked me to drop mine. */
+const MATE_BUFFS = [/^Increases the target's strength and constitution/];
+/** Buffs a mate refused ("already has that effect"), by "spell|mate", until when: don't spend Power on them every upkeep. */
+const refused = new Map<string, number>();
 
 /** Puts its armour and constitution buffs on the mate when it's close and alive and lacks them. */
 export async function buffMate(agent: Agent, name: string): Promise<void> {
@@ -71,7 +74,11 @@ export async function buffMate(agent: Agent, name: string): Promise<void> {
     if (!buff || kept(agent, buff, name)) continue;
     await dropWeaker(agent, buff, name);
     if ((buff.details?.concentrationCost ?? 0) > agent.self.concentration) continue;
+    const key = `${buff.name}|${name}`;
+    if ((refused.get(key) ?? 0) > agent.clock.now()) continue;
     await castOn(agent, m.player.objectId, buff.name);
+    const said = await agent.waitFor((p) => p?.kind === "message" && /already has that effect/.test(p.text) ? true : undefined, 800);
+    if (said) refused.set(key, agent.clock.now() + 300_000);
   }
 }
 
@@ -258,6 +265,8 @@ export async function upkeep(agent: Agent, name: string): Promise<Outcome | "res
   }
   const pet = await ensurePet(agent);
   if (!pet.ok && pet.reason !== "petOutOfView") return pet;
+  // Ceol (Bard) gives the base buffs: take mine off me and the Pet so hers land.
+  await dropBase(agent);
   await buffSelf(agent);
   for (const n of mateNames(agent)) await buffMate(agent, n);
   for (const n of mateNames(agent)) await healMate(agent, n, 90);

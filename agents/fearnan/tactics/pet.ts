@@ -13,6 +13,33 @@ const away = (agent: Agent, p: { x: number; y: number }) => {
   return at ? Math.hypot(p.x - at.x, p.y - at.y) : Infinity;
 };
 
+/** A base (single-stat or armour) buff: what a Bard's Nurture also gives. Spec buffs (str/con, haste, damage shield) aren't. */
+export const isBase = (spell: Spell) => /^Increases the target's (armor factor|strength|constitution|dexterity) by/.test(spell.details?.description ?? "");
+
+/** A living Bard in the Group (Ceol): it gives everyone the base buffs, so I keep only my spec ones (Ceol asked, and so did the Human). */
+export const bardBuffs = (agent: Agent) => agent.group.members.some((m) => m.name !== "Fearnan" && /Bard/.test(m.className ?? "") && !m.dead);
+
+/** Same kind of buff, ignoring the numbers (Ceol's "Oak's Stamina" and my "Oak's Girth" are both "constitution by #"). */
+const kindOf = (description: string) => description.replace(/[\d.]+/g, "#");
+
+/** Whether it should leave `buff` off: a base buff while a Bard covers those. */
+const leaveOff = (agent: Agent, buff: Spell) => isBase(buff) && bardBuffs(agent);
+
+/** Cancels my base buffs on myself and the Pet while a Bard gives those, so the Bard's can land (and my Concentration is free). */
+export async function dropBase(agent: Agent): Promise<number> {
+  if (!bardBuffs(agent)) return 0;
+  const pet = agent.self.pet && agent.surroundings.npc(agent.self.pet.objectId);
+  let dropped = 0;
+  for (const k of agent.self.concentrationBuffs.filter((k) => k.target === cut("Fearnan") || (pet && k.target === cut(pet.name)))) {
+    const spell = spells(agent).find((s) => cut(s.name) === k.spell && s.details?.concentrationCost === k.cost);
+    if (!spell || !isBase(spell)) continue;
+    await agent.sendAndWait({ name: "cancelConcentration", spell: k.spell, target: k.target },
+      () => !agent.self.concentrationBuffs.some((c) => c.spell === k.spell && c.target === k.target && c.cost === k.cost) || undefined, 3_000);
+    dropped++;
+  }
+  return dropped;
+}
+
 /**
  * Whether `buff` is kept up on `target` per the Concentration list. The list cuts names ("Strength of .." is both Strength of the Redwood
  * and Strength of the Tree), so the cost tells them apart.
@@ -91,7 +118,7 @@ export async function ensurePet(agent: Agent): Promise<Outcome> {
   if (!pet) return failed("petOutOfView");
 
   for (const buff of bestBuffs(agent, true)) {
-    if (kept(agent, buff, pet.name)) continue;
+    if (kept(agent, buff, pet.name) || leaveOff(agent, buff)) continue;
     await dropWeaker(agent, buff, pet.name);
     if (away(agent, pet.position) > 900) await runTo(agent, pet.position, 300);
     await castOn(agent, pet.objectId, buff.name);
@@ -106,6 +133,8 @@ export async function buffSelf(agent: Agent): Promise<void> {
   for (const buff of bestBuffs(agent, false)) {
     // After a relog the buffs stay on the buff bar but leave the Concentration list, and recasting them fails.
     if (kept(agent, buff, "Fearnan") || agent.self.effects.some((e) => e.name === buff.name)) continue;
+    // What's actually on me: a buff of the same kind from someone else (Ceol's Oak's Stamina) refuses mine anyway.
+    if (leaveOff(agent, buff) || agent.self.effects.some((e) => e.details && !agent.self.concentrationBuffs.some((k) => k.spell === cut(e.name) && k.target === cut("Fearnan")) && kindOf(e.details.description) === kindOf(buff.details?.description ?? ""))) continue;
     await dropWeaker(agent, buff, "Fearnan");
     await castOn(agent, me, buff.name);
   }
