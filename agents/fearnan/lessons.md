@@ -70,5 +70,7 @@ What I've learned while playing, which I read again before I next act.
 - Siabra task at 15: hand-in 121k XP; the siabra itself 17k.
 - siabraRun stalled 20 min (6 kills): it waited for Orla within 1000 while she holds a ~1500 leash. It now runs to her when she's over 1600 away. Use siabraRun with the tussler camp as `camp`: tusslers while siabras sleep, a siabra when one wakes (they're crowded, few lone ones). 29 kills in 20 min that way.
 - Level 16 (tusslers, ~13 permille a minute). Regrowth 8 trained (Regeneration 85 HP for 15 Power), 9 points left. Still a lynx adolescent L11 pet.
-- At 16 the bag is 32/40 and 105 of 108 lb: sell at Boyd (next to Ornora) before the next long grind. Arcane Mace (L15) is two-handed: no use with the shield, sell it.
-- Siabra task in hand (from Ornora at 15): kill one ghastly siabra.
+- Examine drops and equip upgrades before dropping/selling: at 16 my bag held a Plantbound helm and jewel (+2 Nurture each), L15 sleeves, L14 leggings and a choker for my empty neck slot. Drop junk with `moveItem` to slot 1; a swapped-out item lands in the backpack, so drop by name after equipping.
+- Boyd pays a lot for Scrap of Cloth (24 for 55 gold) and Human Legs (5 for 11 gold): keep those and sell them in town. Bought shell nadurtha vest, gauntlets and boots (L16) at 16.
+- Siabra task hand-in at 16: 173k XP (~60 permille). Orla gets only 67 permille from hers at 15 and counts the run to Ornora at ~7 permille/min: keep the task done and hand in only when in town anyway.
+- Druids can wield blades: Adroit Falcata (L14) in the right hand.
