@@ -4,6 +4,7 @@ import { cast } from "../../../mind/src/tactics/cast.ts";
 import { kill } from "../../../mind/src/tactics/kill.ts";
 import { rest } from "../../../mind/src/tactics/rest.ts";
 import { runTo } from "../../../mind/src/tactics/run-to.ts";
+import { assistTarget } from "./assist.ts";
 
 type Point = { x: number; y: number; z?: number };
 
@@ -106,9 +107,12 @@ export async function burn(agent: Agent, objectId: number): Promise<Outcome> {
  * Hunts with a partner: assists on whatever fights the group (or, with `lead`, pulls Mobs of `levels` near the partner, announces each pull in group chat,
  * burns them down, and rests (saying so) when low. Stops after `minutes` or at `untilLevel`.
  */
-export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false, joinBelow = 75, until: () => boolean = () => false): Promise<Outcome> {
+export async function duo(agent: Agent, partner: string, levels: (l: number) => number[], minutes: number, untilLevel = 99, avoid: string[] = [], lead = false, joinBelow = 75, until: () => boolean = () => false, puller?: string): Promise<Outcome> {
   const end = Date.now() + minutes * 60_000;
   let kills = 0;
+  const picks: Record<string, number> = {};
+  let assistedId: number | undefined;
+  let assistedAt = 0;
   const log: string[] = [];
   while (Date.now() < end && agent.self.level < untilLevel && !until()) {
     if (agent.self.dead) return failed("died");
@@ -136,8 +140,28 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     const reach = (n: { position: Point }) => dist(n.position, agent.self.position) < 4000;
     const onUs = agent.surroundings.npcs.find((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) && n.healthPercent <= joinBelow &&
       (party.has(n.targetId!) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId) || unseenFight(n)));
-    const busy = onMe ?? onUs;
+    // With a puller: assist the puller's target (/assist), once the pet or the puller has it engaged (or it's hurt).
+    // Anything in melee on me comes first: being hit interrupts every cast anyway. Fallback: the pet's target, then whatever is on one of us.
+    let assisted: typeof onUs;
+    const inMelee = onMe && dist(onMe.position, agent.self.position) < 300;
+    if (puller && !inMelee) {
+      // Send /assist only when a fight starts or my assisted Mob died, at most every 3 s: not on every pass (it spammed 400 a session).
+      const fighting = agent.surroundings.npcs.some((n) => n.realm === "None" && n.healthPercent > 0 && reach(n) &&
+        (party.has(n.targetId) || pets.some((p) => p.objectId === n.targetId) || petTargets.has(n.objectId)));
+      const last = agent.surroundings.npcs.find((n) => n.objectId === assistedId && n.healthPercent > 0);
+      if (!last && fighting && Date.now() - assistedAt > 3000) {
+        assistedAt = Date.now();
+        assistedId = await assistTarget(agent, puller);
+      }
+      const id = last ? last.objectId : assistedId;
+      const m = id === undefined ? undefined : agent.surroundings.npcs.find((n) => n.objectId === id && n.healthPercent > 0);
+      const engaged = !!m && (m.healthPercent <= joinBelow || party.has(m.targetId) || pets.some((p) => p.objectId === m.targetId));
+      if (m && engaged && reach(m)) assisted = m;
+    }
+    const busy = assisted ?? onMe ?? onUs;
     if (busy) {
+      const how = assisted ? "assist" : busy === onMe ? "onMe" : "fallback";
+      picks[how] = (picks[how] ?? 0) + 1;
       const k = await burn(agent, busy.objectId);
       if (k.ok) kills++;
       else log.push(`${busy.name}: ${k.reason}`);
@@ -190,6 +214,7 @@ export async function duo(agent: Agent, partner: string, levels: (l: number) => 
     if (k.ok) kills++;
     else log.push(`${mob.name}: ${k.reason}`);
   }
+  console.log(`picks ${JSON.stringify(picks)}`);
   console.log(`kills ${kills}, level ${agent.self.level} ${agent.self.levelPermill}‰\n${log.join("\n")}`);
   return succeeded;
 }
