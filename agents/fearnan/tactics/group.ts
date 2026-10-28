@@ -20,6 +20,17 @@ function mate(agent: Agent, name: string) {
   return member && { member, player };
 }
 
+/** The names of the other Group members. */
+export function mateNames(agent: Agent): string[] {
+  return agent.group.members.map((m) => m.name).filter((n) => n && n !== agent.self.name);
+}
+
+/** The other Group member most in need of a heal (lowest health, alive, in reach), else `name`'s. */
+function neediest(agent: Agent, name: string) {
+  return mateNames(agent).map((n) => mate(agent, n)).filter((m) => m?.player && !m.member.dead)
+    .sort((a, b) => (a!.member.healthPercent ?? 100) - (b!.member.healthPercent ?? 100))[0] ?? mate(agent, name);
+}
+
 /** Its best damage over time Spell it has the Power for. */
 function bestDot(agent: Agent) {
   return agent.self.skills
@@ -62,6 +73,9 @@ export async function buffMate(agent: Agent, name: string): Promise<void> {
 }
 
 let lastBackOff = 0;
+
+/** Classes with no Power bar (it shows 0%): never wait on their Power. */
+const NO_POWER = /Blademaster|Hero|Warrior|Armsman|Mercenary|Berserker|Savage|Infiltrator|Shadowblade|Scout/;
 
 /** The nearest Mob within `within` that could fight us (not peaceful, not far below its level), if any. */
 export function idleNear(agent: Agent, within: number) {
@@ -143,10 +157,15 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
       }
 
       const me = agent.self.objectId!;
-      const m = mate(agent, name);
+      // In a trio: whoever is hurt most, so the tank and the nuker both get heals.
+      const isOn = (x: ReturnType<typeof mate>) => !!x?.player && agent.surroundings.attacking(x.player.objectId).some((npc) => npc.objectId === mobId);
+      // A non-tank mate the Mob turned on comes first; else whoever is hurt most.
+      const victim = mateNames(agent).map((n) => mate(agent, n)).find((x) => isOn(x) && !x!.member.dead && !NO_POWER.test(x!.member.className));
+      const m = victim ?? neediest(agent, name);
       const onMe = agent.surroundings.attacking(me).some((npc) => npc.objectId === mobId);
-      const onMate = m?.player && agent.surroundings.attacking(m.player.objectId).some((npc) => npc.objectId === mobId);
-      const melee = onMe || onMate || !agent.self.pet;
+      const onMate = isOn(m);
+      // Not on a tank (no Power bar): it holds the Mob, and I stay back to heal it.
+      const melee = onMe || !!victim || !agent.self.pet;
 
       // Heals: the mate first, then itself, then the Pet, one cast at a time so a mate the Mob turns on comes first at once.
       // Out of melee they don't get interrupted.
@@ -164,7 +183,7 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
           if (reply?.startsWith("You cast")) continue;
         }
       }
-      if (canHeal && m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, name, onMate ? 95 : 70, 1); continue; }
+      if (canHeal && m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, m.member.name, onMate ? 95 : 70, 1); continue; }
       if (canHeal && agent.self.healthPercent < 45 && !onMe) { await striker.halt(); await healMe(agent, 70, 1); continue; }
       // Even with it on me: a maiden took me to 13% with 93% Power while I only meleed. A cast may be interrupted, but try.
       if (canHeal && agent.self.healthPercent < 40 && onMe) { await striker.halt(); await healMe(agent, 60, 1); continue; }
@@ -199,8 +218,8 @@ export async function upkeep(agent: Agent, name: string): Promise<Outcome | "res
   const pet = await ensurePet(agent);
   if (!pet.ok && pet.reason !== "petOutOfView") return pet;
   await buffSelf(agent);
-  await buffMate(agent, name);
-  await healMate(agent, name, 90);
+  for (const n of mateNames(agent)) await buffMate(agent, n);
+  for (const n of mateNames(agent)) await healMate(agent, n, 90);
   await healPet(agent, 85);
   await healMe(agent, 85);
 
@@ -209,7 +228,8 @@ export async function upkeep(agent: Agent, name: string): Promise<Outcome | "res
   if (m.member.dead) return failed("mateDead");
 
   // Rest until it is full, and give the mate time to get its Power back.
-  if (agent.self.healthPercent < 90 || agent.self.powerPercent < 70 || (m.member.powerPercent ?? 100) < 60 || (m.member.healthPercent ?? 100) < 80) {
+  const others = mateNames(agent).map((n) => agent.group.named(n)).filter((x) => x && !x.dead && x.position && away(agent, x.position) < 3000);
+  if (agent.self.healthPercent < 90 || agent.self.powerPercent < 70 || others.some((x) => (!NO_POWER.test(x!.className) && (x!.powerPercent ?? 100) < 60) || (x!.healthPercent ?? 100) < 80)) {
     // Not next to an idle Mob: one that wandered up to us resting 150 from the siabra camp killed us both. Back off 1500 from it first.
     const near = idleNear(agent, 1500);
     // Once per 30 s at most, so it doesn't bounce between Mobs for ever: else it rests where it is.
@@ -260,6 +280,13 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
     if (ready === "rested") continue;
     if (!ready.ok) return { ...ready, kills };
     const m = mate(agent, name)!;
+
+    // Following with a `camp`: the puller brings Mobs back to it, so wait there instead of trailing the puller onto the Mobs.
+    if (!lead && camp) {
+      if (away(agent, camp) > 250) { await runTo(agent, camp, 100); continue; }
+      await agent.waitFor(() => hostile(agent)[0], 15_000);
+      continue;
+    }
 
     // Stay close to the mate.
     // The group map's position, not the player in view, which stays stale after a release.
