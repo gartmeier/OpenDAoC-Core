@@ -202,8 +202,9 @@ export async function upkeep(agent: Agent, name: string): Promise<Outcome | "res
 /**
  * Grinds with the Group member `name` for `minutes`: rests until both are ready, waits for them to be close, pulls the nearest Mob
  * of `below` levels relative to its own (e.g. [-2, 1] = two above to one below) with the Pet, and heals everyone.
+ * With a `camp`, it goes there first and pulls only Mobs within 3500 of it.
  */
-export async function groupGrind(agent: Agent, name: string, minutes: number, stopAtLevel: number, range = [-1, 2], avoid: string[] = ["mudman"], lead = true): Promise<Outcome & { kills?: number }> {
+export async function groupGrind(agent: Agent, name: string, minutes: number, stopAtLevel: number, range = [-1, 2], avoid: string[] = ["mudman"], lead = true, camp?: { x: number; y: number; z: number }): Promise<Outcome & { kills?: number }> {
   const end = agent.clock.now() + minutes * 60_000;
   let kills = 0, idle = 0;
   const shunned = new Map<number, number>();
@@ -246,10 +247,13 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
       continue;
     }
 
+    // A camp keeps it where the Mobs pay: run there first, and pull only Mobs near it (else it drifts onto low Mobs on the way).
+    if (camp && away(agent, camp) > 2500) { await runTo(agent, camp, 300); continue; }
     const level = agent.self.level;
     const fit = agent.surroundings.npcs
       .filter((npc) => npc.realm === "None" && !npc.peaceful && !npc.pet && npc.healthPercent > 0 && !avoid.includes(npc.name)
-        && npc.level >= level + range[0] && npc.level <= level + range[1] && (shunned.get(npc.objectId) ?? 0) < 2)
+        && npc.level >= level + range[0] && npc.level <= level + range[1] && (shunned.get(npc.objectId) ?? 0) < 2
+        && (!camp || Math.hypot(npc.position.x - camp.x, npc.position.y - camp.y) < 3500))
       .map((npc) => ({ npc, away: away(agent, npc.position) }));
     const mob = fit
       // The Pet attacks only within 2000 units.

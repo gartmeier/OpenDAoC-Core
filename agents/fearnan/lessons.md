@@ -49,3 +49,6 @@ What I've learned while playing, which I read again before I next act.
 - Ornora still gave lough wolf at 11: 22997 XP a task (twice level 10's), 11 tasks took level 11 from 3% to 72%. Pattern that works: tasks to the cap, grind badgers to the next level, tasks again.
 - Nature 7 brings Call Lesser Nature Spirit (bear youth, 75% of my level): L8 at 11, L9 at 12. Release and resummon each level. Nature 12 brings Call Nature Spirit (up to L20); Nature 9 at 12, 5 points saved.
 - `groupGrind` now walks toward the nearest fitting Mob up to 5000 away when none is within 1800, instead of giving up with `noMob` once the camp is picked clean: 16 kills in 14 min at 11.
+- At 12 and 13 Ornora's task is badger (camp X:348000 Y:520000): 38179 XP a task at 12, 58331 at 13, ~39‰ a minute with Orla. Get the task with `turnIn` first: `taskLoop` assumes one is in hand. Cap 12 at 12 ("You cannot do more than 12 tasks at your level").
+- Started from Ornora, `groupGrind` drifted onto L8 blackthorns/lunantishees just south of her (adds, ~1-2k XP, 7‰ a minute). Pass a `camp` (8th argument) and it runs there first and pulls only near it: badger camp L10-13 red wolfhounds pay 12k each at 13.
+- Spec plan: Lesser Nature Spirit caps at L12 pet, so Nature 12 (Call Nature Spirit) is needed by level 17. Nature 10 trained at 13 (Patch of Brambles root).
