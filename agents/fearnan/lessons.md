@@ -42,3 +42,7 @@ What I've learned while playing, which I read again before I next act.
 - Grinding L7-8 spraggonites at X:326800 Y:622000 with Orla: 27 kills in ~22 min, no deaths, ~1000 XP each at 9 (camp bonus). The L6 lynx holds them alone.
 - After a death and release, Orla may vanish from my Surroundings for good (papercut). `mate()` falls back to her object ID and the map position, so heals and buffs still reach her. If `groupGrind` stalls with her "not in view", that's why.
 - Connla healer Keagan (X:296899 Y:641128) restores Constitution; Colm is in a building that `runTo` can't route out of to Keagan directly: run out to X:294768 Y:641635 first.
+- Tir na mBeo: Sentinel Ornora (X:345307 Y:526666) gives lough wolf tasks at 10 (L7-9, 7k south around X:344651 Y:519502). `taskLoop` ran all 10 with Orla, no deaths: 11330 XP each (~47% of level 10 in ~20 min).
+- Ghostly siabras (X:351000 Y:528000) show as peaceful: can't be fought (by day at least).
+- Camp at X:348000 Y:520000: badgers L9-11 and wild lucradans L9-10 with Orla, `groupGrind(agent, "Orla", 12, 11, [-1, 1])`: 13 kills in 12 min, no deaths, L11 badger ~5900 XP. Red wolfhounds L10-13 roam there too.
+- The Fortifying Wrap (itemType 36) goes in a ring slot (36), not the cloak.
