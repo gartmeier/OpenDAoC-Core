@@ -178,7 +178,8 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
       const onMe = agent.surroundings.attacking(me).some((npc) => npc.objectId === mobId);
       const onMate = isOn(m);
       // Not on a tank (no Power bar): it holds the Mob, and I stay back to heal it.
-      const melee = onMe || !!victim || !agent.self.pet;
+      // With a tank I never melee: chasing a Mob that turned on Orla dragged me off camp. The tank taunts it; I heal.
+      const melee = !hasTank && (onMe || !!victim || !agent.self.pet);
 
       // Any Mob on me interrupts every heal (an add sat on me 60 s and killed me): run to the tank so it can taunt it off me.
       const onMeAny = agent.surroundings.attacking(me).some((npc) => npc.healthPercent > 0);
@@ -193,12 +194,13 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
         await agent.waitFor(() => undefined, 500);
         continue;
       }
-      // The tank fighting out of heal range (it chased the Mob off the camp): close in to 1200, or it dies unhealed.
+      // The tank fighting out of heal range (it chased the Mob off the camp): close in just enough (1500), or it dies unhealed.
+      // Not further: groupGrind runs back to the camp after the fight, and Orla follows me if I wander.
       if (tank && agent.self.position && distance(agent.self.position, tank.player!.position) > HEAL_RANGE - 200 && agent.clock.now() - lastToTank > 2_000) {
         lastToTank = agent.clock.now();
         await striker.halt();
         const p = tank.player!.position;
-        await agent.send({ name: "moveTo", x: p.x, y: p.y, z: p.z, within: 1200 });
+        await agent.send({ name: "moveTo", x: p.x, y: p.y, z: p.z, within: HEAL_RANGE - 400 });
         await agent.waitFor(() => undefined, 500);
         continue;
       }
@@ -250,7 +252,7 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
  * Between fights: a Pet, buffs on itself and the mate, heals, then a rest while it or the mate is low.
  * "rested" when it rested (look around again), else whether both are ready to pull.
  */
-export async function upkeep(agent: Agent, name: string): Promise<Outcome | "rested"> {
+export async function upkeep(agent: Agent, name: string, stay = false): Promise<Outcome | "rested"> {
   // A dead mate in reach: resurrect it (Regrowth 16 brings Minor Reconstitution), so it needn't release and run back.
   const rez = agent.self.skills.filter((sp) => sp.page === "Spells" && /Reconstitution/.test(sp.name) && (sp.details?.powerCost ?? 0) <= agent.self.power)
     .sort((a, b) => b.level - a.level)[0];
@@ -283,7 +285,8 @@ export async function upkeep(agent: Agent, name: string): Promise<Outcome | "res
     // Not next to an idle Mob: one that wandered up to us resting 150 from the siabra camp killed us both. Back off 1500 from it first.
     const near = idleNear(agent, 1500);
     // Once per 30 s at most, so it doesn't bounce between Mobs for ever: else it rests where it is.
-    if (near && agent.clock.now() - lastBackOff > 30_000) {
+    // Not at a camp the tank pulls to (`stay`): there I keep the spot (backing off walked me off camp, and Orla followed).
+    if (!stay && near && agent.clock.now() - lastBackOff > 30_000) {
       lastBackOff = agent.clock.now();
       const at = agent.self.position!, d = Math.max(1, away(agent, near.position));
       await runTo(agent, { x: Math.round(at.x + (at.x - near.position.x) / d * (1600 - d)), y: Math.round(at.y + (at.y - near.position.y) / d * (1600 - d)), z: at.z }, 100);
@@ -326,7 +329,10 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
       continue;
     }
 
-    const ready = await upkeep(agent, name);
+    // Following with a camp: the puller brings the Mobs, so I never leave the camp spot except to heal a fight,
+    // and go back to it first thing after one (before resting: I sat 1000 off camp for 3 min resting where a fight ended).
+    if (!lead && camp && away(agent, camp) > 250) { await runTo(agent, camp, 100); continue; }
+    const ready = await upkeep(agent, name, !lead && !!camp);
     if (ready === "rested") continue;
     if (!ready.ok) return { ...ready, kills };
     const m = mate(agent, name)!;
