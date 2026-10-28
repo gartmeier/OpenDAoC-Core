@@ -60,3 +60,8 @@ What I've learned while playing, which I read again before I next act.
 - Roane maidens (L12-13) at the siabra west edge, camp X:366000 Y:516500: 8.5-12.4k XP each at 14, ~7-10 permille a minute with Orla; sometimes two come. Red wolfhounds at X:347000 Y:521000 are mostly L10 by now: ~6 a minute.
 - `tactics/siabra.ts` `taskGrind(agent, "Orla", ORNORA, "Sentinel Ornora", "ghastly siabra", {x:366000,y:516500,z:4600}, 3, 20, [-2, 0], [])` grinds the maidens and takes a lone siabra when they're awake, then hands in. groupGrind takes `until` (9th) now; taskLoop picks lone task Mobs, rests to full Power and runs in legs.
 - Siabras were peaceful most of the stint (awake ~04:50 and ~05:30 real time, peaceful between); check `peaceful` before planning a siabra run.
+- Level 15 (05:55 real time): one siabra task loop ran clean: bear pulled the L15 siabra on the west edge from 1750, no add, 24k XP; hand-in 84.6k. Siabras awake ~05:26-05:36 this time. `tactics/siabra.ts` `siabraRun` does the whole loop (maidens while peaceful).
+- Nature 12 trained: Call Nature Spirit gives a L11 bear adolescent at 15. 14 points saved for Regrowth 8 (Major Revival, 82 HP for 15 Power) at 16.
+- groupFight didn't heal me while a Mob was on me: a maiden took me to 13% at 93% Power. Now it heals below 40% even under attack.
+- The result lists only the newest 50 chat lines, so Orla's /g line that aborted my snippet gets pushed out after a fight. Record CT_Group lines into `globalThis.said` with a `waitFor` at the start of each snippet, and read them next call.
+- Orla pulling maidens herself brings them onto her, not the bear: she died to an add that way. I pull, she assists.

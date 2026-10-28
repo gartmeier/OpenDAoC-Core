@@ -82,7 +82,9 @@ export function idleNear(agent: Agent, within: number) {
 /** Mobs attacking it, its Pet or a Group member. */
 export function hostile(agent: Agent) {
   const ours = [agent.self.objectId, agent.self.pet?.objectId, ...agent.group.members.map((m) => m.objectId)].filter((id) => id !== undefined);
-  return ours.flatMap((id) => agent.surroundings.attacking(id!)).filter((npc) => npc.realm === "None" && npc.healthPercent > 0);
+  // The most hurt first: the one we're already fighting, not an add Orla has mezzed (hitting that breaks the mez).
+  return ours.flatMap((id) => agent.surroundings.attacking(id!)).filter((npc) => npc.realm === "None" && npc.healthPercent > 0)
+    .sort((a, b) => a.healthPercent - b.healthPercent);
 }
 
 /** Melee on `mobId` without spamming the server: it sends only what changed since the last step. */
@@ -157,6 +159,8 @@ export async function groupFight(agent: Agent, mobId: number, name: string, dots
       const canHeal = !!bestHeal(agent);
       if (canHeal && m && !m.member.dead && (m.member.healthPercent ?? 100) < (onMate ? 85 : 50)) { await striker.halt(); await healMate(agent, name, onMate ? 95 : 70, 1); continue; }
       if (canHeal && agent.self.healthPercent < 45 && !onMe) { await striker.halt(); await healMe(agent, 70, 1); continue; }
+      // Even with it on me: a maiden took me to 13% with 93% Power while I only meleed. A cast may be interrupted, but try.
+      if (canHeal && agent.self.healthPercent < 40 && onMe) { await striker.halt(); await healMe(agent, 60, 1); continue; }
       const pet = petNpc(agent);
       if (canHeal && pet && pet.healthPercent < 45 && !onMe) { await striker.halt(); await healPet(agent, 70, 1); continue; }
 
