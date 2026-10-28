@@ -247,14 +247,22 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
     }
 
     const level = agent.self.level;
-    const mob = agent.surroundings.npcs
+    const fit = agent.surroundings.npcs
       .filter((npc) => npc.realm === "None" && !npc.peaceful && !npc.pet && npc.healthPercent > 0 && !avoid.includes(npc.name)
         && npc.level >= level + range[0] && npc.level <= level + range[1] && (shunned.get(npc.objectId) ?? 0) < 2)
-      .map((npc) => ({ npc, away: away(agent, npc.position) }))
+      .map((npc) => ({ npc, away: away(agent, npc.position) }));
+    const mob = fit
       // The Pet attacks only within 2000 units.
       .filter((x) => x.away < 1800)
       // Higher Mobs pay about twice as much (L8 rowdy ~1000 XP, L5 ~520), so the highest first, then the nearest.
       .sort((a, b) => b.npc.level - a.npc.level || a.away - b.away)[0];
+    // The camp is picked clean nearby: move up to 1000 short of the nearest fitting Mob farther off (the mate follows).
+    const farther = !mob && fit.filter((x) => x.away < 5000).sort((a, b) => a.away - b.away)[0];
+    if (farther) {
+      const at = agent.self.position!, p = farther.npc.position;
+      await runTo(agent, { x: Math.round(p.x - (p.x - at.x) / farther.away * 1000), y: Math.round(p.y - (p.y - at.y) / farther.away * 1000), z: p.z }, 150);
+      continue;
+    }
     if (!mob) {
       if (++idle > 6) return { ...failed("noMob"), kills };
       await agent.waitFor(() => undefined, 10_000);

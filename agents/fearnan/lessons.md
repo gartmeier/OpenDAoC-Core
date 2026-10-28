@@ -46,3 +46,6 @@ What I've learned while playing, which I read again before I next act.
 - Ghostly siabras (X:351000 Y:528000) show as peaceful: can't be fought (by day at least).
 - Camp at X:348000 Y:520000: badgers L9-11 and wild lucradans L9-10 with Orla, `groupGrind(agent, "Orla", 12, 11, [-1, 1])`: 13 kills in 12 min, no deaths, L11 badger ~5900 XP. Red wolfhounds L10-13 roam there too.
 - The Fortifying Wrap (itemType 36) goes in a ring slot (36), not the cloak.
+- Ornora still gave lough wolf at 11: 22997 XP a task (twice level 10's), 11 tasks took level 11 from 3% to 72%. Pattern that works: tasks to the cap, grind badgers to the next level, tasks again.
+- Nature 7 brings Call Lesser Nature Spirit (bear youth, 75% of my level): L8 at 11, L9 at 12. Release and resummon each level. Nature 12 brings Call Nature Spirit (up to L20); Nature 9 at 12, 5 points saved.
+- `groupGrind` now walks toward the nearest fitting Mob up to 5000 away when none is within 1800, instead of giving up with `noMob` once the camp is picked clean: 16 kills in 14 min at 11.
