@@ -65,3 +65,6 @@ What I've learned while playing, which I read again before I next act.
 - groupFight didn't heal me while a Mob was on me: a maiden took me to 13% at 93% Power. Now it heals below 40% even under attack.
 - The result lists only the newest 50 chat lines, so Orla's /g line that aborted my snippet gets pushed out after a fight. Record CT_Group lines into `globalThis.said` with a `waitFor` at the start of each snippet, and read them next call.
 - Orla pulling maidens herself brings them onto her, not the bear: she died to an add that way. I pull, she assists.
+- Dergan tusslers L14 at camp X:375000 Y:515300 Z:5390 (Orla's idea): `groupGrind(agent, "Orla", 15, 20, [-1, 1], ["campkeeper", "Hughar"], true, camp)` 22 kills in 15 min at 15, ~16k each, ~14 permille a minute, no deaths: three times the maidens. The lynx adolescent holds them alone.
+- Pull only Mobs within ~1500 (Orla's ask): from farther her assist isn't in range at once. groupGrind and siabraRun do so now.
+- Siabra task at 15: hand-in 121k XP; the siabra itself 17k.

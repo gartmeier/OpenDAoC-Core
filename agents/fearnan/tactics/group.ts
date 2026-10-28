@@ -289,8 +289,8 @@ export async function groupGrind(agent: Agent, name: string, minutes: number, st
         && (!camp || Math.hypot(npc.position.x - camp.x, npc.position.y - camp.y) < 3500))
       .map((npc) => ({ npc, away: away(agent, npc.position) }));
     const mob = fit
-      // The Pet attacks only within 2000 units.
-      .filter((x) => x.away < 1800)
+      // The Pet attacks only within 2000 units; Orla asked for 1500 so her assist is in range at once.
+      .filter((x) => x.away < 1500)
       // Alone first: a Mob with another within 600 tends to bring it (an add killed us both at the siabras).
       .map((x) => ({ ...x, crowded: agent.surroundings.npcs.some((o) => o.objectId !== x.npc.objectId && o.realm === "None" && !o.peaceful && !o.pet && o.healthPercent > 0 && o.level >= level - 3 && Math.hypot(o.position.x - x.npc.position.x, o.position.y - x.npc.position.y) < 600) }))
       // Higher Mobs pay about twice as much (L8 rowdy ~1000 XP, L5 ~520), so the highest first, then the nearest.

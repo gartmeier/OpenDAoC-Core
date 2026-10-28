@@ -31,7 +31,7 @@ export async function taskGrind(agent: Agent, name: string, guard: Point, guardN
 
 /**
  * Siabra Kill Tasks with the mate: from `camp` (the siabra west edge), rests both to full Power, has the Pet pull the awake siabra
- * with the fewest others around it from 1750 away (the mate mezzes an add), fights whatever comes, and hands in at the guard once the
+ * with the fewest others around it from 1400 away (the mate mezzes an add), fights whatever comes, and hands in at the guard once the
  * task says so. While the siabras are peaceful it grinds the maidens at the camp. `rounds` tasks, or until `minutes` run out.
  */
 export async function siabraRun(agent: Agent, name: string, guard: Point, guardName: string, camp: Point, rounds: number, minutes: number, stopAtLevel = 20): Promise<Outcome & { done?: number; kills?: number }> {
@@ -94,9 +94,9 @@ export async function siabraRun(agent: Agent, name: string, guard: Point, guardN
     const crowd = (n: { objectId: number; position: Point }) => all.filter((o) => o.objectId !== n.objectId && Math.hypot(o.position.x - n.position.x, o.position.y - n.position.y) < 700).length;
     const target = all.map((n) => ({ n, c: crowd(n), d: away(n.position) })).sort((a, b) => a.c - b.c || a.d - b.d)[0].n;
     const d = away(target.position);
-    if (d > 1850) {
+    if (d > 1500) {
       const at = agent.self.position!;
-      await runTo(agent, { x: Math.round(target.position.x - (target.position.x - at.x) / d * 1750), y: Math.round(target.position.y - (target.position.y - at.y) / d * 1750), z: at.z }, 100);
+      await runTo(agent, { x: Math.round(target.position.x - (target.position.x - at.x) / d * 1400), y: Math.round(target.position.y - (target.position.y - at.y) / d * 1400), z: at.z }, 100);
       continue;
     }
     if ((await groupFight(agent, target.objectId, name)).ok) kills++;
