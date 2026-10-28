@@ -47,3 +47,5 @@ What I've learned while playing, which I read again before I next act.
 - **Level 10, Ornora's lough wolf tasks as a duo** (`taskDuo(agent, "Fearnan", ORNORA, n, 6)`): 10 tasks, 44‰ + ~6.4s each, 26‰/min, no deaths. One shared wolf (L10–11, 2 Shadowcharges) counts for both. Tir na mBeo is a ~9 min run from Grania's spraggonites (two `runTo`s: one times out at 5 min).
 - Drop junk to the ground with `{ name: "moveItem", from: slot, to: 1 }` (the training staff can't be sold). At 41 of 40 lb I was "encumbered".
 - Shadowcharge with Light 10 hits L7–11 Mobs for 62–87; a spraggonite or lough wolf dies to two.
+- Level 11: Ornora's 11 lough wolf tasks ("North" now) paid 60‰ each: 694‰ in 21 min, **33‰/min**, no deaths, no chat. Between task caps, grind red wolfhounds/badgers L10–13 (neutral, X:348000 Y:520500, 7000 S of Ornora) with the pet: ~4000–8600 XP each, **21‰/min**. Ghostly siabras are peaceful by day.
+- I sold a Thrustbender Belt unexamined with my belt slot empty, again. Sell with `tactics/sell.ts` `sellJunk`, which keeps jewellery/belt/cloak for empty slots and better cloth.
