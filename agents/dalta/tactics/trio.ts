@@ -47,7 +47,9 @@ export async function trio(agent: Agent, { minutes = 20, mob = "large red wolfho
       await rest(agent, 100);
       continue;
     }
-    const low = others().find((m) => (m.healthPercent ?? 100) < 75 || (m.name === "Orla" && (m.powerPercent ?? 100) < 60));
+    // Pull only with both of them here and alive: alone I'm the one holding everything.
+    const away = (m: (typeof agent.group.members)[number]) => m.dead || !m.position || !agent.self.position || Math.hypot(m.position.x - agent.self.position.x, m.position.y - agent.self.position.y) > 2000;
+    const low = others().find((m) => away(m) || (m.healthPercent ?? 100) < 75 || (m.name === "Orla" && (m.powerPercent ?? 100) < 60));
     if (low) {
       await agent.waitFor(() => false, 5_000);
       continue;
