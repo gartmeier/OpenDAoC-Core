@@ -7,7 +7,7 @@ Learned in milestones 3 and 3b, and while shopping in milestone 4b.
 `runTo(agent, { x, y, z }, within?)` runs along a route on the zone's navmesh and succeeds once you arrive, `within` units short of the end if you give it. It fails with why the run stopped, such as `unreachable` or `movedByServer`, or with `timeout` after 5 minutes.
 
 - Positions are global, as `/gloc` gives them, and as the Wiki lists them.
-- If you don't know the ground's height, give your own: the route ends at the nearest point you can walk to.
+- Always send Z, with `runTo` and with the `moveTo` Primitive. Use the target's own `position.z`. If you don't know the ground's height, give your own: the route ends at the nearest point you can walk to.
 - A target out of reach still gets a route as far as it goes, and the run ends short of it.
 
 ```ts
